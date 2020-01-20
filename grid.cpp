@@ -173,7 +173,22 @@ void initializeGrids(
       cerr << "(MAIN) ERROR: System boundary conditions were not set correctly." << endl;
       exit(1);
    }
+
    phiprof::stop("Classify cells (sys boundary conditions)");
+
+
+
+// +=======================================
+
+
+
+
+
+
+//update ghost cells-->fsgrid
+// +=======================================
+
+
 
    // Check refined cells do not touch boundary cells
    phiprof::start("Check boundary refinement");
