@@ -98,7 +98,8 @@ bool propagateFields(
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
    creal& dt,
-   cuint subcycles
+   cuint subcycles,
+   FsGrid<std::array<Real, 5>, 2> &pmlGrid
 );
 
 Real divideIfNonZero(creal rhoV, creal rho);

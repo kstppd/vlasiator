@@ -413,8 +413,8 @@ int main(int argn,char* args[]) {
    FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> dMomentsGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> BgBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> volGrid(fsGridDimensions, comm, periodicity,gridCoupling);
-   FsGrid< std::array<Real, 5>, 2> pmlGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< fsgrids::technical, 2> technicalGrid(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, 5>, 2> pmlGrid(fsGridDimensions, comm, periodicity,gridCoupling);
 
    // Set DX,DY and DZ
    // TODO: This is currently just taking the values from cell 1, and assuming them to be
@@ -491,7 +491,9 @@ int main(int argn,char* args[]) {
 		   BgBGrid,
 		   volGrid,
 		   technicalGrid,
-		   sysBoundaries, 0.0, 1.0
+		   sysBoundaries,0.0, 1.0,
+         pmlGrid
+       
 		   );
 
    phiprof::start("getFieldsFromFsGrid");
@@ -918,7 +920,8 @@ int main(int argn,char* args[]) {
             technicalGrid,
             sysBoundaries,
             P::dt,
-            P::fieldSolverSubcycles
+            P::fieldSolverSubcycles,
+            pmlGrid
          );
 
          phiprof::start("getFieldsFromFsGrid");

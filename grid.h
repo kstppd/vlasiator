@@ -45,6 +45,7 @@ void initializeGrids(
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> & volGrid,
    FsGrid< fsgrids::technical, 2>& technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid< std::array<Real, 5>, 2> &pmlGrid,
    Project& project
 );
 

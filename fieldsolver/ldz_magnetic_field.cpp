@@ -51,6 +51,7 @@ void propagateMagneticField(
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
+   FsGrid<std::array<Real, 5>, 2> &pmlGrid,
    cint i,
    cint j,
    cint k,
@@ -218,6 +219,7 @@ void propagateMagneticFieldSimple(
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid<std::array<Real, 5>, 2> &pmlGrid,
    creal& dt,
    cint& RKCase
 ) {
@@ -241,7 +243,7 @@ void propagateMagneticFieldSimple(
 
             if(technicalGrid.get(i,j,k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY) continue;
             // Propagate B on all local cells:
-            propagateMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, i, j, k, dt, RKCase);
+            propagateMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, i, j, k, dt, RKCase);
          }
       }
    }
