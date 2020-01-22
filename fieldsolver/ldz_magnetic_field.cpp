@@ -51,7 +51,7 @@ void propagateMagneticField(
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
-   FsGrid<std::array<Real, 5>, 2> &pmlGrid,
+   FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
    cint i,
    cint j,
    cint k,
@@ -70,7 +70,6 @@ void propagateMagneticField(
    std::array<Real, fsgrids::efield::N_EFIELD> * EGrid1;
    std::array<Real, fsgrids::efield::N_EFIELD> * EGrid2;
    std::array<Real, fsgrids::bfield::N_BFIELD> * perBDt2Grid0;
-   
    if (doX == true) {
       switch (RKCase) {
          case RK_ORDER1:
@@ -78,6 +77,7 @@ void propagateMagneticField(
             EGrid1 = EGrid.get(i,j+1,k);
             EGrid2 = EGrid.get(i,j,k+1);
             perBGrid0->at(fsgrids::bfield::PERBX) += dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+            
             break;
             
          case RK_ORDER2_STEP1:
@@ -177,7 +177,7 @@ void propagateSysBoundaryMagneticField(
     FsGrid<std::array<Real, fsgrids::bfield::N_BFIELD>, 2> &perBDt2Grid,
     FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, 2> &EGrid,
     FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, 2> &EDt2Grid,
-    FsGrid<std::array<Real, 5>, 2> &pmlGrid,
+    FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
     FsGrid<fsgrids::technical, 2> &technicalGrid,
     cint i,
     cint j,
@@ -220,10 +220,11 @@ void propagateMagneticFieldSimple(
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
-   FsGrid<std::array<Real, 5>, 2> &pmlGrid,
+   FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
    creal& dt,
    cint& RKCase
-) {
+)
+{
    int timer;
    //const std::array<int, 3> gridDims = technicalGrid.getLocalSize();
    const int* gridDims = &technicalGrid.getLocalSize()[0];

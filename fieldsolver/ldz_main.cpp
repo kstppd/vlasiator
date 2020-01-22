@@ -100,8 +100,7 @@ bool propagateFields(
     SysBoundary &sysBoundaries,
     creal &dt,
     cuint subcycles,
-    FsGrid<std::array<Real, 5>, 2> &pmlGrid
-    )
+    FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid)
 {
 
    if(subcycles == 0) {

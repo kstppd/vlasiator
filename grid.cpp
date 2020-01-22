@@ -177,17 +177,34 @@ void initializeGrids(
    phiprof::stop("Classify cells (sys boundary conditions)");
 
 
-// +=======================================
+   /*----------Building the PML Block-------*/
+
+   std::array<Real,fsgrids::pml::N_PML> * test;
+   int ii=5;
+   int jj=5;
+   int kk=5;
+   test = pmlGrid.get(ii,jj,kk);
+   test->at(fsgrids::pml::PGI2) = test->at(fsgrids::pml::PGI2) +10.23;
+   std::cout<<test->at(fsgrids::pml::PGI2)<<endl;
 
 
 
 
 
 
-//update ghost cells-->fsgrid
-// +=======================================
 
 
+
+
+
+
+
+
+   // Update Ghost Cells
+   pmlGrid.updateGhostCells();
+
+
+   /*---------------------------------------*/
 
    // Check refined cells do not touch boundary cells
    phiprof::start("Check boundary refinement");

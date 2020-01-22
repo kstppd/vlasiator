@@ -533,7 +533,7 @@ namespace SBC {
        FsGrid<std::array<Real, fsgrids::bfield::N_BFIELD>, 2> &perBDt2Grid,
        FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, 2> &EGrid,
        FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, 2> &EDt2Grid,
-       FsGrid<std::array<Real, 5>, 2> &pmlGrid,
+       FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
        FsGrid<fsgrids::technical, 2> &technicalGrid,
        cint i,
        cint j,
