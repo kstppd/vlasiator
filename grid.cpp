@@ -177,20 +177,112 @@ void initializeGrids(
    phiprof::stop("Classify cells (sys boundary conditions)");
 
 
+
+
+// ******************************************************************************
+   phiprof::start("Build PML Domain");
+
    /*----------Building the PML Block-------*/
 
-   std::array<Real,fsgrids::pml::N_PML> * test;
-   int ii=5;
-   int jj=5;
-   int kk=5;
-   test = pmlGrid.get(ii,jj,kk);
-   test->at(fsgrids::pml::PGI2) = test->at(fsgrids::pml::PGI2) +10.23;
-   std::cout<<test->at(fsgrids::pml::PGI2)<<endl;
+   /*----Get PML Array and Domain Size-----*/
+   std::array<Real,fsgrids::pml::N_PML> * pmltest;
+   const int *pmlDims = &pmlGrid.getLocalSize()[0];
+
+   /*-----Initially set all arrays to one-----*/
+
+
+
+   //Iterate over domain 
+   #pragma omp parallel for collapse(3)
+   for (int kk = 0; kk < pmlDims[2]; kk++){
+      for (int jj = 0; jj < pmlDims[1]; jj++){
+         for (int ii = 0; ii < pmlDims[0]; ii++){
+            pmltest = pmlGrid.get(ii, jj, kk);
+            pmltest->at(fsgrids::pml::PGI2)=1.0;
+            pmltest->at(fsgrids::pml::PGI3)=1.0;
+            pmltest->at(fsgrids::pml::PFI1)=1.0;
+            pmltest->at(fsgrids::pml::PFI2)=1.0;
+            pmltest->at(fsgrids::pml::PFI3)=1.0;
+         }
+      }
+   }
+
+
+// Attentuation Along the X-Dimension
+
+  for (int kk = 0; kk < pmlDims[2]; kk++){
+      for (int jj = 0; jj < pmlDims[1]; jj++){
+         for (int ii = 0; ii < fsgrids::pml::widthX ; ii++){
+
+            /***** -X *****/
+            int xnum=fsgrids::pml::widthX-ii;
+            int xd= fsgrids::pml::widthX;
+
+            float xxn=xnum/xd;
+            float xn=0.33*(xxn*xxn*xxn);
+            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+  
+
+
+            /**** +X ****/
+            xxn=(xnum-0.5)/xd;
+            xn=0.25*(xxn*xxn*xxn);
+
+
+
+
+         }
+      }
+   }
+
+
+
+   // int ii=5;
+   // int jj=5;
+   // int kk=5;
+   // test = pmlGrid.get(ii,jj,kk);
+   // test->at(fsgrids::pml::PGI2) = test->at(fsgrids::pml::PGI2) +10.23;
+   // std::cout<<test->at(fsgrids::pml::PGI2)<<endl;
+   
+   // Getting local and global domain
+
+   // const int* gpmlDims = &pmlGrid.getGlobalSize()[0];
+
+   // Getting Global i,j,k's
+   // int ii=5;
+   // int jj=5;
+   // int kk=5;   
+
+   // // const int * gindex =& pmlGrid.getGlobalIndices(ii,jj,kk)[0];
+   // const double * gindex =& pmlGrid.getPhysicalCoords(ii,jj,kk)[0];
+
+   // std::cout<< pmlDims[0]<<endl;
+   // std::cout<< pmlDims[1]<<endl;
+   // std::cout<< pmlDims[2]<<endl;
+
+// Initially set all arrays to one 
 
 
 
 
 
+
+
+
+// //    // Remember to add openMP clause
+
+//   for (int kk=0; kk<pmlDims[2]; kk++){
+//      for (int jj=0; jj<pmlDims[1]; jj++){
+//         for (int ii=0; ii<pmlDims[0]; ii++ ){
+
+//            test = pmlGrid.get(ii,jj, kk);
+//            std::cout << test->at(fsgrids::pml::PGI2) << endl;
+
+
+
+//         }
+//      }
+//   }
 
 
 
@@ -203,8 +295,13 @@ void initializeGrids(
    // Update Ghost Cells
    pmlGrid.updateGhostCells();
 
-
+   phiprof::stop("Build PML Domain");
    /*---------------------------------------*/
+
+// ******************************************************************************
+
+
+
 
    // Check refined cells do not touch boundary cells
    phiprof::start("Check boundary refinement");

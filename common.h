@@ -234,6 +234,9 @@ namespace fsgrids {
    PFI1,
    PFI2,
    PFI3,
+   widthX=20,
+   widthY=20,
+   widthZ=20,
    N_PML=5
    };
 
