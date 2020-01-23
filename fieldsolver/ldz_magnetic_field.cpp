@@ -70,14 +70,26 @@ void propagateMagneticField(
    std::array<Real, fsgrids::efield::N_EFIELD> * EGrid1;
    std::array<Real, fsgrids::efield::N_EFIELD> * EGrid2;
    std::array<Real, fsgrids::bfield::N_BFIELD> * perBDt2Grid0;
+   
+   // Allocare array for PML
+   std::array<Real, fsgrids::pml::N_PML> * pmlGrid0;
+   
+
    if (doX == true) {
       switch (RKCase) {
          case RK_ORDER1:
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j+1,k);
             EGrid2 = EGrid.get(i,j,k+1);
+            
+            // GetPMLarrays for Bx Component   
+            pmlGrid0=pmlGrid.get(i,j,k);
+
+            // Update  Bx
             perBGrid0->at(fsgrids::bfield::PERBX) += dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
             
+            // perBGrid0->at(fsgrids::bfield::PERBX) =perBGrid0->at(fsgrids::bfield::PERBX)+ dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+
             break;
             
          case RK_ORDER2_STEP1:

@@ -94,7 +94,7 @@ void initializeGrids(
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> & volGrid,
    FsGrid< fsgrids::technical, 2>& technicalGrid,
    SysBoundary& sysBoundaries,
-   FsGrid< std::array<Real, 5>, 2> &pmlGrid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
    Project& project
 ) {
    int myRank;
@@ -185,24 +185,31 @@ void initializeGrids(
    /*----------Building the PML Block-------*/
 
    /*----Get PML Array and Domain Size-----*/
-   std::array<Real,fsgrids::pml::N_PML> * pmltest;
+   std::array<Real,fsgrids::pml::N_PML> * pmlTest;
    const int *pmlDims = &pmlGrid.getLocalSize()[0];
 
    /*-----Initially set all arrays to one-----*/
-
-
-
    //Iterate over domain 
    #pragma omp parallel for collapse(3)
    for (int kk = 0; kk < pmlDims[2]; kk++){
       for (int jj = 0; jj < pmlDims[1]; jj++){
          for (int ii = 0; ii < pmlDims[0]; ii++){
-            pmltest = pmlGrid.get(ii, jj, kk);
-            pmltest->at(fsgrids::pml::PGI2)=1.0;
-            pmltest->at(fsgrids::pml::PGI3)=1.0;
-            pmltest->at(fsgrids::pml::PFI1)=1.0;
-            pmltest->at(fsgrids::pml::PFI2)=1.0;
-            pmltest->at(fsgrids::pml::PFI3)=1.0;
+            pmlTest = pmlGrid.get(ii, jj, kk);
+            pmlTest->at(fsgrids::pml::PGI2)=1.0;
+            pmlTest->at(fsgrids::pml::PGI3)=1.0;
+            pmlTest->at(fsgrids::pml::PFI1)=1.0;
+            pmlTest->at(fsgrids::pml::PFI2)=1.0;
+            pmlTest->at(fsgrids::pml::PFI3)=1.0;
+            pmlTest->at(fsgrids::pml::PGJ2)=1.0;
+            pmlTest->at(fsgrids::pml::PGJ3)=1.0;
+            pmlTest->at(fsgrids::pml::PFJ1)=1.0;
+            pmlTest->at(fsgrids::pml::PFJ2)=1.0;
+            pmlTest->at(fsgrids::pml::PFJ3)=1.0;
+            pmlTest->at(fsgrids::pml::PGK2)=1.0;
+            pmlTest->at(fsgrids::pml::PGK3)=1.0;
+            pmlTest->at(fsgrids::pml::PFK1)=1.0;
+            pmlTest->at(fsgrids::pml::PFK2)=1.0;
+            pmlTest->at(fsgrids::pml::PFK3)=1.0;
          }
       }
    }
@@ -210,25 +217,66 @@ void initializeGrids(
 
 // Attentuation Along the X-Dimension
 
-  for (int kk = 0; kk < pmlDims[2]; kk++){
-      for (int jj = 0; jj < pmlDims[1]; jj++){
-         for (int ii = 0; ii < fsgrids::pml::widthX ; ii++){
+  for (int kk = 2; kk < pmlDims[2]-2; kk++){
+      for (int jj = 2; jj < pmlDims[1]-2; jj++){
+         for (int ii = 2; ii <2+ fsgrids::pml::widthX ; ii++){
 
+            // Get Arrays
+            pmlTest=pmlGrid.get(ii,jj,kk);
+            
             /***** -X *****/
-            int xnum=fsgrids::pml::widthX-ii;
+            int xnum=ii-2;
             int xd= fsgrids::pml::widthX;
 
             float xxn=xnum/xd;
             float xn=0.33*(xxn*xxn*xxn);
+            
             // printf("xnum= %d <--> xd=%d\n",xnum,xd);
-  
+            
+            pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
 
-
-            /**** +X ****/
+            /**** -X ****/
             xxn=(xnum-0.5)/xd;
             xn=0.25*(xxn*xxn*xxn);
 
+            pmlTest->at(fsgrids::pml::PFI1)=xn;
+            pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
 
+
+         }
+      }
+   }
+
+// Attentuation Along the Y-Dimension
+
+  for (int kk = 2; kk < pmlDims[2]-2; kk++){
+      for (int ii = 2; ii < pmlDims[1]-2; ii++){
+         for (int jj = 2; jj <2+ fsgrids::pml::widthX ; jj++){
+
+            // Get Arrays
+            pmlTest=pmlGrid.get(ii,jj,kk);
+            
+            /***** -X *****/
+            int xnum=jj-2;
+            int xd= fsgrids::pml::widthX;
+
+            float xxn=xnum/xd;
+            float xn=0.33*(xxn*xxn*xxn);
+            
+            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+            
+            pmlTest->at(fsgrids::pml::PGJ2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
+
+            /**** -X ****/
+            xxn=(xnum-0.5)/xd;
+            xn=0.25*(xxn*xxn*xxn);
+
+            pmlTest->at(fsgrids::pml::PFJ1)=xn;
+            pmlTest->at(fsgrids::pml::PFJ2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
 
 
          }
@@ -236,61 +284,39 @@ void initializeGrids(
    }
 
 
+// Attentuation Along the Z-Dimension
 
-   // int ii=5;
-   // int jj=5;
-   // int kk=5;
-   // test = pmlGrid.get(ii,jj,kk);
-   // test->at(fsgrids::pml::PGI2) = test->at(fsgrids::pml::PGI2) +10.23;
-   // std::cout<<test->at(fsgrids::pml::PGI2)<<endl;
-   
-   // Getting local and global domain
+  for (int jj = 2; jj < pmlDims[2]-2; jj++){
+      for (int ii = 2; ii < pmlDims[1]-2; ii++){
+         for (int kk = 2; kk <2+ fsgrids::pml::widthX ; kk++){
 
-   // const int* gpmlDims = &pmlGrid.getGlobalSize()[0];
+            // Get Arrays
+            pmlTest=pmlGrid.get(ii,jj,kk);
+            
+            /***** -X *****/
+            int xnum=kk-2;
+            int xd= fsgrids::pml::widthX;
 
-   // Getting Global i,j,k's
-   // int ii=5;
-   // int jj=5;
-   // int kk=5;   
+            float xxn=xnum/xd;
+            float xn=0.33*(xxn*xxn*xxn);
+            
+            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+            
+            pmlTest->at(fsgrids::pml::PGK2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PGK3)=(1-xn)/(1+xn);
 
-   // // const int * gindex =& pmlGrid.getGlobalIndices(ii,jj,kk)[0];
-   // const double * gindex =& pmlGrid.getPhysicalCoords(ii,jj,kk)[0];
+            /**** -X ****/
+            xxn=(xnum-0.5)/xd;
+            xn=0.25*(xxn*xxn*xxn);
 
-   // std::cout<< pmlDims[0]<<endl;
-   // std::cout<< pmlDims[1]<<endl;
-   // std::cout<< pmlDims[2]<<endl;
-
-// Initially set all arrays to one 
-
-
-
-
-
+            pmlTest->at(fsgrids::pml::PFK1)=xn;
+            pmlTest->at(fsgrids::pml::PFK2)=1/(1+xn);
+            pmlTest->at(fsgrids::pml::PFK3)=(1-xn)/(1+xn);
 
 
-
-// //    // Remember to add openMP clause
-
-//   for (int kk=0; kk<pmlDims[2]; kk++){
-//      for (int jj=0; jj<pmlDims[1]; jj++){
-//         for (int ii=0; ii<pmlDims[0]; ii++ ){
-
-//            test = pmlGrid.get(ii,jj, kk);
-//            std::cout << test->at(fsgrids::pml::PGI2) << endl;
-
-
-
-//         }
-//      }
-//   }
-
-
-
-
-
-
-
-
+         }
+      }
+   }
 
    // Update Ghost Cells
    pmlGrid.updateGhostCells();
