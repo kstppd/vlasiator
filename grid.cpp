@@ -186,6 +186,7 @@ void initializeGrids(
 
    /*----Get PML Array and Domain Size-----*/
    std::array<Real,fsgrids::pml::N_PML> * pmlTest;
+   std::array<int32_t, 3> pos;
    const int *pmlDims = &pmlGrid.getLocalSize()[0];
 
    /*-----Initially set all arrays to one-----*/
@@ -215,112 +216,139 @@ void initializeGrids(
    }
 
 
-// Attentuation Along the X-Dimension
+   bool enable=true;
 
-  for (int kk = 2; kk < pmlDims[2]-2; kk++){
-      for (int jj = 2; jj < pmlDims[1]-2; jj++){
-         for (int ii = 2; ii <2+ fsgrids::pml::widthX ; ii++){
+   if (enable==true){
+      printf("Dims x:%d y:%d z:%d\n", pmlDims[0], pmlDims[1], pmlDims[2]);
+      int start=2;
+      // Attentuation Along the X-Dimension
 
-            // Get Arrays
-            pmlTest=pmlGrid.get(ii,jj,kk);
+      for (int kk = 0; kk < pmlDims[2] ; kk++)
+      {
+         for (int jj = 0; jj < pmlDims[1]; jj++){
+
+            for (int ii = start; ii <=start+ fsgrids::pml::widthX ; ii++){
+
+               // Get Arrays
+               pmlTest=pmlGrid.get(ii,jj,kk);
+               pos=pmlGrid.getGlobalIndices(ii,jj,kk);
             
-            /***** -X *****/
-            int xnum=ii-2;
-            int xd= fsgrids::pml::widthX;
 
-            float xxn=xnum/xd;
-            float xn=0.33*(xxn*xxn*xxn);
+               if (pos[0]<=fsgrids::pml::widthX+2){
+                  // printf("Local Indices x:%d y:%d z;%d\n", ii,jj,kk);
+                  // printf("Global Indices x:%d y:%d z;%d\n",pos[0],pos[1],pos[2]);
+                  // printf("\n");
+                  
+                  /***** -X *****/
+                  
+                  int xnum=ii-2;
+                  int xd= fsgrids::pml::widthX;
+
+                  float xxn=xnum/xd;
+                  float xn=0.33*(xxn*xxn*xxn);
+                  
+                  // printf("xnum= %d <--> xxxn=%f\n",xnum,xxn);
+                  
+                  pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
+
+                  /**** -X ****/
+                  xxn=(xnum-0.5)/xd;
+                  xn=0.25*(xxn*xxn*xxn);
+
+                  pmlTest->at(fsgrids::pml::PFI1)=xn;
+                  pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
+
+               }
+
+
+            }
+         }
+      }
+
+   // Attentuation Along the Y-Dimension
+
+   for (int kk = 0; kk < pmlDims[2]; kk++){
+         for (int ii = 0; ii < pmlDims[1]; ii++){
+            for (int jj = start; jj <start+ fsgrids::pml::widthX ; jj++){
+
+               // Get Arrays
+               pmlTest=pmlGrid.get(ii,jj,kk);
+               pos=pmlGrid.getGlobalIndices(ii,jj,kk);
             
-            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+
+               if (pos[0]<=fsgrids::pml::widthX+2){
+                  
+                  /***** -X *****/
+                  int xnum=jj-2;
+                  int xd= fsgrids::pml::widthX;
+
+                  float xxn=xnum/xd;
+                  float xn=0.33*(xxn*xxn*xxn);
+                  
+                  // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+                  
+                  pmlTest->at(fsgrids::pml::PGJ2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
+
+                  /**** -X ****/
+                  xxn=(xnum-0.5)/xd;
+                  xn=0.25*(xxn*xxn*xxn);
+
+                  pmlTest->at(fsgrids::pml::PFJ1)=xn;
+                  pmlTest->at(fsgrids::pml::PFJ2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
+               }
+
+            }
+         }
+      }
+
+
+   // Attentuation Along the Z-Dimension
+
+   for (int jj = 0; jj < pmlDims[2]; jj++){
+         for (int ii = 0; ii < pmlDims[1]; ii++){
+            for (int kk = start; kk <start+ fsgrids::pml::widthX ; kk++){
+
+               // Get Arrays
+               pmlTest=pmlGrid.get(ii,jj,kk);
+               pos=pmlGrid.getGlobalIndices(ii,jj,kk);
             
-            pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
 
-            /**** -X ****/
-            xxn=(xnum-0.5)/xd;
-            xn=0.25*(xxn*xxn*xxn);
+               if (pos[0]<=fsgrids::pml::widthX+2){
+                  /***** -X *****/
+                  int xnum=kk-2;
+                  int xd= fsgrids::pml::widthX;
 
-            pmlTest->at(fsgrids::pml::PFI1)=xn;
-            pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
+                  float xxn=xnum/xd;
+                  float xn=0.33*(xxn*xxn*xxn);
+                  
+                  // printf("xnum= %d <--> xd=%d\n",xnum,xd);
+                  
+                  pmlTest->at(fsgrids::pml::PGK2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PGK3)=(1-xn)/(1+xn);
 
+                  /**** -X ****/
+                  xxn=(xnum-0.5)/xd;
+                  xn=0.25*(xxn*xxn*xxn);
 
+                  pmlTest->at(fsgrids::pml::PFK1)=xn;
+                  pmlTest->at(fsgrids::pml::PFK2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PFK3)=(1-xn)/(1+xn);
+               }
+
+            }
          }
       }
    }
 
-// Attentuation Along the Y-Dimension
-
-  for (int kk = 2; kk < pmlDims[2]-2; kk++){
-      for (int ii = 2; ii < pmlDims[1]-2; ii++){
-         for (int jj = 2; jj <2+ fsgrids::pml::widthX ; jj++){
-
-            // Get Arrays
-            pmlTest=pmlGrid.get(ii,jj,kk);
-            
-            /***** -X *****/
-            int xnum=jj-2;
-            int xd= fsgrids::pml::widthX;
-
-            float xxn=xnum/xd;
-            float xn=0.33*(xxn*xxn*xxn);
-            
-            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
-            
-            pmlTest->at(fsgrids::pml::PGJ2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
-
-            /**** -X ****/
-            xxn=(xnum-0.5)/xd;
-            xn=0.25*(xxn*xxn*xxn);
-
-            pmlTest->at(fsgrids::pml::PFJ1)=xn;
-            pmlTest->at(fsgrids::pml::PFJ2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
-
-
-         }
-      }
-   }
-
-
-// Attentuation Along the Z-Dimension
-
-  for (int jj = 2; jj < pmlDims[2]-2; jj++){
-      for (int ii = 2; ii < pmlDims[1]-2; ii++){
-         for (int kk = 2; kk <2+ fsgrids::pml::widthX ; kk++){
-
-            // Get Arrays
-            pmlTest=pmlGrid.get(ii,jj,kk);
-            
-            /***** -X *****/
-            int xnum=kk-2;
-            int xd= fsgrids::pml::widthX;
-
-            float xxn=xnum/xd;
-            float xn=0.33*(xxn*xxn*xxn);
-            
-            // printf("xnum= %d <--> xd=%d\n",xnum,xd);
-            
-            pmlTest->at(fsgrids::pml::PGK2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PGK3)=(1-xn)/(1+xn);
-
-            /**** -X ****/
-            xxn=(xnum-0.5)/xd;
-            xn=0.25*(xxn*xxn*xxn);
-
-            pmlTest->at(fsgrids::pml::PFK1)=xn;
-            pmlTest->at(fsgrids::pml::PFK2)=1/(1+xn);
-            pmlTest->at(fsgrids::pml::PFK3)=(1-xn)/(1+xn);
-
-
-         }
-      }
-   }
+   MPI_Barrier(MPI_COMM_WORLD);
 
    // Update Ghost Cells
    pmlGrid.updateGhostCells();
-
+   printf("Done building PML\n");
    phiprof::stop("Build PML Domain");
    /*---------------------------------------*/
 
