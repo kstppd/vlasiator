@@ -2,4 +2,4 @@
 # Column 2 Simulation time
 # Column 3 Time step dt
 # Columns 4 to 7: proton/vg_blocks min max sum average
-0	0	0.778260869565	20	128	2452	49.04	
+0	0	0.778260869565	20	128	1492	49.7333333333	

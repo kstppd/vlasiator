@@ -1,107 +1,107 @@
-Thu Jan 23 12:03:04 2020 
+Sun Jan 26 21:13:13 2020 
 (MAIN) Starting simulation with 1 MPI processes and 8 OpenMP threads per process
 
-Thu Jan 23 12:03:04 2020 
+Sun Jan 26 21:13:13 2020 
 	 Zoltan 3.83 initialized successfully
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:13 2020 
 (INIT): Starting initial load balance.
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 (INIT): Set initial state.
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 (TIMESTEP) New dt = 4.07688 computed on step 0 at 0s   Maximum possible dt (not including  vlasovsolver CFL 0.8-0.99 or fieldsolver CFL 0.4-0.5) in {r, v, BE} was 1.79769e+308 4.55517 1.79769e+308  Including subcycling { v, BE}  was 4.55517 1.79769e+308 
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 (MAIN): Starting main simulation loop.
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 ---------- tstep = 0 t = 0 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 0 t = 0
 
-Thu Jan 23 12:03:05 2020 
-(writeGrid) Wrote 124.096 kB in 0.000225887 seconds, approximate data rate is 549.372 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 124.096 kB in 0.0140345 seconds, approximate data rate is 8.84224 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:05 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 0 t = 0
 
-Thu Jan 23 12:03:05 2020 
-(writeGrid) Wrote 150.46 kB in 0.000226685 seconds, approximate data rate is 663.74 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 150.46 kB in 0.00418238 seconds, approximate data rate is 35.9747 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 ---------- tstep = 1 t = 4.07688 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 1 t = 4.07688
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 124.096 kB in 0.000221817 seconds, approximate data rate is 559.452 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 124.096 kB in 0.0058488 seconds, approximate data rate is 21.2173 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 ---------- tstep = 2 t = 8.15376 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 2 t = 8.15376
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 124.096 kB in 0.000212232 seconds, approximate data rate is 584.719 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 124.096 kB in 0.00778712 seconds, approximate data rate is 15.9361 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 ---------- tstep = 3 t = 12.2306 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 3 t = 12.2306
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 124.096 kB in 0.000209505 seconds, approximate data rate is 592.33 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 124.096 kB in 0.00449627 seconds, approximate data rate is 27.5998 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:14 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 3 t = 12.2306
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 150.46 kB in 0.000225634 seconds, approximate data rate is 666.832 MB/s
+Sun Jan 26 21:13:14 2020 
+(writeGrid) Wrote 150.46 kB in 0.000266728 seconds, approximate data rate is 564.095 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 ---------- tstep = 4 t = 16.3075 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 4 t = 16.3075
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 124.096 kB in 0.000208986 seconds, approximate data rate is 593.801 MB/s
+Sun Jan 26 21:13:15 2020 
+(writeGrid) Wrote 124.096 kB in 0.000241771 seconds, approximate data rate is 513.279 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 ---------- tstep = 5 t = 20.3844 dt = 4.07688 FS cycles = 1 ----------
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 5 t = 20.3844
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 124.096 kB in 0.000205855 seconds, approximate data rate is 602.832 MB/s
+Sun Jan 26 21:13:15 2020 
+(writeGrid) Wrote 124.096 kB in 0.000241567 seconds, approximate data rate is 513.713 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 5 t = 20.3844
 
-Thu Jan 23 12:03:06 2020 
-(writeGrid) Wrote 150.46 kB in 0.00022624 seconds, approximate data rate is 665.046 MB/s
+Sun Jan 26 21:13:15 2020 
+(writeGrid) Wrote 150.46 kB in 0.000266563 seconds, approximate data rate is 564.444 MB/s
 (IO): .... done!
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 (MAIN): All timesteps calculated.
-	 (TIME) total run time 0.423338 s, total simulated time 20.3844 s
-	 (TIME) seconds per timestep 0.0846676, seconds per simulated second 0.0207678
+	 (TIME) total run time 0.627961 s, total simulated time 20.3844 s
+	 (TIME) seconds per timestep 0.125592, seconds per simulated second 0.030806
 
-Thu Jan 23 12:03:06 2020 
+Sun Jan 26 21:13:15 2020 
 (MAIN): Exiting.
 
