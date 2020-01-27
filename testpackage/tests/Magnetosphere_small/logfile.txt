@@ -1,120 +1,235 @@
-Sun Jan 26 02:33:58 2020 
-(MAIN) Starting simulation with 1 MPI processes and 2 OpenMP threads per process
+Mon Jan 27 13:58:03 2020 
+(MAIN) Starting simulation with 4 MPI processes and 8 OpenMP threads per process
 
-Sun Jan 26 02:33:58 2020 
+Mon Jan 27 13:58:03 2020 
 	 Zoltan 3.83 initialized successfully
 
-Sun Jan 26 02:33:58 2020 
+Mon Jan 27 13:58:03 2020 
 (INIT): Starting initial load balance.
 
-Sun Jan 26 02:33:58 2020 
+Mon Jan 27 13:58:03 2020 
 (INIT): Set initial state.
 
-Sun Jan 26 02:34:04 2020 
-(TIMESTEP) New dt = 0.0278263 computed on step 0 at 0s   Maximum possible dt (not including  vlasovsolver CFL 0.8-0.99 or fieldsolver CFL 0.4-0.5) in {r, v, BE} was 9.30233 0.0310908 1.59757  Including subcycling { v, BE}  was 0.0310908 1.59757 
+Mon Jan 27 13:58:07 2020 
+(TIMESTEP) New dt = 0.0255844 computed on step 0 at 0s   Maximum possible dt (not including  vlasovsolver CFL 0.8-0.99 or fieldsolver CFL 0.4-0.5) in {r, v, BE} was 15.5039 0.028586 0.622826  Including subcycling { v, BE}  was 0.028586 0.622826 
 
-Sun Jan 26 02:34:05 2020 
+Mon Jan 27 13:58:07 2020 
 (MAIN): Starting main simulation loop.
 
-Sun Jan 26 02:34:05 2020 
----------- tstep = 0 t = 0 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:07 2020 
+---------- tstep = 0 t = 0 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:05 2020 
+Mon Jan 27 13:58:07 2020 
 (IO): Writing spatial cell and reduced system data to disk, tstep = 0 t = 0
 
-Sun Jan 26 02:34:05 2020 
-(writeGrid) Wrote 1.01872 MB in 0.000865843 seconds, approximate data rate is 1.17656 GB/s
+Mon Jan 27 13:58:07 2020 
+(writeGrid) Wrote 369.68 kB in 0.00272232 seconds, approximate data rate is 135.796 MB/s
 (IO): .... done!
 
-Sun Jan 26 02:34:08 2020 
----------- tstep = 1 t = 0.0278263 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:09 2020 
+---------- tstep = 1 t = 0.0255844 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:10 2020 
----------- tstep = 2 t = 0.0556525 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:11 2020 
+---------- tstep = 2 t = 0.0511689 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:12 2020 
----------- tstep = 3 t = 0.0834788 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:13 2020 
+---------- tstep = 3 t = 0.0767533 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:14 2020 
----------- tstep = 4 t = 0.111305 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:16 2020 
+---------- tstep = 4 t = 0.102338 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:16 2020 
----------- tstep = 5 t = 0.139131 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:18 2020 
+---------- tstep = 5 t = 0.127922 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:19 2020 
----------- tstep = 6 t = 0.166958 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:20 2020 
+---------- tstep = 6 t = 0.153507 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:21 2020 
----------- tstep = 7 t = 0.194784 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:22 2020 
+---------- tstep = 7 t = 0.179091 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:23 2020 
----------- tstep = 8 t = 0.22261 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:25 2020 
+---------- tstep = 8 t = 0.204675 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:25 2020 
----------- tstep = 9 t = 0.250436 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:27 2020 
+---------- tstep = 9 t = 0.23026 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:28 2020 
----------- tstep = 10 t = 0.278263 dt = 0.0278263 FS cycles = 1 ----------
-(TIME) current walltime/step 2.23207 s
-(TIME) current walltime/simusecond 80.2146 s
-(TIME) Estimated completion time is Sun Jan 26 02:47:35 2020
+Mon Jan 27 13:58:29 2020 
+---------- tstep = 10 t = 0.255844 dt = 0.0255844 FS cycles = 1 ----------
+(TIME) current walltime/step 2.19655 s
+(TIME) current walltime/simusecond 85.8551 s
+(TIME) Estimated completion time is Mon Jan 27 14:05:16 2020
 
 
-Sun Jan 26 02:34:28 2020 
-(LB): Start load balance, tstep = 10 t = 0.278263
+Mon Jan 27 13:58:29 2020 
+(LB): Start load balance, tstep = 10 t = 0.255844
 
-Sun Jan 26 02:34:28 2020 
+Mon Jan 27 13:58:29 2020 
 (LB): ... done!
 
-Sun Jan 26 02:34:30 2020 
----------- tstep = 11 t = 0.306089 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:32 2020 
+---------- tstep = 11 t = 0.281429 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:32 2020 
----------- tstep = 12 t = 0.333915 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:34 2020 
+---------- tstep = 12 t = 0.307013 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:34 2020 
----------- tstep = 13 t = 0.361741 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:37 2020 
+---------- tstep = 13 t = 0.332598 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:37 2020 
----------- tstep = 14 t = 0.389568 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:39 2020 
+---------- tstep = 14 t = 0.358182 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:39 2020 
----------- tstep = 15 t = 0.417394 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:41 2020 
+---------- tstep = 15 t = 0.383766 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:41 2020 
----------- tstep = 16 t = 0.44522 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:43 2020 
+---------- tstep = 16 t = 0.409351 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:43 2020 
----------- tstep = 17 t = 0.473046 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:46 2020 
+---------- tstep = 17 t = 0.434935 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:46 2020 
----------- tstep = 18 t = 0.500873 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:48 2020 
+---------- tstep = 18 t = 0.46052 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:48 2020 
----------- tstep = 19 t = 0.528699 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:50 2020 
+---------- tstep = 19 t = 0.486104 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:50 2020 
----------- tstep = 20 t = 0.556525 dt = 0.0278263 FS cycles = 1 ----------
-(TIME) current walltime/step 2.25074 s
-(TIME) current walltime/simusecond 80.8855 s
-(TIME) Estimated completion time is Sun Jan 26 02:47:41 2020
+Mon Jan 27 13:58:52 2020 
+---------- tstep = 20 t = 0.511689 dt = 0.0255844 FS cycles = 1 ----------
+(TIME) current walltime/step 2.31022 s
+(TIME) current walltime/simusecond 90.2981 s
+(TIME) Estimated completion time is Mon Jan 27 14:05:37 2020
 
 
-Sun Jan 26 02:34:50 2020 
-(LB): Start load balance, tstep = 20 t = 0.556525
+Mon Jan 27 13:58:52 2020 
+(LB): Start load balance, tstep = 20 t = 0.511689
 
-Sun Jan 26 02:34:50 2020 
+Mon Jan 27 13:58:52 2020 
 (LB): ... done!
 
-Sun Jan 26 02:34:53 2020 
----------- tstep = 21 t = 0.584351 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:55 2020 
+---------- tstep = 21 t = 0.537273 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:55 2020 
----------- tstep = 22 t = 0.612178 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:57 2020 
+---------- tstep = 22 t = 0.562857 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:34:57 2020 
----------- tstep = 23 t = 0.640004 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:58:59 2020 
+---------- tstep = 23 t = 0.588442 dt = 0.0255844 FS cycles = 1 ----------
 
-Sun Jan 26 02:35:00 2020 
----------- tstep = 24 t = 0.66783 dt = 0.0278263 FS cycles = 1 ----------
+Mon Jan 27 13:59:01 2020 
+---------- tstep = 24 t = 0.614026 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:03 2020 
+---------- tstep = 25 t = 0.639611 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:05 2020 
+---------- tstep = 26 t = 0.665195 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:07 2020 
+---------- tstep = 27 t = 0.69078 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:09 2020 
+---------- tstep = 28 t = 0.716364 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:12 2020 
+---------- tstep = 29 t = 0.741948 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:14 2020 
+---------- tstep = 30 t = 0.767533 dt = 0.0255844 FS cycles = 1 ----------
+(TIME) current walltime/step 2.19019 s
+(TIME) current walltime/simusecond 85.6063 s
+(TIME) Estimated completion time is Mon Jan 27 14:05:16 2020
+
+
+Mon Jan 27 13:59:14 2020 
+(LB): Start load balance, tstep = 30 t = 0.767533
+
+Mon Jan 27 13:59:14 2020 
+(LB): ... done!
+
+Mon Jan 27 13:59:17 2020 
+---------- tstep = 31 t = 0.793117 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:19 2020 
+---------- tstep = 32 t = 0.818702 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:22 2020 
+---------- tstep = 33 t = 0.844286 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:24 2020 
+---------- tstep = 34 t = 0.86987 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:27 2020 
+---------- tstep = 35 t = 0.895455 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:28 2020 
+---------- tstep = 36 t = 0.921039 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:29 2020 
+---------- tstep = 37 t = 0.946624 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:31 2020 
+---------- tstep = 38 t = 0.972208 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:33 2020 
+---------- tstep = 39 t = 0.997793 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:35 2020 
+---------- tstep = 40 t = 1.02338 dt = 0.0255844 FS cycles = 1 ----------
+(TIME) current walltime/step 2.0468 s
+(TIME) current walltime/simusecond 80.0019 s
+(TIME) Estimated completion time is Mon Jan 27 14:04:52 2020
+
+
+Mon Jan 27 13:59:35 2020 
+(IO): Writing spatial cell and reduced system data to disk, tstep = 40 t = 1.02338
+
+Mon Jan 27 13:59:35 2020 
+(writeGrid) Wrote 388.164 kB in 0.00291065 seconds, approximate data rate is 133.36 MB/s
+(IO): .... done!
+
+Mon Jan 27 13:59:35 2020 
+(LB): Start load balance, tstep = 40 t = 1.02338
+
+Mon Jan 27 13:59:35 2020 
+(LB): ... done!
+
+Mon Jan 27 13:59:37 2020 
+---------- tstep = 41 t = 1.04896 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:39 2020 
+---------- tstep = 42 t = 1.07455 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:40 2020 
+---------- tstep = 43 t = 1.10013 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:42 2020 
+---------- tstep = 44 t = 1.12571 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:43 2020 
+---------- tstep = 45 t = 1.1513 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:43 2020 
+---------- tstep = 46 t = 1.17688 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:44 2020 
+---------- tstep = 47 t = 1.20247 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:45 2020 
+---------- tstep = 48 t = 1.22805 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:46 2020 
+---------- tstep = 49 t = 1.25364 dt = 0.0255844 FS cycles = 1 ----------
+
+Mon Jan 27 13:59:48 2020 
+---------- tstep = 50 t = 1.27922 dt = 0.0255844 FS cycles = 1 ----------
+(TIME) current walltime/step 1.32472 s
+(TIME) current walltime/simusecond 51.7783 s
+(TIME) Estimated completion time is Mon Jan 27 14:03:00 2020
+
+
+Mon Jan 27 13:59:48 2020 
+(LB): Start load balance, tstep = 50 t = 1.27922
+
+Mon Jan 27 13:59:48 2020 
+(LB): ... done!
 

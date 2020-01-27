@@ -191,7 +191,7 @@ void initializeGrids(
 
    /*-----Initially set all arrays to one-----*/
    //Iterate over domain 
-   #pragma omp parallel for collapse(3)
+   // #pragma omp parallel for collapse(3)
    for (int kk = 0; kk < pmlDims[2]; kk++){
       for (int jj = 0; jj < pmlDims[1]; jj++){
          for (int ii = 0; ii < pmlDims[0]; ii++){
@@ -220,7 +220,7 @@ void initializeGrids(
    }
 
 
-   bool enable=true;
+   bool enable=false;
    // Need to fix this for MPI
    if (enable==true){
       printf("Dims x:%d y:%d z:%d\n", pmlDims[0], pmlDims[1], pmlDims[2]);
@@ -258,7 +258,7 @@ void initializeGrids(
 
 
                   printf("xnum= %f <--> xxxn=%f\n",xnum,xxn);
-                  std::cout<< xxn<<std::endl;
+                  // std::cout<< xxn<<std::endl;
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
 

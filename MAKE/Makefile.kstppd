@@ -18,6 +18,7 @@ endif
 
 #======== Allocator =========
 #Use TBB malloc
+CXXFLAGS += -DUSE_JEMALLOC -DJEMALLOC_NO_DEMANGLE
 
 CMP = mpic++
 LNK = mpic++
