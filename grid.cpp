@@ -257,7 +257,7 @@ void initializeGrids(
                   float xn =0.33*(xxn*xxn*xxn);
 
 
-                  printf("xnum= %f <--> xxxn=%f\n",xnum,xxn);
+                  // printf("xnum= %f <--> xxxn=%f\n",xnum,xxn);
                   // std::cout<< xxn<<std::endl;
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
@@ -279,41 +279,43 @@ void initializeGrids(
 
    // Attentuation Along the Y-Dimension
 
-   // for (int kk = 0; kk < pmlDims[2]; kk++){
-   //       for (int ii = 0; ii < pmlDims[1]; ii++){
-   //          for (int jj = start; jj <start+ fsgrids::pml::widthX ; jj++){
+   for (int kk = 0; kk < pmlDims[2]; kk++){
+         for (int ii = 0; ii < pmlDims[0]; ii++){
+            for (int jj = 0; jj < pmlDims[1]; jj++){
 
-   //             // Get Arrays
-   //             pmlTest=pmlGrid.get(ii,jj,kk);
-   //             pos=pmlGrid.getGlobalIndices(ii,jj,kk);
+               // Get Arrays
+               pmlTest=pmlGrid.get(ii,jj,kk);
+               pos=pmlGrid.getGlobalIndices(ii,jj,kk);
             
-
-   //             if (pos[0]<=fsgrids::pml::widthX+2){
+               if (  pos[1]>1 && pos[1]<=fsgrids::pml::widthX+1){
                   
-   //                /***** -X *****/
-   //                int xnum=jj-2;
-   //                int xd= fsgrids::pml::widthX;
+                   int xnum = pos[2]-1;
+                  int xd = fsgrids::pml::widthX;
 
-   //                float xxn=xnum/xd;
-   //                float xn=0.33*(xxn*xxn*xxn);
-                  
-   //                // printf("xnum= %d <--> xd=%d\n",xnum,xd);
-                  
-   //                pmlTest->at(fsgrids::pml::PGJ2)=1/(1+xn);
-   //                pmlTest->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
+                  // float xxn=xnum/xd;
+                  // float xn=0.33*(xxn*xxn*xxn);
 
-   //                /**** -X ****/
-   //                xxn=(xnum-0.5)/xd;
-   //                xn=0.25*(xxn*xxn*xxn);
+                  float xxn =xnum/xd;
+                  float xn =0.33*(xxn*xxn*xxn);
 
-   //                pmlTest->at(fsgrids::pml::PFJ1)=xn;
-   //                pmlTest->at(fsgrids::pml::PFJ2)=1/(1+xn);
-   //                pmlTest->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
-   //             }
 
-   //          }
-   //       }
-   //    }
+                  // printf("xnum= %f <--> xxxn=%f\n",xnum,xxn);
+                  // std::cout<< xxn<<std::endl;
+                  pmlTest->at(fsgrids::pml::PGJ2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
+
+                  /**** -Y ****/
+                  xxn=(xnum-0.5)/xd;
+                  xn=0.25*(xxn*xxn*xxn);
+
+                  pmlTest->at(fsgrids::pml::PFJ1)=xn;
+                  pmlTest->at(fsgrids::pml::PFJ2)=1/(1+xn);
+                  pmlTest->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
+               }
+
+            }
+         }
+      }
 
 
    // // Attentuation Along the Z-Dimension
