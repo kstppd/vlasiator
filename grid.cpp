@@ -193,6 +193,7 @@ void initializeGrids(
    /*-----Initially set all arrays to one-----*/
    //Iterate over domain 
    // #pragma omp parallel for collapse(3)
+   
    for (int kk = 0; kk < pmlDims[2]; kk++){
       for (int jj = 0; jj < pmlDims[1]; jj++){
          for (int ii = 0; ii < pmlDims[0]; ii++){
@@ -224,7 +225,7 @@ void initializeGrids(
    bool enable=false;
    // Need to fix this for MPI
    if (enable==true){
-      printf("Dims x:%d y:%d z:%d\n", pmlDims[0], pmlDims[1], pmlDims[2]);
+      printf("PML is on!=>Dims x:%d y:%d z:%d\n", pmlDims[0], pmlDims[1], pmlDims[2]);
       int start=2;
       // Attentuation Along the X-Dimension
 
@@ -236,7 +237,7 @@ void initializeGrids(
 
                // Get Arrays
                pmlTest=pmlGrid.get(ii,jj,kk);
-               pmlTestE=pmlGrid.get(pmlDims[0]-1-ii,jj,kk);
+               // pmlTestE=pmlGrid.get(pmlDims[0]-1-ii,jj,kk);
                pos=pmlGrid.getGlobalIndices(ii,jj,kk);
             
 
@@ -246,39 +247,29 @@ void initializeGrids(
                   // printf("\n");
                   
                   /***** -X *****/
-                  // int xnum=ii-2;
-                  // int xd= fsgrids::pml::widthX;
-
-                  int xnum = pos[0]-1;
+                  int xnum =fsgrids::pml::widthX-pos[0];
                   int xd = fsgrids::pml::widthX;
-
-                  // float xxn=xnum/xd;
-                  // float xn=0.33*(xxn*xxn*xxn);
 
                   float xxn =xnum/xd;
                   float xn =0.33*(xxn*xxn*xxn);
 
-
-                  // printf("xnum= %f <--> xxxn=%f\n",xnum,xxn);
-                  // std::cout<< xxn<<std::endl;
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
-                  pmlTestE->at(fsgrids::pml::PGI2)=1/(1+xn);
+                  // pmlTestE->at(fsgrids::pml::PGI2)=1/(1+xn);
 
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-                  pmlTestE->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
+                  // pmlTestE->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
 
-                  /**** X ****/
                   xxn=(xnum-0.5)/xd;
                   xn=0.25*(xxn*xxn*xxn);
 
                   pmlTest->at(fsgrids::pml::PFI1)=xn;
-                  pmlTestE->at(fsgrids::pml::PFI1)=xn;
+                  // pmlTestE->at(fsgrids::pml::PFI1)=xn;
 
                   pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
-                  pmlTestE->at(fsgrids::pml::PFI2)=1/(1+xn);
+                  // pmlTestE->at(fsgrids::pml::PFI2)=1/(1+xn);
                   
                   pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
-                  pmlTestE->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
+                  // pmlTestE->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
 
                }
 
