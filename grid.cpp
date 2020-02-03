@@ -229,7 +229,7 @@ void initializeGrids(
       int start=2;
       // Attentuation Along the X-Dimension
 
-      for (int kk = 0; kk < pmlDims[2] ; kk++)
+       for (int kk = 0; kk < pmlDims[2] ; kk++)
       {
          for (int jj = 0; jj < pmlDims[1]; jj++){
 
@@ -237,15 +237,12 @@ void initializeGrids(
 
                // Get Arrays
                pmlTest=pmlGrid.get(ii,jj,kk);
-               // pmlTestE=pmlGrid.get(pmlDims[0]-1-ii,jj,kk);
+//               pmlTestE=pmlGrid.get(pmlDims[0]-1-ii,jj,kk)
                pos=pmlGrid.getGlobalIndices(ii,jj,kk);
-            
 
-               if (  pos[0]>1 && pos[0]<=fsgrids::pml::widthX+1 || pos[0]>=pmlDims[0]-fsgrids::pml::widthX){
-                  // printf("Local Indices x:%d y:%d z;%d\n", ii,jj,kk);
-                  // printf("Global Indices x:%d y:%d z;%d\n",pos[0],pos[1],pos[2]);
-                  // printf("\n");
-                  
+
+               if (  pos[0]>1 && pos[0]<=fsgrids::pml::widthX+1 ){
+
                   /***** -X *****/
                   int xnum =fsgrids::pml::widthX-pos[0];
                   int xd = fsgrids::pml::widthX;
@@ -254,26 +251,25 @@ void initializeGrids(
                   float xn =0.33*(xxn*xxn*xxn);
 
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
-                  // pmlTestE->at(fsgrids::pml::PGI2)=1/(1+xn);
+ //                 pmlTestE->at(fsgrids::pml::PGI2)=1/(1+xn);
 
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-                  // pmlTestE->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
+//                 pmlTestE->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
 
+                  /**** X ****/
                   xxn=(xnum-0.5)/xd;
                   xn=0.25*(xxn*xxn*xxn);
 
                   pmlTest->at(fsgrids::pml::PFI1)=xn;
-                  // pmlTestE->at(fsgrids::pml::PFI1)=xn;
+//                 pmlTestE->at(fsgrids::pml::PFI1)=xn;
 
                   pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
-                  // pmlTestE->at(fsgrids::pml::PFI2)=1/(1+xn);
-                  
+  //                pmlTestE->at(fsgrids::pml::PFI2)=1/(1+xn);
+
                   pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
-                  // pmlTestE->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
+//                  pmlTestE->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
 
                }
-
-
             }
          }
       }
