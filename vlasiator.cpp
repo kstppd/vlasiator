@@ -1034,6 +1034,8 @@ int main(int argn,char* args[]) {
    BgBGrid.finalize();
    volGrid.finalize();
    technicalGrid.finalize();
+   pmlGrid.finalize();
+   
    
    MPI_Finalize();
    return 0;
