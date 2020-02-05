@@ -1,12 +1,12 @@
-Tue Feb  4 16:05:35 2020 
+Wed Feb  5 11:59:42 2020 
 (MAIN) Starting simulation with 1 MPI processes and 8 OpenMP threads per process
 
-Tue Feb  4 16:05:35 2020 
+Wed Feb  5 11:59:42 2020 
 	 Zoltan 3.83 initialized successfully
 
-Tue Feb  4 16:05:35 2020 
+Wed Feb  5 11:59:43 2020 
 (INIT): Starting initial load balance.
 
-Tue Feb  4 16:05:35 2020 
+Wed Feb  5 11:59:43 2020 
 (INIT): Set initial state.
 
