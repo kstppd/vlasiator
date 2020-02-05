@@ -186,12 +186,12 @@ void initializeGrids(
 
    /*----Get PML Array and Domain Size-----*/
    std::array<Real,fsgrids::pml::N_PML> * pmlTest;
-   std::array<Real,fsgrids::pml::N_PML> * pmlTestE;
+   std::array<Real,fsgrids::pml::N_PML> * pmlTestR;
    std::array<int32_t, 3> pos;
    const int *pmlDims = &pmlGrid.getLocalSize()[0];
-   const int *globalDims = &pmlGrid.getLocalSize()[0];
+   const int *globalDims = &pmlGrid.getGlobalSize()[0];
 
-   printf("Global Size is : %d ,%d, %d \n", globalDims[0], globalDims[1], globalDims[2]);
+   // printf("Global Size is : %d ,%d, %d \n", globalDims[0], globalDims[1], globalDims[2]);
 
        /*-----Initially set all arrays to one-----*/
        //Iterate over domain
@@ -226,7 +226,7 @@ void initializeGrids(
    }
 
 
-   bool enable=false;
+   bool enable=true;
    // Need to fix this for MPI
    if (enable==true){
       phiprof::start("Build PML Domain");
@@ -241,7 +241,7 @@ void initializeGrids(
 
          for (int jj = 0; jj < pmlDims[1]; jj++){
 
-            for (int ii = 0; ii <pmlDims[0]; ii++){
+            for (int ii = 0; pmlDims[0]; ii++){
 
                // Get Global Arrays
                pos=pmlGrid.getGlobalIndices(ii,jj,kk);
@@ -249,39 +249,49 @@ void initializeGrids(
 
                
                if (  pos[0]>=start && pos[0]<=fsgrids::pml::widthX+start )
-               {
+               {  
                   
                   // Get Local  Arrays
                   pmlTest = pmlGrid.get(ii, jj, kk);
+                  // pmlTestR = pmlGrid.get(pmlDims[0]-ii-1, jj, kk);
 
 
-                  xnum =fsgrids::pml::widthX-pos[0];
+                  xnum =fsgrids::pml::widthX-pos[0] +start;
                   xd = fsgrids::pml::widthX;
 
                   xxn =xnum/xd;
                   xn =0.33*(xxn*xxn*xxn);
 
+
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
+
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-                  
+
+                  // printf("Left %d, Value= %d \n", pos[0], xnum);
 
                   xxn=(xnum-0.5)/xd;
                   xn=0.25*(xxn*xxn*xxn);
 
                   pmlTest->at(fsgrids::pml::PFI1)=xn;
+
                   pmlTest->at(fsgrids::pml::PFI2)=1/(1+xn);
+
                   pmlTest->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
+
+                  
                   
                }
 
                
                if (pos[0]>=globalDims[0]-start- fsgrids::pml::widthX && pos[0] <=globalDims[0]-start)
                {
-               
+
+                  
+
                   // Get Local  Arrays
                   pmlTest = pmlGrid.get(ii, jj, kk);
 
-                  xnum =fsgrids::pml::widthX-(globalDims[0]- pos[0]);
+                  xnum =fsgrids::pml::widthX-(globalDims[0]- pos[0]) +start;
                   xd = fsgrids::pml::widthX;
 
                   xxn =xnum/xd;
@@ -290,7 +300,7 @@ void initializeGrids(
 
                   pmlTest->at(fsgrids::pml::PGI2)=1/(1+xn);
                   pmlTest->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-                  
+                  // printf("Right %d, Value= %d \n", pos[0], xnum);
 
                   xxn=(xnum-0.5)/xd;
                   xn=0.25*(xxn*xxn*xxn);
