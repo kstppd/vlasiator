@@ -201,17 +201,22 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
 
    list<pair<string, string> > variableAttributes;
    const string _varToExtract( varToExtract );
+
    variableAttributes.push_back( make_pair("mesh", meshName) );
    variableAttributes.push_back( make_pair("name", _varToExtract) );
    //Read in array size, vector size, data type and data size of the array "VARIABLE" in the vlsv file (Needed in reading the array)
-   if (vlsvReader.getArrayInfo("VARIABLE", variableAttributes, variableArraySize, variableVectorSize, variableDataType, variableDataSize) == false) {
+
+       if (vlsvReader.getArrayInfo("VARIABLE", variableAttributes, variableArraySize, variableVectorSize, variableDataType, variableDataSize) == false)
+   {
       cerr << "ERROR, failed to get array info for '" << _varToExtract << "' at " << __FILE__ << " " << __LINE__ << endl;
       return false;
    }
 
    //Get local cell ids:
    vector<uint64_t> local_cells;
-   if ( vlsvReader.getCellIds( local_cells, meshName) == false ) {
+
+
+   if ( vlsvReader.getCellIds( local_cells, "SpatialGrid") == false ) {
       cerr << "Failed to read cell ids at "  << __FILE__ << " " << __LINE__ << endl;
       return false;
    }
@@ -310,7 +315,7 @@ bool convertSILO(const string fileName,
    }
 
    // Get the names of all meshes in vlsv file
-   list<string> meshNames;
+   list<string> meshNames;   
    if (vlsvReader.getMeshNames(meshNames) == false) {
       cerr << "Failed to read mesh names" << endl;
       exit(1);
@@ -320,8 +325,17 @@ bool convertSILO(const string fileName,
    orderedData->clear();
 
    for (list<string>::const_iterator it=meshNames.begin(); it!=meshNames.end(); ++it) {
+
+      // cout<<"debug"<<endl;
+      // cout<<  *it<<endl;
+      // cout << attributes["--meshname"] << endl;
+
       if (*it != attributes["--meshname"]) continue;
 
+      // cout<<"debug"<<endl;
+      // cout<<  *it<<endl;
+      // cout<<  varToExtract<<endl;
+   
       if (convertMesh(vlsvReader, *it, varToExtract, compToExtract, orderedData, cellOrder, storeCellOrder) == false) {
          return false;
       }      
