@@ -35,6 +35,7 @@
 #include "ionosphere.h"
 #include "outflow.h"
 #include "setmaxwellian.h"
+#include "pmlbc.h"
 
 using namespace std;
 using namespace spatial_cell;
@@ -85,6 +86,7 @@ void SysBoundary::addParameters() {
    SBC::Ionosphere::addParameters();
    SBC::Outflow::addParameters();
    SBC::SetMaxwellian::addParameters();
+   SBC::PmlBC::addParameters();
 }
 
 /*!\brief Get this class' parameters.
@@ -231,6 +233,14 @@ bool SysBoundary::initSysBoundaries(
          isThisDynamic = isThisDynamic|
          this->getSysBoundary(sysboundarytype::IONOSPHERE)->isDynamic();
       }
+
+      if(*it == "PML") {
+         if(this->addSysBoundary(new SBC::PmlBC, project, t) == false) {
+            if(myRank == MASTER_RANK) cerr << "Error in adding PML boundary." << endl;
+            success = false;
+         }
+      }
+
       if(*it == "Maxwellian") {
          if(this->addSysBoundary(new SBC::SetMaxwellian, project, t) == false) {
             if(myRank == MASTER_RANK) cerr << "Error in adding Maxwellian boundary." << endl;
@@ -401,6 +411,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    */
    list<SBC::SysBoundaryCondition*>::iterator it;
    for (it = sysBoundaries.begin(); it != sysBoundaries.end(); it++) {
+
       success = success && (*it)->assignSysBoundary(mpiGrid,technicalGrid);
    }
    
