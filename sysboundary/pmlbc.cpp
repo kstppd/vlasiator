@@ -185,7 +185,7 @@ namespace SBC
 
 			if (doAssign)
 			{
-                std::cout<<x<<std::endl;
+                // std::cout<<x<<std::endl;
 				mpiGrid[dccrgId]->sysBoundaryFlag = this->getIndex();
 			}
       }
