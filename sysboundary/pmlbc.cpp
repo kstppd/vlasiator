@@ -113,6 +113,7 @@ namespace SBC
       //       facesToProcess[i] = false;
 
         this->getParameters();
+        isThisDynamic = false;
 
         return success;
         }
@@ -146,19 +147,45 @@ namespace SBC
 			int lastPmlCellYm = this->PMLSize.find("Y-")->second; 
 			int lastPmlCellZm = this->PMLSize.find("Z-")->second; 
 
+            bool isInPMLXp,isInPMLXm,isInPMLYp,isInPMLYm,isInPMLZp,isInPMLZm;
 
-		 	bool isInPMLXm = (x <= Parameters::xmin +lastPmlCellXm*dx ) ; 
-		 	bool isInPMLYm = (y <= Parameters::ymin +lastPmlCellYm*dy ) ; 
-		 	bool isInPMLZm = (z <= Parameters::zmin +lastPmlCellZm*dz ) ; 
-		 	bool isInPMLXp = (x >= Parameters::xmax -lastPmlCellXp*dx ) ; 
-		 	bool isInPMLYp = (y >= Parameters::ymax -lastPmlCellYp*dy ) ; 
-		 	bool isInPMLZp = (z >= Parameters::zmax -lastPmlCellZp*dz ) ;
+            if (Parameters::xcells_ini > this->PMLSize.find("X-")-> second + this->PMLSize.find("X+")->second){
+                isInPMLXm = x <= Parameters::xmin +lastPmlCellXm*dx;
+                isInPMLXp = x >= Parameters::xmax - lastPmlCellXp * dx;
+            }else{
+                isInPMLXm = false;
+                isInPMLXp = false;
+            }
+
+            if (Parameters::ycells_ini > this->PMLSize.find("Y-")-> second + this->PMLSize.find("Y+")->second){
+                isInPMLYm = y <= Parameters::ymin + lastPmlCellYm * dy;
+                isInPMLYp = y >= Parameters::ymax - lastPmlCellYp * dy;
+            }else{
+                isInPMLYm = false;
+                isInPMLYp = false;
+            }
+            if (Parameters::zcells_ini > this->PMLSize.find("Z-")-> second + this->PMLSize.find("Z+")->second){
+                isInPMLZm = z <= Parameters::zmin + lastPmlCellZm * dz;
+                isInPMLZp = z >= Parameters::zmax -lastPmlCellZp*dz ;
+            }else{
+                isInPMLZm = false;
+                isInPMLZp = false;
+            }
+
+
+		 	// bool isInPMLXm = (x <= Parameters::xmin +lastPmlCellXm*dx ) ; 
+		 	// bool isInPMLYm = (y <= Parameters::ymin +lastPmlCellYm*dy ) ; 
+		 	// bool isInPMLZm = (z <= Parameters::zmin +lastPmlCellZm*dz ) ; 
+		 	// bool isInPMLXp = (x >= Parameters::xmax -lastPmlCellXp*dx ) ; 
+		 	// bool isInPMLYp = (y >= Parameters::ymax -lastPmlCellYp*dy ) ; 
+		 	// bool isInPMLZp = (z >= Parameters::zmax -lastPmlCellZp*dz ) ;
 
 			doAssign = isInPMLYm || isInPMLXm || isInPMLZm;
 			doAssign = doAssign || isInPMLYp || isInPMLXp || isInPMLZp;
 
 			if (doAssign)
 			{
+                std::cout<<x<<std::endl;
 				mpiGrid[dccrgId]->sysBoundaryFlag = this->getIndex();
 			}
       }
@@ -181,12 +208,36 @@ namespace SBC
 					int lastPmlCellYm = this->PMLSize.find("Y-")->second;
 					int lastPmlCellZm = this->PMLSize.find("Z-")->second;
 
-					bool isInPMLXm = (pos[0] < lastPmlCellXm) && (pos[0] > firstPmlCell);
-					bool isInPMLYm = (pos[1] < lastPmlCellYm) && (pos[1] > firstPmlCell);
-					bool isInPMLZm = (pos[2] < lastPmlCellZm) && (pos[2] > firstPmlCell);
-					bool isInPMLXp = (pos[0] < gridDims[0]-3) && (pos[0] >= gridDims[0]-lastPmlCellXp);
-					bool isInPMLYp = (pos[1] < gridDims[1]-3) && (pos[1] >= gridDims[1]-lastPmlCellYp);
-					bool isInPMLZp = (pos[2] < gridDims[2]-3) && (pos[2] >= gridDims[2]-lastPmlCellZp);
+                    bool isInPMLXp,isInPMLXm,isInPMLYp,isInPMLYm,isInPMLZp,isInPMLZm;
+
+                    if (Parameters::xcells_ini > this->PMLSize.find("X-")->second + this->PMLSize.find("X+")->second){
+                        isInPMLXm = (pos[0] < lastPmlCellXm) && (pos[0] > firstPmlCell);
+                        isInPMLXp = (pos[0] < gridDims[0] - 3) && (pos[0] >= gridDims[0] - lastPmlCellXp);
+                    }else{
+                        isInPMLXm = false;
+                        isInPMLXp = false;
+                    }
+
+                    if (Parameters::ycells_ini > this->PMLSize.find("Y-")-> second + this->PMLSize.find("Y+")->second){
+                        isInPMLYm = (pos[1] < lastPmlCellYm) && (pos[1] > firstPmlCell);
+                        isInPMLYp = (pos[1] < gridDims[1] - 3) && (pos[1] >= gridDims[1] - lastPmlCellYp);
+                    }else{
+                        isInPMLYm = false;
+                        isInPMLYp = false;
+                    }
+                    if (Parameters::zcells_ini > this->PMLSize.find("Z-")-> second + this->PMLSize.find("Z+")->second){
+                        isInPMLZm = (pos[2] < lastPmlCellZm) && (pos[2] > firstPmlCell);
+                        isInPMLZp = (pos[2] < gridDims[2] - 3) && (pos[2] >= gridDims[2] - lastPmlCellZp);
+                    }else{
+                        isInPMLZm = false;
+                        isInPMLZp = false;
+                    }
+                    // bool isInPMLXm = (pos[0] < lastPmlCellXm) && (pos[0] > firstPmlCell);
+					// bool isInPMLYm = (pos[1] < lastPmlCellYm) && (pos[1] > firstPmlCell);
+					// bool isInPMLZm = (pos[2] < lastPmlCellZm) && (pos[2] > firstPmlCell);
+					// bool isInPMLXp = (pos[0] < gridDims[0]-3) && (pos[0] >= gridDims[0]-lastPmlCellXp);
+					// bool isInPMLYp = (pos[1] < gridDims[1]-3) && (pos[1] >= gridDims[1]-lastPmlCellYp);
+					// bool isInPMLZp = (pos[2] < gridDims[2]-3) && (pos[2] >= gridDims[2]-lastPmlCellZp);
 
 					doAssign = isInPMLYm || isInPMLXm || isInPMLZm;
 					doAssign = doAssign || isInPMLYp || isInPMLXp || isInPMLZp;
@@ -195,7 +246,7 @@ namespace SBC
 					{
 						technicalGrid.get(i,j,k)->sysBoundaryFlag = this->getIndex();						
 					}
-				}
+                }
          }
       }
       
