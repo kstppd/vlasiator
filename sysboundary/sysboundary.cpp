@@ -468,7 +468,8 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    for(uint i=0; i<cells.size(); i++) {
       if(mpiGrid[cells[i]]->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
          mpiGrid[cells[i]]->sysBoundaryLayer != 1 &&
-         mpiGrid[cells[i]]->sysBoundaryLayer != 2
+         mpiGrid[cells[i]]->sysBoundaryLayer != 2 &&
+         mpiGrid[cells[i]]->sysBoundaryLayer != 3
       ) {
          mpiGrid[cells[i]]->sysBoundaryFlag = sysboundarytype::DO_NOT_COMPUTE;
       }
