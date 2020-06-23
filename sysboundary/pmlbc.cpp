@@ -150,7 +150,7 @@ namespace SBC
             bool isInPMLXp,isInPMLXm,isInPMLYp,isInPMLYm,isInPMLZp,isInPMLZm = false;
 
             if (Parameters::xcells_ini > this->PMLSize.find("X-")-> second + this->PMLSize.find("X+")->second){
-                isInPMLXm = x <= Parameters::xmin + lastPmlCellXm * dx && x > Parameters::xmin + 3 * dx3 && mpiGrid[dccrgId]->sysBoundaryFlag != sysboundarytype::OUTFLOW;
+                isInPMLXm = x <= Parameters::xmin + lastPmlCellXm * dx && x > Parameters::xmin + 3 * dx && mpiGrid[dccrgId]->sysBoundaryFlag != sysboundarytype::OUTFLOW;
                 isInPMLXp = x >= Parameters::xmax - lastPmlCellXp * dx && x< Parameters::xmax - 3* dx;
             
             }

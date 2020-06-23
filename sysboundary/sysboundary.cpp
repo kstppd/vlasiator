@@ -34,6 +34,7 @@
 #include "donotcompute.h"
 #include "ionosphere.h"
 #include "outflow.h"
+#include "outflowPML.h"
 #include "setmaxwellian.h"
 #include "pmlbc.h"
 
@@ -84,9 +85,10 @@ void SysBoundary::addParameters() {
    //call static addParameter functions in all bc's
    SBC::DoNotCompute::addParameters();
    SBC::Ionosphere::addParameters();
-   SBC::Outflow::addParameters();
+   // SBC::Outflow::addParameters();
+   SBC::OutflowPML::addParameters();
    SBC::SetMaxwellian::addParameters();
-   SBC::PmlBC::addParameters();
+   // SBC::PmlBC::addParameters();
 }
 
 /*!\brief Get this class' parameters.
@@ -192,6 +194,37 @@ bool SysBoundary::initSysBoundaries(
         it != sysBoundaryCondList.end();
         it++) {
       if(*it == "Outflow") {
+         if(this->addSysBoundary(new SBC::OutflowPML, project, t) == false) {
+            if(myRank == MASTER_RANK) cerr << "Error in adding Outflow boundary." << endl;
+            success = false;
+         }
+         isThisDynamic = isThisDynamic|this->getSysBoundary(sysboundarytype::OUTFLOW)->isDynamic();
+         bool faces[6];
+         this->getSysBoundary(sysboundarytype::OUTFLOW)->getFaces(&faces[0]);
+         if((faces[0] || faces[1]) && isPeriodic[0]) {
+            if(myRank == MASTER_RANK) cerr << "You set boundaries.periodic_x = yes and load Outflow system boundary conditions on the x+ or x- face, are you sure this is correct?" << endl;
+         }
+         if((faces[2] || faces[3]) && isPeriodic[1]) {
+            if(myRank == MASTER_RANK) cerr << "You set boundaries.periodic_y = yes and load Outflow system boundary conditions on the y+ or y- face, are you sure this is correct?" << endl;
+         }
+         if((faces[4] || faces[5]) && isPeriodic[2]) {
+            if(myRank == MASTER_RANK) cerr << "You set boundaries.periodic_z = yes and load Outflow system boundary conditions on the z+ or z- face, are you sure this is correct?" << endl;
+         }
+         if((faces[0] || faces[1]) && P::xcells_ini < 5) {
+            if(myRank == MASTER_RANK) cerr << "You load Outflow system boundary conditions on the x+ or x- face but there is not enough cells in that direction to make sense." << endl;
+            exit(1);
+         }
+         if((faces[2] || faces[3]) && P::ycells_ini < 5) {
+            if(myRank == MASTER_RANK) cerr << "You load Outflow system boundary conditions on the y+ or y- face but there is not enough cells in that direction to make sense." << endl;
+            exit(1);
+         }
+         if((faces[4] || faces[5]) && P::zcells_ini < 5) {
+            if(myRank == MASTER_RANK) cerr << "You load Outflow system boundary conditions on the z+ or z- face but there is not enough cells in that direction to make sense." << endl;
+            exit(1);
+         }
+      }
+
+      if(*it == "OutflowPML") {
          if(this->addSysBoundary(new SBC::Outflow, project, t) == false) {
             if(myRank == MASTER_RANK) cerr << "Error in adding Outflow boundary." << endl;
             success = false;
@@ -221,6 +254,7 @@ bool SysBoundary::initSysBoundaries(
             exit(1);
          }
       }
+
       if(*it == "Ionosphere") {
          if(this->addSysBoundary(new SBC::Ionosphere, project, t) == false) {
             if(myRank == MASTER_RANK) cerr << "Error in adding Ionosphere boundary." << endl;
