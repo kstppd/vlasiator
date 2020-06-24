@@ -413,7 +413,6 @@ namespace sysboundarytype {
       IONOSPHERE,       /*!< Initially a perfectly conducting sphere. */
       OUTFLOW,          /*!< No fixed conditions on the fields and distribution function. */
       SET_MAXWELLIAN,   /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
-      PML,   /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
       OUTFLOWPML,
       N_SYSBOUNDARY_CONDITIONS
    };

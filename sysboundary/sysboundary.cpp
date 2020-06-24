@@ -36,7 +36,7 @@
 #include "outflow.h"
 #include "outflowPML.h"
 #include "setmaxwellian.h"
-#include "pmlbc.h"
+
 
 using namespace std;
 using namespace spatial_cell;
@@ -85,10 +85,10 @@ void SysBoundary::addParameters() {
    //call static addParameter functions in all bc's
    SBC::DoNotCompute::addParameters();
    SBC::Ionosphere::addParameters();
-   // SBC::Outflow::addParameters();
+   SBC::Outflow::addParameters();
    SBC::OutflowPML::addParameters();
    SBC::SetMaxwellian::addParameters();
-   // SBC::PmlBC::addParameters();
+   
 }
 
 /*!\brief Get this class' parameters.
@@ -194,7 +194,7 @@ bool SysBoundary::initSysBoundaries(
         it != sysBoundaryCondList.end();
         it++) {
       if(*it == "Outflow") {
-         if(this->addSysBoundary(new SBC::OutflowPML, project, t) == false) {
+         if(this->addSysBoundary(new SBC::Outflow, project, t) == false) {
             if(myRank == MASTER_RANK) cerr << "Error in adding Outflow boundary." << endl;
             success = false;
          }
@@ -225,13 +225,13 @@ bool SysBoundary::initSysBoundaries(
       }
 
       if(*it == "OutflowPML") {
-         if(this->addSysBoundary(new SBC::Outflow, project, t) == false) {
+         if(this->addSysBoundary(new SBC::OutflowPML, project, t) == false) {
             if(myRank == MASTER_RANK) cerr << "Error in adding Outflow boundary." << endl;
             success = false;
          }
-         isThisDynamic = isThisDynamic|this->getSysBoundary(sysboundarytype::OUTFLOW)->isDynamic();
+         isThisDynamic = isThisDynamic|this->getSysBoundary(sysboundarytype::OUTFLOWPML)->isDynamic();
          bool faces[6];
-         this->getSysBoundary(sysboundarytype::OUTFLOW)->getFaces(&faces[0]);
+         this->getSysBoundary(sysboundarytype::OUTFLOWPML)->getFaces(&faces[0]);
          if((faces[0] || faces[1]) && isPeriodic[0]) {
             if(myRank == MASTER_RANK) cerr << "You set boundaries.periodic_x = yes and load Outflow system boundary conditions on the x+ or x- face, are you sure this is correct?" << endl;
          }
@@ -268,12 +268,6 @@ bool SysBoundary::initSysBoundaries(
          this->getSysBoundary(sysboundarytype::IONOSPHERE)->isDynamic();
       }
 
-      if(*it == "PML") {
-         if(this->addSysBoundary(new SBC::PmlBC, project, t) == false) {
-            if(myRank == MASTER_RANK) cerr << "Error in adding PML boundary." << endl;
-            success = false;
-         }
-      }
 
       if(*it == "Maxwellian") {
          if(this->addSysBoundary(new SBC::SetMaxwellian, project, t) == false) {

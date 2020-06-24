@@ -57,7 +57,7 @@ using namespace spatial_cell;
 
 //Is cell translated? It is not translated if DO_NO_COMPUTE or if it is sysboundary cell and not in first sysboundarylayer
 bool do_translate_cell(SpatialCell* SC){
-   if(SC->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE || SC->sysBoundaryFlag == sysboundarytype::PML ||
+   if(SC->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
       (SC->sysBoundaryLayer != 1 && SC->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY))
       return false;
    else
