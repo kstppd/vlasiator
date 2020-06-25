@@ -471,7 +471,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    mpiGrid.update_copies_of_remote_neighbors(SYSBOUNDARIES_NEIGHBORHOOD_ID);
 
    /*Compute distances*/
-   uint maxLayers=3;//max(max(P::xcells_ini, P::ycells_ini), P::zcells_ini);
+   uint maxLayers=7;//max(max(P::xcells_ini, P::ycells_ini), P::zcells_ini);
    for(uint layer=1;layer<maxLayers;layer++){
       for(uint i=0; i<cells.size(); i++) {
          if(mpiGrid[cells[i]]->sysBoundaryLayer==0){
@@ -495,9 +495,10 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
     * in the first two layers of the boundary*/
    for(uint i=0; i<cells.size(); i++) {
       if(mpiGrid[cells[i]]->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+         mpiGrid[cells[i]]->sysBoundaryFlag != sysboundarytype::OUTFLOWPML &&  
          mpiGrid[cells[i]]->sysBoundaryLayer != 1 &&
          mpiGrid[cells[i]]->sysBoundaryLayer != 2 &&
-         mpiGrid[cells[i]]->sysBoundaryLayer != 3
+         mpiGrid[cells[i]]->sysBoundaryLayer != 3 
       ) {
          mpiGrid[cells[i]]->sysBoundaryFlag = sysboundarytype::DO_NOT_COMPUTE;
       }
@@ -533,11 +534,11 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
                   if (belongsToLayer(layer, x, y, z, technicalGrid)) {
                      
                      technicalGrid.get(x,y,z)->sysBoundaryLayer = layer;
-                     
-                     if (layer > 2 && technicalGrid.get(x,y,z)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY) {
+
+                     if (layer > 2 && technicalGrid.get(x, y, z)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY && technicalGrid.get(x, y, z)->sysBoundaryFlag != sysboundarytype::OUTFLOWPML)
+                     {
                         technicalGrid.get(x,y,z)->sysBoundaryFlag = sysboundarytype::DO_NOT_COMPUTE;
                      }
-                     
                   }
                }
             }
@@ -553,7 +554,8 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    for (int x = 0; x < localSize[0]; ++x) {
       for (int y = 0; y < localSize[1]; ++y) {
          for (int z = 0; z < localSize[2]; ++z) {
-            if (technicalGrid.get(x,y,z)->sysBoundaryLayer == 0 && technicalGrid.get(x,y,z)->sysBoundaryFlag == sysboundarytype::IONOSPHERE) {
+            if (technicalGrid.get(x, y, z)->sysBoundaryLayer == 0 && technicalGrid.get(x, y, z)->sysBoundaryFlag == sysboundarytype::IONOSPHERE && technicalGrid.get(x, y, z)->sysBoundaryFlag != sysboundarytype::OUTFLOWPML)
+            {
                technicalGrid.get(x,y,z)->sysBoundaryFlag = sysboundarytype::DO_NOT_COMPUTE;
             }
          }

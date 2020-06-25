@@ -227,12 +227,12 @@ namespace SBC {
    ) {
       const CellID closestCell = getTheClosestNonsysboundaryCell(cellID);
       
-      if(closestCell == INVALID_CELLID) {
-         cerr << __FILE__ << ":" << __LINE__ << ": No closest cell found!" << endl;
-         abort();
-      }
-      //Do not allow block adjustment, the block structure when calling vlasovBoundaryCondition should be static
-      copyCellData(mpiGrid[closestCell],mpiGrid[cellID],false, copyMomentsOnly, popID);
+      // if(closestCell == INVALID_CELLID) {
+      //    cerr << __FILE__ << ":" << __LINE__ << ": No closest cell found!" << endl;
+      //    abort();
+      // }
+      // //Do not allow block adjustment, the block structure when calling vlasovBoundaryCondition should be static
+      // copyCellData(mpiGrid[closestCell],mpiGrid[cellID],false, copyMomentsOnly, popID);
    }
    
    /*! Function used to average and copy the distribution and moments from all the closest sysboundarytype::NOT_SYSBOUNDARY cells.
