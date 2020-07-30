@@ -238,8 +238,8 @@ namespace SBC {
          // Comparison of the array defining which faces to use and the array telling on which faces this cell is
          doAssign = false;
          for(int j=0; j<6; j++) doAssign = doAssign || (facesToProcess[j] && isThisCellOnAFace[j] );
-         if (x < Parameters::xmin + 7.0 * dx) //this seems to work fine
-          //if (doAssign)
+         doAssign = (x<P::xmin+P::pmlWidthXm*dx  );
+         if (doAssign)
          {
             mpiGrid[dccrgId]->sysBoundaryFlag = this->getIndex();
          }
@@ -272,8 +272,8 @@ namespace SBC {
 
                determineFace(isThisCellOnAFace.data(), cellCenterCoords[0], cellCenterCoords[1], cellCenterCoords[2], dx, dy, dz);
                for(int iface=0; iface<6; iface++) doAssign = doAssign || (facesToProcess[iface] && isThisCellOnAFace[iface]   );
-                //if(doAssign) {
-               if (cellCenterCoords[0]< P::xmin +3*dx){
+               doAssign = (cellCenterCoords[0]<P::xmin+P::pmlWidthXm*dx);
+               if(doAssign) {
                   technicalGrid.get(i,j,k)->sysBoundaryFlag = this->getIndex();
                }
             }

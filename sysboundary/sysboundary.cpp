@@ -513,7 +513,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    
    // Now the layers need to be set on fsgrid too
    // In dccrg initialization the max number of boundary layers is set to 3.
-   const uint MAX_NUMBER_OF_BOUNDARY_LAYERS = 3 * pow(2,mpiGrid.get_maximum_refinement_level());
+   const uint MAX_NUMBER_OF_BOUNDARY_LAYERS = maxLayers * pow(2,mpiGrid.get_maximum_refinement_level());
    
    technicalGrid.updateGhostCells();
    
@@ -554,7 +554,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    for (int x = 0; x < localSize[0]; ++x) {
       for (int y = 0; y < localSize[1]; ++y) {
          for (int z = 0; z < localSize[2]; ++z) {
-            if (technicalGrid.get(x, y, z)->sysBoundaryLayer == 0 && technicalGrid.get(x, y, z)->sysBoundaryFlag == sysboundarytype::IONOSPHERE && technicalGrid.get(x, y, z)->sysBoundaryFlag != sysboundarytype::OUTFLOWPML)
+            if (technicalGrid.get(x, y, z)->sysBoundaryLayer == 0 && technicalGrid.get(x, y, z)->sysBoundaryFlag == sysboundarytype::IONOSPHERE )
             {
                technicalGrid.get(x,y,z)->sysBoundaryFlag = sysboundarytype::DO_NOT_COMPUTE;
             }
