@@ -145,6 +145,7 @@ namespace SBC {
       
       /*! Factor by which to quench the inflowing parts of the velocity distribution function.*/
       Real quenchFactor;
+      int withOutflow;
       
       enum vlasovscheme {
          NONE,

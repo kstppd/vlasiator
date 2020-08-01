@@ -57,6 +57,7 @@ namespace SBC {
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
         const std::string& pop = getObjectWrapper().particleSpecies[i].name;
 
+        Readparameters::add(pop + "_outflowPML.withOutflow", "PML incorporates vlasiator's outflow boundary conditions at the last two cells",0);
         Readparameters::addComposing(pop + "_outflowPML.reapplyFaceUponRestart", "List of faces on which PML boundary conditions are to be reapplied upon restart ([xyz][+-]).");
         Readparameters::addComposing(pop + "_outflowPML.face", "List of faces on which PML boundary conditions are to be applied ([xyz][+-]).");
         Readparameters::add(pop + "_outflowPML.vlasovScheme_face_x+", "Scheme to use on the face x+ (Copy, Limit, None)", defStr);
@@ -116,6 +117,10 @@ namespace SBC {
           if(face == "z-") { facesToProcess[5] = true; sP.facesToSkipVlasov[5] = false; }
         }
 
+        if(!Readparameters::get(pop + "_outflowPML.withOutflow", withOutflow)) {
+           if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
+           exit(1);
+        }
         if(!Readparameters::get(pop + "_outflowPML.reapplyFaceUponRestart", sP.faceToReapplyUponRestartList)) {
            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
            exit(1);
@@ -232,13 +237,15 @@ namespace SBC {
          creal y = cellParams[CellParams::YCRD] + 0.5*dy;
          creal z = cellParams[CellParams::ZCRD] + 0.5*dz;
          
-         isThisCellOnAFace.fill(false);
-         determineFace(isThisCellOnAFace.data(), x, y, z, dx, dy, dz);
          
          // Comparison of the array defining which faces to use and the array telling on which faces this cell is
          doAssign = false;
-         for(int j=0; j<6; j++) doAssign = doAssign || (facesToProcess[j] && isThisCellOnAFace[j] );
-         doAssign = (x<P::xmin+P::pmlWidthXm*dx  );
+         doAssign = (x<P::xmin+P::pmlWidthXm*dx);
+         doAssign = doAssign || (y<P::ymin+P::pmlWidthYm*dy);
+         doAssign = doAssign || (z<P::zmin+P::pmlWidthZm*dz);
+         doAssign = doAssign || (x>P::xmax-P::pmlWidthXp*dx);
+         doAssign = doAssign || (y>P::ymax-P::pmlWidthYp*dy);
+         doAssign = doAssign || (z>P::zmax-P::pmlWidthZp*dz);
          if (doAssign)
          {
             mpiGrid[dccrgId]->sysBoundaryFlag = this->getIndex();
@@ -270,9 +277,12 @@ namespace SBC {
                isThisCellOnAFace.fill(false);
                doAssign = false;
 
-               determineFace(isThisCellOnAFace.data(), cellCenterCoords[0], cellCenterCoords[1], cellCenterCoords[2], dx, dy, dz);
-               for(int iface=0; iface<6; iface++) doAssign = doAssign || (facesToProcess[iface] && isThisCellOnAFace[iface]   );
                doAssign = (cellCenterCoords[0]<P::xmin+P::pmlWidthXm*dx);
+               doAssign = doAssign || (cellCenterCoords[1]<P::ymin+P::pmlWidthYm*dy);
+               doAssign = doAssign || (cellCenterCoords[2]<P::zmin+P::pmlWidthZm*dz);
+               doAssign = doAssign || (cellCenterCoords[0]>P::xmax-P::pmlWidthXp*dx);
+               doAssign = doAssign || (cellCenterCoords[1]>P::ymax-P::pmlWidthYp*dy);
+               doAssign = doAssign || (cellCenterCoords[2]>P::zmax-P::pmlWidthZp*dz);
                if(doAssign) {
                   technicalGrid.get(i,j,k)->sysBoundaryFlag = this->getIndex();
                }
@@ -363,6 +373,8 @@ namespace SBC {
       determineFace(&isThisCellOnAFace[0], x, y, z, dx, dy, dz, true);
       
       cuint sysBoundaryLayer = technicalGrid.get(i,j,k)->sysBoundaryLayer;
+
+
       if(sysBoundaryLayer == 1) {
          cint neigh_i=i + ((component==0)?-1:0);
          cint neigh_j=j + ((component==1)?-1:0);
@@ -408,8 +420,33 @@ namespace SBC {
       cint k,
       cuint component
    ) {
-      EGrid.get(i,j,k)->at(fsgrids::efield::EX+component) = 0.0;
+      
+    
+     //Get Global Position
+      creal dx =Parameters::dx_ini;
+      creal dy =Parameters::dy_ini;
+      creal dz =Parameters::dz_ini;
+      const std::array<int, 3> globalIndices = EGrid.getGlobalIndices(i,j,k);
+      creal x = (convert<Real>(globalIndices[0])+0.5)*EGrid.DX + Parameters::xmin;
+      creal y = (convert<Real>(globalIndices[1])+0.5)*EGrid.DY + Parameters::ymin;
+      creal z = (convert<Real>(globalIndices[2])+0.5)*EGrid.DZ + Parameters::zmin;
+      
+
+      if (withOutflow){ //If withOutflow then use ourflow in the last 2 cells
+        bool Apply = false;
+        Apply = (x<P::xmin+2.*dx);
+        Apply = Apply || (y<P::ymin+2.*dy);
+        Apply = Apply || (z<P::zmin+2.*dz);
+        Apply = Apply || (x>P::xmax-2.*dx);
+        Apply = Apply || (y>P::ymax-2.*dy);
+        Apply = Apply || (z>P::zmax-2.*dz);
+        
+        if (Apply){
+          EGrid.get(i,j,k)->at(fsgrids::efield::EX+component) = 0.0;
+        }
+      }
    }
+
    
    void OutflowPML::fieldSolverBoundaryCondHallElectricField(
       FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
@@ -418,30 +455,53 @@ namespace SBC {
       cint k,
       cuint component
    ) {
-      std::array<Real, fsgrids::ehall::N_EHALL> * cp = EHallGrid.get(i,j,k);
-      switch (component) {
-         case 0:
-            cp->at(fsgrids::ehall::EXHALL_000_100) = 0.0;
-            cp->at(fsgrids::ehall::EXHALL_010_110) = 0.0;
-            cp->at(fsgrids::ehall::EXHALL_001_101) = 0.0;
-            cp->at(fsgrids::ehall::EXHALL_011_111) = 0.0;
-            break;
-         case 1:
-            cp->at(fsgrids::ehall::EYHALL_000_010) = 0.0;
-            cp->at(fsgrids::ehall::EYHALL_100_110) = 0.0;
-            cp->at(fsgrids::ehall::EYHALL_001_011) = 0.0;
-            cp->at(fsgrids::ehall::EYHALL_101_111) = 0.0;
-            break;
-         case 2:
-            cp->at(fsgrids::ehall::EZHALL_000_001) = 0.0;
-            cp->at(fsgrids::ehall::EZHALL_100_101) = 0.0;
-            cp->at(fsgrids::ehall::EZHALL_010_011) = 0.0;
-            cp->at(fsgrids::ehall::EZHALL_110_111) = 0.0;
-            break;
-         default:
-            cerr << __FILE__ << ":" << __LINE__ << ":" << " Invalid component" << endl;
-      }
-   }
+      
+      //Get Global Position
+      creal dx =Parameters::dx_ini;
+      creal dy =Parameters::dy_ini;
+      creal dz =Parameters::dz_ini;
+      const std::array<int, 3> globalIndices = EHallGrid.getGlobalIndices(i,j,k);
+      creal x = (convert<Real>(globalIndices[0])+0.5)*EHallGrid.DX + Parameters::xmin;
+      creal y = (convert<Real>(globalIndices[1])+0.5)*EHallGrid.DY + Parameters::ymin;
+      creal z = (convert<Real>(globalIndices[2])+0.5)*EHallGrid.DZ + Parameters::zmin;
+      
+
+      if (withOutflow){ //If withOutflow then use ourflow in the last 2 cells
+        bool Apply = false;
+        Apply = (x<P::xmin+2.*dx);
+        Apply = Apply || (y<P::ymin+2.*dy);
+        Apply = Apply || (z<P::zmin+2.*dz);
+        Apply = Apply || (x>P::xmax-2.*dx);
+        Apply = Apply || (y>P::ymax-2.*dy);
+        Apply = Apply || (z>P::zmax-2.*dz);
+        
+        if (Apply){    
+        std::array<Real, fsgrids::ehall::N_EHALL> * cp = EHallGrid.get(i,j,k);
+        switch (component) {
+           case 0:
+              cp->at(fsgrids::ehall::EXHALL_000_100) = 0.0;
+              cp->at(fsgrids::ehall::EXHALL_010_110) = 0.0;
+              cp->at(fsgrids::ehall::EXHALL_001_101) = 0.0;
+              cp->at(fsgrids::ehall::EXHALL_011_111) = 0.0;
+              break;
+           case 1:
+              cp->at(fsgrids::ehall::EYHALL_000_010) = 0.0;
+              cp->at(fsgrids::ehall::EYHALL_100_110) = 0.0;
+              cp->at(fsgrids::ehall::EYHALL_001_011) = 0.0;
+              cp->at(fsgrids::ehall::EYHALL_101_111) = 0.0;
+              break;
+           case 2:
+              cp->at(fsgrids::ehall::EZHALL_000_001) = 0.0;
+              cp->at(fsgrids::ehall::EZHALL_100_101) = 0.0;
+              cp->at(fsgrids::ehall::EZHALL_010_011) = 0.0;
+              cp->at(fsgrids::ehall::EZHALL_110_111) = 0.0;
+              break;
+           default:
+              cerr << __FILE__ << ":" << __LINE__ << ":" << " Invalid component" << endl;
+           }
+         }
+       }
+    }
    
    void OutflowPML::fieldSolverBoundaryCondGradPeElectricField(
       FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
@@ -450,9 +510,32 @@ namespace SBC {
       cint k,
       cuint component
    ) {
-      EGradPeGrid.get(i,j,k)->at(fsgrids::egradpe::EXGRADPE+component) = 0.0;
+     
+      //Get Global Position
+      creal dx =Parameters::dx_ini;
+      creal dy =Parameters::dy_ini;
+      creal dz =Parameters::dz_ini;
+      const std::array<int, 3> globalIndices = EGradPeGrid.getGlobalIndices(i,j,k);
+      creal x = (convert<Real>(globalIndices[0])+0.5)*EGradPeGrid.DX + Parameters::xmin;
+      creal y = (convert<Real>(globalIndices[1])+0.5)*EGradPeGrid.DY + Parameters::ymin;
+      creal z = (convert<Real>(globalIndices[2])+0.5)*EGradPeGrid.DZ + Parameters::zmin;
+      
+
+      if (withOutflow){ //If withOutflow then use ourflow in the last 2 cells
+        bool Apply = false;
+        Apply = (x<P::xmin+2.*dx);
+        Apply = Apply || (y<P::ymin+2.*dy);
+        Apply = Apply || (z<P::zmin+2.*dz);
+        Apply = Apply || (x>P::xmax-2.*dx);
+        Apply = Apply || (y>P::ymax-2.*dy);
+        Apply = Apply || (z>P::zmax-2.*dz);
+      
+        if (Apply){
+         EGradPeGrid.get(i,j,k)->at(fsgrids::egradpe::EXGRADPE+component) = 0.0;
+        }   
+      }
    }
-   
+
    void OutflowPML::fieldSolverBoundaryCondDerivatives(
       FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
       FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
@@ -462,9 +545,35 @@ namespace SBC {
       cuint& RKCase,
       cuint& component
    ) {
-      this->setCellDerivativesToZero(dPerBGrid, dMomentsGrid, i, j, k, component);
+
+      //Get Global Position
+      creal dx =Parameters::dx_ini;
+      creal dy =Parameters::dy_ini;
+      creal dz =Parameters::dz_ini;
+      const std::array<int, 3> globalIndices = dMomentsGrid.getGlobalIndices(i,j,k);
+      creal x = (convert<Real>(globalIndices[0])+0.5)*dMomentsGrid.DX + Parameters::xmin;
+      creal y = (convert<Real>(globalIndices[1])+0.5)*dMomentsGrid.DY + Parameters::ymin;
+      creal z = (convert<Real>(globalIndices[2])+0.5)*dMomentsGrid.DZ + Parameters::zmin;
+      
+
+      if (withOutflow){ //If withOutflow then use ourflow in the last 2 cells
+        bool Apply = false;
+        Apply = (x<P::xmin+2.*dx);
+        Apply = Apply || (y<P::ymin+2.*dy);
+        Apply = Apply || (z<P::zmin+2.*dz);
+        Apply = Apply || (x>P::xmax-2.*dx);
+        Apply = Apply || (y>P::ymax-2.*dy);
+        Apply = Apply || (z>P::zmax-2.*dz);
+        
+        if (Apply){
+          this->setCellDerivativesToZero(dPerBGrid, dMomentsGrid, i, j, k, component);
+     
+        }
+  
+      } 
+  
    }
-   
+
    void OutflowPML::fieldSolverBoundaryCondBVOLDerivatives(
       FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> & volGrid,
       cint i,
@@ -472,8 +581,33 @@ namespace SBC {
       cint k,
       cuint& component
    ) {
-      this->setCellBVOLDerivativesToZero(volGrid, i, j, k, component);
+      
+   
+      //Get Global Position
+      creal dx =Parameters::dx_ini;
+      creal dy =Parameters::dy_ini;
+      creal dz =Parameters::dz_ini;
+      const std::array<int, 3> globalIndices = volGrid.getGlobalIndices(i,j,k);
+      creal x = (convert<Real>(globalIndices[0])+0.5)*volGrid.DX + Parameters::xmin;
+      creal y = (convert<Real>(globalIndices[1])+0.5)*volGrid.DY + Parameters::ymin;
+      creal z = (convert<Real>(globalIndices[2])+0.5)*volGrid.DZ + Parameters::zmin;
+      
+
+      if (withOutflow){ //If withOutflow then use ourflow in the last 2 cells
+      bool Apply = false;
+      Apply = (x<P::xmin+2.*dx);
+      Apply = Apply || (y<P::ymin+2.*dy);
+      Apply = Apply || (z<P::zmin+2.*dz);
+      Apply = Apply || (x>P::xmax-2.*dx);
+      Apply = Apply || (y>P::ymax-2.*dy);
+      Apply = Apply || (z>P::zmax-2.*dz);
+     
+      if (Apply){
+         this->setCellBVOLDerivativesToZero(volGrid, i, j, k, component);
+       }
+     }
    }
+
    
    /**
     * NOTE that this is called once for each particle species!
