@@ -283,6 +283,15 @@ void calculateSpatialTranslation(
       }
    }
    
+   for (auto c: localCells){
+      //std:cout<< c<<std::endl;
+   }
+   
+   
+   for (auto c: local_propagated_cells){
+      std:cout<< c<<std::endl;
+   }
+   
    
    // Figure out target spatial cells, result
    // independent of particle species.

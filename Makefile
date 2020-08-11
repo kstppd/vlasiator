@@ -92,6 +92,7 @@ tools: parallel_tools not_parallel_tools
 parallel_tools: vlsvextract vlsvdiff
 
 testpackage: vlasiator
+				 @echo $(VECTORCLASS)
 
 FORCE:
 # On FERMI one has to use the front-end compiler (e.g. g++) to compile this tool.
