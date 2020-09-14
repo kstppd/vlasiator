@@ -57,6 +57,8 @@ namespace projects {
       RP::add("Alfven.Bz_guiding", "Guiding field z component", 0);
       RP::add("Alfven.Wavelength", "Wavelength (m)", 100000.0);
       RP::add("Alfven.A_mag", "Amplitude of the magnetic perturbation", 0.1);
+      RP::add("Alfven.nSpaceSamples", "Amplitude of the magnetic perturbation", 2);
+      RP::add("Alfven.VX", "Amplitude of the magnetic perturbation", 0);
 
       // Per-population parameters
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
@@ -65,8 +67,7 @@ namespace projects {
          RP::add(pop + "_Alfven.rho", "Number density (m^-3)", 1.0e8);
          RP::add(pop + "_Alfven.Temperature", "Temperature (K)", 0.86456498092);
          RP::add(pop + "_Alfven.A_vel", "Amplitude of the velocity perturbation", 0.1);
-         RP::add(pop + "_Alfven.nSpaceSamples", "Number of sampling points per spatial dimension", 2);
-         RP::add(pop + "_Alfven.nVelocitySamples", "Number of sampling points per velocity dimension", 5);
+         RP::add(pop + "_Alfven.nVelocitySamples", "Number of sampling points per velocity dimension", 2);
 
       }
    }
@@ -82,6 +83,7 @@ namespace projects {
       RP::get("Alfven.Wavelength", this->WAVELENGTH);
       RP::get("Alfven.A_mag", this->A_MAG);
       RP::get("Alfven.nSpaceSamples", this->nSpaceSamples);
+      RP::get("Alfven.VX", this->VX);
 
       // Per-population parameters
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
@@ -108,7 +110,7 @@ namespace projects {
       creal ALFVEN_VEL = this->B0 / sqrt(mu0 * sP.rho * mass);
 
       creal ksi = (x * cos(this->ALPHA) + y * sin(this->ALPHA)) / this->WAVELENGTH;
-      creal Vx = sP.A_VEL * ALFVEN_VEL * sin(this->ALPHA) * sin(2.0 * M_PI * ksi);
+      creal Vx = sP.A_VEL * ALFVEN_VEL * sin(this->ALPHA) * sin(2.0 * M_PI * ksi)+this->VX;
       creal Vy = - sP.A_VEL * ALFVEN_VEL * cos(this->ALPHA) * sin(2.0 * M_PI * ksi);
       creal Vz = - sP.A_VEL * ALFVEN_VEL * cos(2.0 * M_PI * ksi);
    
