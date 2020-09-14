@@ -72,9 +72,11 @@ namespace projects {
       Real ALPHA;
       Real WAVELENGTH;
       Real A_MAG;
+      Real VX;
       uint nSpaceSamples;
       std::vector<AlfvenSpeciesParameters> speciesParams;
    } ; // class Alfven
 } // namespace projects
 
 #endif
+
