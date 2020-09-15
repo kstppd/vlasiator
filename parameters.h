@@ -144,6 +144,12 @@ struct Parameters {
    static Realf amrBoxCenterX;
    static Realf amrBoxCenterY;
    static Realf amrBoxCenterZ;
+   static int pmlWidthXp;            /*!< Sets the PML width at the  boundaries in the X dimension*/
+   static int pmlWidthYp;            /*!< Sets the PML width at the  boundaries in the Y dimension*/
+   static int pmlWidthZp;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
+   static int pmlWidthXm;            /*!< Sets the PML width at the  boundaries in the X dimension*/
+   static int pmlWidthYm;            /*!< Sets the PML width at the  boundaries in the Y dimension*/
+   static int pmlWidthZm;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
    
     /*! \brief Add the global parameters.
     * 

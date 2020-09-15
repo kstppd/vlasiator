@@ -52,6 +52,12 @@ Real P::zmax = NAN;
 Real P::dx_ini = NAN;
 Real P::dy_ini = NAN;
 Real P::dz_ini = NAN;
+int P::pmlWidthXp = 0;
+int P::pmlWidthYp = 0;
+int P::pmlWidthZp = 0;
+int P::pmlWidthXm = 0;
+int P::pmlWidthYm = 0;
+int P::pmlWidthZm = 0;
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -206,6 +212,13 @@ bool Parameters::addParameters(){
    Readparameters::add("fieldsolver.electronTemperature", "Constant electron temperature to be used for the electron pressure gradient term (K).", 0.0);
    Readparameters::add("fieldsolver.maxCFL","The maximum CFL limit for field propagation. Used to set timestep if dynamic_timestep is true.",0.5);
    Readparameters::add("fieldsolver.minCFL","The minimum CFL limit for field propagation. Used to set timestep if dynamic_timestep is true.",0.4);
+   Readparameters::add("PML.WidthXp", "Width of PML areas in X.", "0");
+   Readparameters::add("PML.WidthYp", "Width of PML areas in Y.", "0");
+   Readparameters::add("PML.WidthZp", "Width of PML areas in Z.", "0");
+   Readparameters::add("PML.WidthXm", "Width of PML areas in X.", "0");
+   Readparameters::add("PML.WidthYm", "Width of PML areas in Y.", "0");
+   Readparameters::add("PML.WidthZm", "Width of PML areas in Z.", "0");
+
 
    // Vlasov solver parameters
    Readparameters::add("vlasovsolver.maxSlAccelerationRotation","Maximum rotation angle (degrees) allowed by the Semi-Lagrangian solver (Use >25 values with care)",25.0);
@@ -510,6 +523,12 @@ bool Parameters::getParameters(){
    Readparameters::get("fieldsolver.electronTemperature", P::electronTemperature);
    Readparameters::get("fieldsolver.maxCFL",P::fieldSolverMaxCFL);
    Readparameters::get("fieldsolver.minCFL",P::fieldSolverMinCFL);
+   Readparameters::get("PML.WidthXp", P::pmlWidthXp);
+   Readparameters::get("PML.WidthYp", P::pmlWidthYp);
+   Readparameters::get("PML.WidthZp", P::pmlWidthZp);
+   Readparameters::get("PML.WidthXm", P::pmlWidthXm);
+   Readparameters::get("PML.WidthYm", P::pmlWidthYm);
+   Readparameters::get("PML.WidthZm", P::pmlWidthZm);
    // Get Vlasov solver parameters
    Readparameters::get("vlasovsolver.maxSlAccelerationRotation",P::maxSlAccelerationRotation);
    Readparameters::get("vlasovsolver.maxSlAccelerationSubcycles",P::maxSlAccelerationSubcycles);

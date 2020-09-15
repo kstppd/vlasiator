@@ -43,6 +43,7 @@
 #include "spatial_cell.hpp"
 #include "datareduction/datareducer.h"
 #include "sysboundary/sysboundary.h"
+#include "sysboundary/upml.h"
 
 #include "fieldsolver/fs_common.h"
 #include "projects/project.h"
@@ -414,6 +415,7 @@ int main(int argn,char* args[]) {
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> BgBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> volGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< fsgrids::technical, 2> technicalGrid(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> pmlGrid(fsGridDimensions, comm, periodicity,gridCoupling);
 
    // Set DX,DY and DZ
    // TODO: This is currently just taking the values from cell 1, and assuming them to be
@@ -465,6 +467,15 @@ int main(int argn,char* args[]) {
       *project
    );
    isSysBoundaryCondDynamic = sysBoundaries.isDynamic();
+
+   /*Initialize PML Grid*/
+   phiprof::start("Init PML Grid");
+   if (!buildPMLGrid(pmlGrid)){
+      std::cerr<<"PML Failed"<<std::endl;
+      abort();
+   }
+   phiprof::stop("Init PML Grid");
+
    
    const std::vector<CellID>& cells = getLocalCells();
    
@@ -496,7 +507,7 @@ int main(int argn,char* args[]) {
 		   BgBGrid,
 		   volGrid,
 		   technicalGrid,
-		   sysBoundaries, 0.0, 1.0
+		   sysBoundaries,pmlGrid, 0.0, 1.0
 		   );
 
    phiprof::start("getFieldsFromFsGrid");
@@ -913,6 +924,7 @@ int main(int argn,char* args[]) {
             volGrid,
             technicalGrid,
             sysBoundaries,
+            pmlGrid,
             P::dt,
             P::fieldSolverSubcycles
          );

@@ -434,11 +434,13 @@ void calculateEdgeElectricFieldX(
    FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint i,
    cint j,
    cint k,
    cint& RKCase
 ) {
+
    #ifdef DEBUG_FSOLVER
    bool ok = true;
    if (technicalGrid.get(i,j,k) == NULL) ok = false;
@@ -770,6 +772,10 @@ void calculateEdgeElectricFieldX(
       //update max allowed timestep for field propagation in this cell, which is the minimum of CFL=1 timesteps
       if (maxV != ZERO) technicalGrid.get(i,j,k)->maxFsDt = min(technicalGrid.get(i,j,k)->maxFsDt,min_dx/maxV);
    }
+
+
+
+
 }
 
 /*! \brief Low-level electric field propagation function.
@@ -792,12 +798,13 @@ void calculateEdgeElectricFieldY(
    FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint i,
    cint j,
    cint k,
    cint& RKCase
 ) {
-   #ifdef DEBUG_FSOLVER
+      #ifdef DEBUG_FSOLVER
    bool ok = true;
    if (technicalGrid.get(i,j,k) == NULL) ok = false;
    if (technicalGrid.get(i,j,k-1) == NULL) ok = false;
@@ -887,8 +894,11 @@ void calculateEdgeElectricFieldY(
    
    // Ey and characteristic speeds on this cell:
    // 1st order terms:
-   Real Ey_SW  = Bz_S*Vx0 - Bx_W*Vz0;
-   
+   // Real Ey_SW  = Bz_S*Vx0 - Bx_W*Vz0;
+   std::array<Real, fsgrids::pml::N_PML> *pmlGrid0;
+   pmlGrid0 = pmlGrid.get(i, j, k);
+   Real Ey_SW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_W * Vz0);
+
    // Resistive term
    if (Parameters::resistivity > 0) {
       Ey_SW += Parameters::resistivity *
@@ -943,7 +953,7 @@ void calculateEdgeElectricFieldY(
    Vz0  = moments_SE->at(fsgrids::moments::VZ);
 
    // 1st order terms:
-   Real Ey_SE    = Bz_S*Vx0 - Bx_E*Vz0;
+   Real Ey_SE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_E * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -999,7 +1009,7 @@ void calculateEdgeElectricFieldY(
    Vx0  = moments_NW->at(fsgrids::moments::VX);
    
    // 1st order terms:
-   Real Ey_NW    = Bz_N*Vx0 - Bx_W*Vz0;
+   Real Ey_NW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_W * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1055,8 +1065,8 @@ void calculateEdgeElectricFieldY(
    Vx0 = moments_NE->at(fsgrids::moments::VX);
    
    // 1st order terms:
-   Real Ey_NE    = Bz_N*Vx0 - Bx_E*Vz0;
-   
+   Real Ey_NE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_E * Vz0);
+
    // Resistive term
    if (Parameters::resistivity > 0) {
       Ey_NE += Parameters::resistivity *
@@ -1149,12 +1159,13 @@ void calculateEdgeElectricFieldZ(
    FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint i,
    cint j,
    cint k,
    cint& RKCase
 ) {
-   #ifdef DEBUG_FSOLVER
+      #ifdef DEBUG_FSOLVER
    bool ok = true;
    if (technicalGrid.get(i,j,k) == NULL) ok = false;
    if (technicalGrid.get(i-1,j,k) == NULL) ok = false;
@@ -1166,7 +1177,7 @@ void calculateEdgeElectricFieldZ(
    }
    #endif
 
-   // An edge has four neighbouring spatial cells. Calculate 
+   // An edge has four neighbouring spatial cells. Calculate
    // electric field in each of the four cells per edge.
    Real ax_pos,ax_neg;              // Max. characteristic velocities to x-direction
    Real ay_pos,ay_neg;              // Max. characteristic velocities to y-direction
@@ -1174,7 +1185,7 @@ void calculateEdgeElectricFieldZ(
    Real vA, vS, vW;                         // Alfven, sound, whistler speed
    Real maxV = 0.0;                 // Max velocity for CFL purposes
    Real c_x,c_y;                    // Characteristic speeds to xy-directions
-   
+
    // Get read-only pointers to NE,NW,SE,SW states (SW is rw, result is written there):
    std::array<Real, fsgrids::bfield::N_BFIELD> * perb_SW = perBGrid.get(i  ,j  ,k  );
    std::array<Real, fsgrids::bfield::N_BFIELD> * perb_SE = perBGrid.get(i-1,j  ,k  );
@@ -1196,9 +1207,9 @@ void calculateEdgeElectricFieldZ(
    std::array<Real, fsgrids::dperb::N_DPERB> * dperb_SE = dPerBGrid.get(i-1,j  ,k  );
    std::array<Real, fsgrids::dperb::N_DPERB> * dperb_NE = dPerBGrid.get(i-1,j-1,k  );
    std::array<Real, fsgrids::dperb::N_DPERB> * dperb_NW = dPerBGrid.get(i  ,j-1,k  );
-   
+
    std::array<Real, fsgrids::efield::N_EFIELD> * efield_SW = EGrid.get(i,j,k);
-   
+
    // Fetch needed plasma parameters/derivatives from the four cells:
    Real Bx_S, By_W, By_E, Bx_N, perBx_S, perBy_W, perBy_E, perBx_N;
    Real minRhom = std::numeric_limits<Real>::max();
@@ -1230,7 +1241,7 @@ void calculateEdgeElectricFieldZ(
                )
             )
          );
-   
+
    creal dBxdy_S = dperb_SW->at(fsgrids::dperb::dPERBxdy) + bgb_SW->at(fsgrids::bgbfield::dBGBxdy);
    creal dBxdz_S = dperb_SW->at(fsgrids::dperb::dPERBxdz) + bgb_SW->at(fsgrids::bgbfield::dBGBxdz);
    creal dBydx_W = dperb_SW->at(fsgrids::dperb::dPERBydx) + bgb_SW->at(fsgrids::bgbfield::dBGBydx);
@@ -1243,11 +1254,11 @@ void calculateEdgeElectricFieldZ(
    creal dperBxdy_N = dperb_NW->at(fsgrids::dperb::dPERBxdy);
    creal dperBydx_W = dperb_SW->at(fsgrids::dperb::dPERBydx);
    creal dperBydx_E = dperb_SE->at(fsgrids::dperb::dPERBydx);
-   
+
    // Ez and characteristic speeds on SW cell:
    // 1st order terms:
    Real Ez_SW = Bx_S*Vy0 - By_W*Vx0;
-   
+
    // Resistive term
    if (Parameters::resistivity > 0) {
      Ez_SW += Parameters::resistivity *
@@ -1262,24 +1273,24 @@ void calculateEdgeElectricFieldZ(
        physicalconstants::MU_0 *
        (dperb_SW->at(fsgrids::dperb::dPERBydx)/technicalGrid.DX - dperb_SW->at(fsgrids::dperb::dPERBxdy)/technicalGrid.DY);
    }
-   
+
    // Hall term
    if (Parameters::ohmHallTerm > 0) {
       Ez_SW += EHallGrid.get(i,j,k)->at(fsgrids::ehall::EZHALL_000_001);
    }
-   
+
    // Electron pressure gradient term
    if(Parameters::ohmGradPeTerm > 0) {
       Ez_SW += EGradPeGrid.get(i,j,k)->at(fsgrids::egradpe::EZGRADPE);
    }
-   
+
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
       Ez_SW  += +HALF*((Bx_S - HALF*dBxdy_S)*(-dmoments_SW->at(fsgrids::dmoments::dVydx) - dmoments_SW->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SW->at(fsgrids::dmoments::dVydz));
       Ez_SW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_SW->at(fsgrids::dmoments::dVxdz));
    #endif
-   
-   // Calculate maximum wave speed (fast magnetosonic speed) on SW cell. In order 
+
+   // Calculate maximum wave speed (fast magnetosonic speed) on SW cell. In order
    // to get Alfven speed we need to calculate some reconstruction coeff. for Bz:
    calculateWaveSpeedXY(
       perBGrid,
@@ -1302,7 +1313,7 @@ void calculateEdgeElectricFieldZ(
    // Ez and characteristic speeds on SE (i-1) cell:
    Vx0  = moments_SE->at(fsgrids::moments::VX);
    Vy0  = moments_SE->at(fsgrids::moments::VY);
-   
+
    // 1st order terms:
    Real Ez_SE = Bx_S*Vy0 - By_E*Vx0;
 
@@ -1320,23 +1331,23 @@ void calculateEdgeElectricFieldZ(
         physicalconstants::MU_0 *
         (dperb_SE->at(fsgrids::dperb::dPERBydx)/technicalGrid.DX - dperb_SE->at(fsgrids::dperb::dPERBxdy)/technicalGrid.DY);
    }
-   
+
    // Hall term
    if (Parameters::ohmHallTerm > 0) {
       Ez_SE += EHallGrid.get(i-1,j,k)->at(fsgrids::ehall::EZHALL_100_101);
    }
-   
+
    // Electron pressure gradient term
    if(Parameters::ohmGradPeTerm > 0) {
       Ez_SE += EGradPeGrid.get(i-1,j,k)->at(fsgrids::egradpe::EZGRADPE);
    }
-   
+
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
       Ez_SE  += +HALF*((Bx_S - HALF*dBxdy_S)*(+dmoments_SE->at(fsgrids::dmoments::dVydx) - dmoments_SE->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SE->at(fsgrids::dmoments::dVydz));
       Ez_SE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_SE->at(fsgrids::dmoments::dVxdx) - dmoments_SE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_SE->at(fsgrids::dmoments::dVxdz));
    #endif
-   
+
    calculateWaveSpeedXY(
       perBGrid,
       momentsGrid,
@@ -1358,10 +1369,10 @@ void calculateEdgeElectricFieldZ(
    // Ez and characteristic speeds on NW (j-1) cell:
    Vx0  = moments_NW->at(fsgrids::moments::VX);
    Vy0  = moments_NW->at(fsgrids::moments::VY);
-   
+
    // 1st order terms:
    Real Ez_NW = Bx_N*Vy0 - By_W*Vx0;
-   
+
    // Resistive term
    if (Parameters::resistivity > 0) {
       Ez_NW += Parameters::resistivity *
@@ -1376,23 +1387,23 @@ void calculateEdgeElectricFieldZ(
         physicalconstants::MU_0 *
         (dperb_NW->at(fsgrids::dperb::dPERBydx)/technicalGrid.DX - dperb_NW->at(fsgrids::dperb::dPERBxdy)/technicalGrid.DY);
    }
-   
+
    // Hall term
    if(Parameters::ohmHallTerm > 0) {
       Ez_NW += EHallGrid.get(i,j-1,k)->at(fsgrids::ehall::EZHALL_010_011);
    }
-   
+
    // Electron pressure gradient term
    if(Parameters::ohmGradPeTerm > 0) {
       Ez_NW += EGradPeGrid.get(i,j-1,k)->at(fsgrids::egradpe::EZGRADPE);
    }
-   
+
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
       Ez_NW  += +HALF*((Bx_N + HALF*dBxdy_N)*(-dmoments_NW->at(fsgrids::dmoments::dVydx) + dmoments_NW->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NW->at(fsgrids::dmoments::dVydz));
       Ez_NW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_NW->at(fsgrids::dmoments::dVxdx) + dmoments_NW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_NW->at(fsgrids::dmoments::dVxdz));
    #endif
-   
+
    calculateWaveSpeedXY(
       perBGrid,
       momentsGrid,
@@ -1405,19 +1416,19 @@ void calculateEdgeElectricFieldZ(
    );
    c_x = min(Parameters::maxWaveVelocity,sqrt(vA*vA + vS*vS) + vW);
    c_y = c_x;
-   ax_neg = max(ax_neg,-Vx0 + c_x); 
+   ax_neg = max(ax_neg,-Vx0 + c_x);
    ax_pos = max(ax_pos,+Vx0 + c_x);
    ay_neg = max(ay_neg,-Vy0 + c_y);
    ay_pos = max(ay_pos,+Vy0 + c_y);
    maxV = max(maxV, calculateCflSpeed(Vx0, Vy0, vA, vS, vW));
-   
+
    // Ez and characteristic speeds on NE (i-1,j-1) cell:
    Vx0  = moments_NE->at(fsgrids::moments::VX);
    Vy0  = moments_NE->at(fsgrids::moments::VY);
-   
+
    // 1st order terms:
    Real Ez_NE = Bx_N*Vy0 - By_E*Vx0;
-   
+
    // Resistive term
    if (Parameters::resistivity > 0) {
       Ez_NE += Parameters::resistivity *
@@ -1432,23 +1443,23 @@ void calculateEdgeElectricFieldZ(
         physicalconstants::MU_0 *
         (dperb_NE->at(fsgrids::dperb::dPERBydx)/technicalGrid.DX - dperb_NE->at(fsgrids::dperb::dPERBxdy)/technicalGrid.DY);
    }
-   
+
    // Hall term
    if(Parameters::ohmHallTerm > 0) {
       Ez_NE += EHallGrid.get(i-1,j-1,k)->at(fsgrids::ehall::EZHALL_110_111);
    }
-   
+
    // Electron pressure gradient term
    if(Parameters::ohmGradPeTerm > 0) {
       Ez_NE += EGradPeGrid.get(i-1,j-1,k)->at(fsgrids::egradpe::EZGRADPE);
    }
-   
+
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
       Ez_NE  += +HALF*((Bx_N + HALF*dBxdy_N)*(+dmoments_NE->at(fsgrids::dmoments::dVydx) + dmoments_NE->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NE->at(fsgrids::dmoments::dVydz));
       Ez_NE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_NE->at(fsgrids::dmoments::dVxdz));
    #endif
-   
+
    calculateWaveSpeedXY(
       perBGrid,
       momentsGrid,
@@ -1480,7 +1491,7 @@ void calculateEdgeElectricFieldZ(
       efield_SW->at(fsgrids::efield::EZ) += ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*((perBy_W-HALF*dperBydx_W) - (perBy_E+HALF*dperBydx_E));
 #endif
    }
-   
+
    if ((RKCase == RK_ORDER1) || (RKCase == RK_ORDER2_STEP2)) {
       //compute maximum timestep for fieldsolver in this cell (CFL=1)
       Real min_dx=std::numeric_limits<Real>::max();;
@@ -1489,6 +1500,7 @@ void calculateEdgeElectricFieldZ(
       //update max allowed timestep for field propagation in this cell, which is the minimum of CFL=1 timesteps
       if(maxV!=ZERO) technicalGrid.get(i,j,k)->maxFsDt=min(technicalGrid.get(i,j,k)->maxFsDt,min_dx/maxV);
    }
+
 }
 
 /*! \brief Electric field propagation function.
@@ -1525,6 +1537,7 @@ void calculateElectricField(
    cint j,
    cint k,
    SysBoundary& sysBoundaries,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint& RKCase
 ) {
    cuint cellSysBoundaryFlag = technicalGrid.get(i,j,k)->sysBoundaryFlag;
@@ -1544,6 +1557,7 @@ void calculateElectricField(
          dMomentsGrid,
          BgBGrid,
          technicalGrid,
+         pmlGrid,
          i,
          j,
          k,
@@ -1564,6 +1578,7 @@ void calculateElectricField(
          dMomentsGrid,
          BgBGrid,
          technicalGrid,
+         pmlGrid,
          i,
          j,
          k,
@@ -1584,6 +1599,7 @@ void calculateElectricField(
          dMomentsGrid,
          BgBGrid,
          technicalGrid,
+         pmlGrid,
          i,
          j,
          k,
@@ -1629,6 +1645,7 @@ void calculateUpwindedElectricFieldSimple(
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint& RKCase
 ) {
    int timer;
@@ -1673,6 +1690,7 @@ void calculateUpwindedElectricFieldSimple(
                   j,
                   k,
                   sysBoundaries,
+                  pmlGrid,
                   RKCase
                );
             } else { // RKCase == RK_ORDER2_STEP1
@@ -1690,6 +1708,7 @@ void calculateUpwindedElectricFieldSimple(
                   j,
                   k,
                   sysBoundaries,
+                  pmlGrid,
                   RKCase
                );
             }

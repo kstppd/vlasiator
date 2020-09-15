@@ -36,6 +36,7 @@ void calculateUpwindedElectricFieldSimple(
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
    cint& RKCase
 );
 

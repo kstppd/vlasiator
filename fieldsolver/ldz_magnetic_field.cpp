@@ -51,6 +51,7 @@ void propagateMagneticField(
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    cint i,
    cint j,
    cint k,
@@ -70,13 +71,25 @@ void propagateMagneticField(
    std::array<Real, fsgrids::efield::N_EFIELD> * EGrid2;
    std::array<Real, fsgrids::bfield::N_BFIELD> * perBDt2Grid0;
    
+   // Get PML Array
+   std::array<Real, fsgrids::pml::N_PML> * pmlGrid0;
+   
+
    if (doX == true) {
       switch (RKCase) {
          case RK_ORDER1:
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j+1,k);
             EGrid2 = EGrid.get(i,j,k+1);
-            perBGrid0->at(fsgrids::bfield::PERBX) += dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+            
+            // GetPMLarrays for Bx Component   
+            pmlGrid0=pmlGrid.get(i,j,k);
+
+            // Update  Bx
+            // perBGrid0->at(fsgrids::bfield::PERBX) += dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+
+            perBGrid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBX) + pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) * (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+
             break;
             
          case RK_ORDER2_STEP1:
@@ -84,14 +97,25 @@ void propagateMagneticField(
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j+1,k);
             EGrid2 = EGrid.get(i,j,k+1);
-            perBDt2Grid0->at(fsgrids::bfield::PERBX) = perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*(1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+            // perBDt2Grid0->at(fsgrids::bfield::PERBX) = perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*(1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+            perBDt2Grid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3)*pmlGrid0->at(fsgrids::pml::PFK3)*perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*( pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2)*1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)+  pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1)  *1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)))); 
             break;
-            
+
          case RK_ORDER2_STEP2:
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i,j+1,k);
             EGrid2 = EDt2Grid.get(i,j,k+1);
-            perBGrid0->at(fsgrids::bfield::PERBX) += dt * (1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+
+            // perBGrid0->at(fsgrids::bfield::PERBX) += dt * (1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+            perBGrid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3)*pmlGrid0->at(fsgrids::pml::PFK3)*perBGrid0->at(fsgrids::bfield::PERBX)+ dt * ( pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2)*1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) *1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+
+
             break;
             
          default:
@@ -106,20 +130,34 @@ void propagateMagneticField(
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j,k+1);
             EGrid2 = EGrid.get(i+1,j,k);
-            perBGrid0->at(fsgrids::bfield::PERBY) += dt/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + dt/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
+
+            // GetPMLarrays for Bx Component   
+            pmlGrid0=pmlGrid.get(i,j,k);
+           
+         // Update BY
+            // perBGrid0->at(fsgrids::bfield::PERBY) += dt/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + dt/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
+
+            perBGrid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1) * (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
+
             break;
          case RK_ORDER2_STEP1:
             perBDt2Grid0 = perBDt2Grid.get(i,j,k);
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j,k+1);
             EGrid2 = EGrid.get(i+1,j,k);
-            perBDt2Grid0->at(fsgrids::bfield::PERBY) = perBGrid0->at(fsgrids::bfield::PERBY) + 0.5*dt*(1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+            // perBDt2Grid0->at(fsgrids::bfield::PERBY) = perBGrid0->at(fsgrids::bfield::PERBY) + 0.5*dt*(1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            perBDt2Grid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + 0.5 * dt * (1.0 / dx * pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1) * 1.0 / dz * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
             break;
          case RK_ORDER2_STEP2:
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i,j,k+1);
             EGrid2 = EDt2Grid.get(i+1,j,k);
-            perBGrid0->at(fsgrids::bfield::PERBY) += dt * (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+            // perBGrid0->at(fsgrids::bfield::PERBY) += dt * (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            perBGrid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + dt * (1.0 / dx * pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) *(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ))  + pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1) *(1.0 / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
             break;
          default:
             std::cerr << __FILE__ << ":" << __LINE__ << ":" << "Invalid RK case." << std::endl;
@@ -133,26 +171,41 @@ void propagateMagneticField(
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i+1,j,k);
             EGrid2 = EGrid.get(i,j+1,k);
-            perBGrid0->at(fsgrids::bfield::PERBZ) += dt/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + dt/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
+
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+
+            // Update Bz
+            // perBGrid0->at(fsgrids::bfield::PERBZ) += dt/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + dt/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
+
+            perBGrid0->at(fsgrids::bfield::PERBZ) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3) * perBGrid0->at(fsgrids::bfield::PERBZ) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2) * (dt / dy) * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1)*(dt / dx) * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
+
             break;
          case RK_ORDER2_STEP1:
             perBDt2Grid0 = perBDt2Grid.get(i,j,k);
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i+1,j,k);
             EGrid2 = EGrid.get(i,j+1,k);
-            perBDt2Grid0->at(fsgrids::bfield::PERBZ) = perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5*dt*(1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+            // perBDt2Grid0->at(fsgrids::bfield::PERBZ) = perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5*dt*(1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            perBDt2Grid0->at(fsgrids::bfield::PERBZ) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3) * perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5 * dt * (pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2) * 1.0 / dy * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) * 1.0 / dx * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
             break;
          case RK_ORDER2_STEP2:
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i+1,j,k);
             EGrid2 = EDt2Grid.get(i,j+1,k);
-            perBGrid0->at(fsgrids::bfield::PERBZ) += dt  * (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            // GetPMLarrays for Bx Component
+            pmlGrid0 = pmlGrid.get(i, j, k);
+            // perBGrid0->at(fsgrids::bfield::PERBZ) += dt  * (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            perBGrid0->at(fsgrids::bfield::PERBZ) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3) * perBGrid0->at(fsgrids::bfield::PERBZ) + dt * (pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2) * 1.0 / dy * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) * 1.0 / dx * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
             break;
          default:
             std::cerr << __FILE__ << ":" << __LINE__ << ":" << "Invalid RK case." << std::endl;
             abort();
       }
    }
+
 }
 
 /*! \brief Low-level magnetic field propagation function.
@@ -176,6 +229,7 @@ void propagateSysBoundaryMagneticField(
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    cint i,
    cint j,
@@ -212,6 +266,7 @@ void propagateMagneticFieldSimple(
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
    creal& dt,
@@ -232,7 +287,7 @@ void propagateMagneticFieldSimple(
       for (int j=0; j<gridDims[1]; j++) {
          for (int i=0; i<gridDims[0]; i++) {
             cuint bitfield = technicalGrid.get(i,j,k)->SOLVE;
-            propagateMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, i, j, k, dt, RKCase, ((bitfield & compute::BX) == compute::BX), ((bitfield & compute::BY) == compute::BY), ((bitfield & compute::BZ) == compute::BZ));
+            propagateMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, pmlGrid,i, j, k, dt, RKCase, ((bitfield & compute::BX) == compute::BX), ((bitfield & compute::BY) == compute::BY), ((bitfield & compute::BZ) == compute::BZ));
          }
       }
    }
@@ -267,13 +322,13 @@ void propagateMagneticFieldSimple(
             // L1 pass
             if (technicalGrid.get(i,j,k)->sysBoundaryLayer == 1) {
                if ((bitfield & compute::BX) != compute::BX) {
-                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 0);
+                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 0);
                }
                if ((bitfield & compute::BY) != compute::BY) {
-                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 1);
+                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 1);
                }
                if ((bitfield & compute::BZ) != compute::BZ) {
-                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 2);
+                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid ,technicalGrid, i, j, k, sysBoundaries, dt, RKCase, 2);
                }
             }
          }
@@ -289,7 +344,7 @@ void propagateMagneticFieldSimple(
                technicalGrid.get(i,j,k)->sysBoundaryLayer == 2
             ) {
                for (uint component = 0; component < 3; component++) {
-                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, component);
+                  propagateSysBoundaryMagneticField(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, i, j, k, sysBoundaries, dt, RKCase, component);
                }
             }
          }

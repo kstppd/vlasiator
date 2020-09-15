@@ -227,6 +227,26 @@ namespace bvolderivatives {
  * back and forth.
  */
 namespace fsgrids {
+
+   enum pml{
+      PGI2,
+      PGI3,
+      PFI1,
+      PFI2,
+      PFI3,
+      PGJ2,
+      PGJ3,
+      PFJ1,
+      PFJ2,
+      PFJ3,
+      PGK2,
+      PGK3,
+      PFK1,
+      PFK2,
+      PFK3,
+      N_PML 
+   };
+
    enum bfield {
       PERBX,  /*!< Perturbed Magnetic field x-component, averaged over cell x-face. Propagated by field solver.*/
       PERBY,  /*!< Perturbed Magnetic field y-component, averaged over cell y-face. Propagated by field solver.*/

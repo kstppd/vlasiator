@@ -98,6 +98,7 @@ bool propagateFields(
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> & volGrid,
    FsGrid< fsgrids::technical, 2> & technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> & pmlGrid,
    creal& dt,
    cuint subcycles
 ) {
@@ -123,7 +124,7 @@ bool propagateFields(
    
    if (subcycles == 1) {
       #ifdef FS_1ST_ORDER_TIME
-      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, sysBoundaries, dt, RK_ORDER1);
+      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, sysBoundaries, dt, RK_ORDER1);
       calculateDerivativesSimple(perBGrid, perBDt2Grid, momentsGrid, momentsDt2Grid, dPerBGrid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER1, true);
       if(P::ohmGradPeTerm > 0){
          calculateGradPeTermSimple(EGradPeGrid, momentsGrid, momentsDt2Grid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER1);
@@ -159,10 +160,11 @@ bool propagateFields(
          BgBGrid,
          technicalGrid,
          sysBoundaries,
+         pmlGrid,
          RK_ORDER1
       );
       #else
-      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, sysBoundaries, dt, RK_ORDER2_STEP1);
+      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, sysBoundaries, dt, RK_ORDER2_STEP1);
       calculateDerivativesSimple(perBGrid, perBDt2Grid, momentsGrid, momentsDt2Grid, dPerBGrid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER2_STEP1, true);
       if(P::ohmGradPeTerm > 0) {
          calculateGradPeTermSimple(EGradPeGrid, momentsGrid, momentsDt2Grid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER2_STEP1);
@@ -198,10 +200,11 @@ bool propagateFields(
          BgBGrid,
          technicalGrid,
          sysBoundaries,
+         pmlGrid,
          RK_ORDER2_STEP1
       );
       
-      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, sysBoundaries, dt, RK_ORDER2_STEP2);
+      propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, sysBoundaries, dt, RK_ORDER2_STEP2);
       calculateDerivativesSimple(perBGrid, perBDt2Grid, momentsGrid, momentsDt2Grid, dPerBGrid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER2_STEP2, true);
       if(P::ohmGradPeTerm > 0) {
          calculateGradPeTermSimple(EGradPeGrid, momentsGrid, momentsDt2Grid, dMomentsGrid, technicalGrid, sysBoundaries, RK_ORDER2_STEP2);
@@ -237,6 +240,7 @@ bool propagateFields(
          BgBGrid,
          technicalGrid,
          sysBoundaries,
+         pmlGrid,
          RK_ORDER2_STEP2
       );
       #endif
@@ -251,7 +255,7 @@ bool propagateFields(
       while (subcycleCount < maxSubcycleCount ) {         
          // In case of subcycling, we decided to go for a blunt Runge-Kutta subcycling even though e.g. moments are not going along.
          // Result of the Summer of Debugging 2016, the behaviour in wave dispersion was much improved with this.
-         propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, sysBoundaries, subcycleDt, RK_ORDER2_STEP1);
+         propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, sysBoundaries, subcycleDt, RK_ORDER2_STEP1);
          
          // We need to calculate derivatives of the moments at every substep, but they only
          // need to be communicated in the first one.
@@ -290,10 +294,11 @@ bool propagateFields(
             BgBGrid,
             technicalGrid,
             sysBoundaries,
+            pmlGrid,
             RK_ORDER2_STEP1
          );
          
-         propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid, technicalGrid, sysBoundaries, subcycleDt, RK_ORDER2_STEP2);
+         propagateMagneticFieldSimple(perBGrid, perBDt2Grid, EGrid, EDt2Grid,pmlGrid, technicalGrid, sysBoundaries, subcycleDt, RK_ORDER2_STEP2);
          
          // We need to calculate derivatives of the moments at every substep, but they only
          // need to be communicated in the first one.
@@ -332,6 +337,7 @@ bool propagateFields(
             BgBGrid,
             technicalGrid,
             sysBoundaries,
+            pmlGrid,
             RK_ORDER2_STEP2
          );
          
@@ -405,7 +411,7 @@ bool propagateFields(
          logFile << "Effective field solver subcycles were " << subcycleCount << " instead of " << P::fieldSolverSubcycles << " on step " <<  P::tstep << std::endl;
       }
    }
-   
+  
    calculateVolumeAveragedFields(perBGrid,EGrid,dPerBGrid,volGrid,technicalGrid);
    calculateBVOLDerivativesSimple(volGrid, technicalGrid, sysBoundaries);
    return true;
