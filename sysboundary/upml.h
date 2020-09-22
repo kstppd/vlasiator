@@ -21,12 +21,22 @@
 #ifndef UPML_H
 #define UPML_H
 
+#include"/home/kostis/dccrg/dccrg_cartesian_geometry.hpp"
+#include"/home/kostis/dccrg/dccrg.hpp"
+//#include "sysboundarycondition.h"
+#include<vector>
 #include "fsgrid.hpp"
 #include "../definitions.h"
 #include "../common.h"
+#include "../spatial_cell.hpp"
+
+bool assingFSGridCells(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
+                       FsGrid< fsgrids::technical, 2> & technicalGrid,
+                       dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                       int width,int  side, int comp);
 
 
-bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid);
+bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid, dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid);
 
 
 #endif

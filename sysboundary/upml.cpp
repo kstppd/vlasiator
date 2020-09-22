@@ -34,26 +34,158 @@
 #include "../common.h"
 #include "../parameters.h"
 #include "../readparameters.h"
+#include "../spatial_cell.hpp"
 
 
 
-bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid){
+bool assingFSGridCells(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
+                       FsGrid< fsgrids::technical, 2> & technicalGrid,
+                       dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                       int width,int  side, int comp){
 
+   std::array<Real, fsgrids::pml::N_PML> *pmlValue;
+   const int *globalDims = &pmlGrid.getGlobalSize()[0];
+   const int *pmlDims=&pmlGrid.getLocalSize()[0];
+   std::array<int32_t, 3> pos;
+   Real xnum, xd;
+   Real xxn, xn;
+   Real alpha = 3.;
+   int start = 2;
+   int enumOrder =5*comp;
+   std:: vector<CellID> cells = mpiGrid.get_cells();
+   bool doAssign;
    
+   switch(side){
+      case (-1):
+
+         for (int kk = 0; kk < pmlDims[2] ; kk++){
+            for (int jj = 0; jj < pmlDims[1]; jj++){
+               for (int ii = 0; ii <pmlDims[0]; ii++){
+
+                  // Get Global Arrays Indeces
+                  pos=pmlGrid.getGlobalIndices(ii,jj,kk);
+                  doAssign = width>0 &&  pos[comp]>=start && pos[comp]<width+start;
+                  if (doAssign){
+                     
+                     // Get Local  Arrays
+                     pmlValue = pmlGrid.get(ii, jj, kk);
+
+                     xnum =width-pos[comp] +start;
+                     xd = width;
+                     xxn =xnum/xd;
+                     xn =alpha*(xxn*xxn*xxn);
+                     pmlValue->at( fsgrids::pml(enumOrder) )=1/(1+xn);
+                     pmlValue->at(fsgrids::pml(enumOrder+1))=(1-xn)/(1+xn);
+
+                     //printf("comp=-%d pos=%d ---->xn=%f, xxn=%f \n" ,comp, pos[comp],xn,xxn  );
+
+                     xxn=(xnum-0.5)/xd;
+                     xn=alpha*(xxn*xxn*xxn);
+                     pmlValue->at(fsgrids::pml(enumOrder+2))=xn;
+                     pmlValue->at(fsgrids::pml(enumOrder+3))=1/(1+xn);
+                     pmlValue->at(fsgrids::pml(enumOrder+4))=(1-xn)/(1+xn);
+
+                     //Set the technical grid flag
+                     technicalGrid.get(ii,jj,kk)->pmlFlag= sysboundarytype::PMLCELL; 
+                     
+                     
+                  }
+               }
+            }
+         }
+         //Assing DCCRG Cells
+         for(uint i=0; i<cells.size(); i++) {
+         
+            creal* const cellParams = &(mpiGrid[cells[i]]->parameters[0]);
+            creal dx = cellParams[CellParams::DX];
+            creal dy = cellParams[CellParams::DY];
+            creal dz = cellParams[CellParams::DZ];
+            creal x = cellParams[CellParams::XCRD] + 0.5*dx;
+            creal y = cellParams[CellParams::YCRD] + 0.5*dy;
+            creal z = cellParams[CellParams::ZCRD] + 0.5*dz;
+            std::array<creal,3> p={x,y,z};
+
+            doAssign = width>0 &&  p[comp]>start && p[comp]<width+start;
+            if(doAssign) {
+               mpiGrid[cells[i]]->pmlFlag = sysboundarytype::PMLCELL ;
+            }
+         }
+         break;
+      
+      case(1):
+        
+         for (int kk = 0; kk < pmlDims[2] ; kk++){
+            for (int jj = 0; jj < pmlDims[1]; jj++){
+               for (int ii = 0; ii <pmlDims[0]; ii++){
+
+                  // Get Global Arrays Indeces
+                  pos=pmlGrid.getGlobalIndices(ii,jj,kk);
+                  doAssign = (width>0 && pos[comp]>globalDims[0]-start- width && pos[comp] <=globalDims[0]-start);
+                  if (doAssign){
+                     
+                     // Get Local  Arrays
+                     pmlValue = pmlGrid.get(ii, jj, kk);
+
+                     xnum =start+ width-(globalDims[0]- pos[comp]);
+                     xd = width;
+                     xxn =xnum/xd;
+                     xn =alpha*(xxn*xxn*xxn);
+                     pmlValue->at(fsgrids::pml(enumOrder))=1/(1+xn);
+                     pmlValue->at(fsgrids::pml(enumOrder+1))=(1-xn)/(1+xn);
+
+                     //printf("comp=+%d pos=%d ---->xn=%f, xxn=%f \n" ,comp, pos[comp],xn,xxn  );
+
+                     xxn=(xnum-0.5)/xd;
+                     xn=alpha*(xxn*xxn*xxn);
+                     pmlValue->at(fsgrids::pml(enumOrder+2))=xn;
+                     pmlValue->at(fsgrids::pml(enumOrder+3))=1/(1+xn);
+                     pmlValue->at(fsgrids::pml(enumOrder+4))=(1-xn)/(1+xn);
+
+                     //Set the technical grid flag
+                     technicalGrid.get(ii,jj,kk)->pmlFlag = sysboundarytype::PMLCELL; 
+                     
+                     
+                  }
+               }
+            }
+         }
+         
+         //Assing DCCRG Cells
+         for(uint i=0; i<cells.size(); i++) {
+            
+            creal* const cellParams = &(mpiGrid[cells[i]]->parameters[0]);
+            creal dx = cellParams[CellParams::DX];
+            creal dy = cellParams[CellParams::DY];
+            creal dz = cellParams[CellParams::DZ];
+            creal x = cellParams[CellParams::XCRD] + 0.5*dx;
+            creal y = cellParams[CellParams::YCRD] + 0.5*dy;
+            creal z = cellParams[CellParams::ZCRD] + 0.5*dz;
+            std::array<creal,3> p={x,y,z};
+           
+            doAssign =  (width>0 && p[comp]>globalDims[0]-start- width && p[comp] <=globalDims[0]-start); 
+            if(doAssign) {
+               mpiGrid[cells[i]]->pmlFlag = sysboundarytype::PMLCELL ;
+            }
+         }
+
+         break;
+   }
+
+   return true;
+}
+
+
+bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid,dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid){
+
    typedef Parameters P;
    
-     
    /*----Get PML Array and Domain Size-----*/
    std::array<Real, fsgrids::pml::N_PML> *pmlValue;
-   int start = 2;   /*don't judge will change it */
-   std::array<int32_t, 3> pos;
-   const int *pmlDims = &pmlGrid.getLocalSize()[0];
-   const int *globalDims = &pmlGrid.getGlobalSize()[0];
+   const int *pmlDims=&pmlGrid.getLocalSize()[0];
 
     /*-----Initially set all arrays to one-----*/
     /*Iterate over domain and set the PML arrays to 1.0 thus not affecting the fieldsolver*/ 
    
-   //  #pragma omp parallel for collapse(3)
     for (int kk = 0; kk < pmlDims[2]; kk++){
         for (int jj = 0; jj < pmlDims[1]; jj++){
             for (int ii = 0; ii < pmlDims[0]; ii++){
@@ -67,169 +199,13 @@ bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid){
 
 
 
-   Real xnum, xd;
-   Real xxn, xn;
-
-   Real alpha = 3.0;
-   for (int kk = 0; kk < pmlDims[2] ; kk++){
-      for (int jj = 0; jj < pmlDims[1]; jj++){
-         for (int ii = 0; ii <pmlDims[0]; ii++){
-
-            // Get Global Arrays Indeces
-            pos=pmlGrid.getGlobalIndices(ii,jj,kk);
-            bool doAssign = P::pmlWidthXm>0 &&  pos[0]>start && pos[0]<P::pmlWidthXm+start;
-            if (doAssign){
-               
-               // Get Local  Arrays
-               pmlValue = pmlGrid.get(ii, jj, kk);
-
-               xnum =P::pmlWidthXm-pos[0] +start;
-               xd = P::pmlWidthXm;
-               xxn =xnum/xd;
-               xn =alpha*(xxn*xxn*xxn);
-               pmlValue->at(fsgrids::pml::PGI2)=1/(1+xn);
-               pmlValue->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-
-               xxn=(xnum-0.5)/xd;
-               xn=alpha*(xxn*xxn*xxn);
-               pmlValue->at(fsgrids::pml::PFI1)=xn;
-               pmlValue->at(fsgrids::pml::PFI2)=1/(1+xn);
-               pmlValue->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
-        
-         }
-      
-
-      
-          if (P::pmlWidthXp>0 && pos[0]>globalDims[0]-start- P::pmlWidthXp && pos[0] <=globalDims[0]-start){
-         
-             // Get Local  Arrays
-             pmlValue = pmlGrid.get(ii, jj, kk);
-
-             xnum =start+ P::pmlWidthXp-(globalDims[0]- pos[0]);
-             xd = P::pmlWidthXp;               
-             xxn =xnum/xd;
-             xn =alpha*(xxn*xxn*xxn);
-             pmlValue->at(fsgrids::pml::PGI2)=1/(1+xn);
-             pmlValue->at(fsgrids::pml::PGI3)=(1-xn)/(1+xn);
-
-             xxn=(xnum-0.5)/xd;
-             xn=alpha*(xxn*xxn*xxn);
-             pmlValue->at(fsgrids::pml::PFI1)=xn;
-             pmlValue->at(fsgrids::pml::PFI2)=1/(1+xn);
-             pmlValue->at(fsgrids::pml::PFI3)=(1-xn)/(1+xn);
-
-             }          
-         }
-      }
-   }
-
-
- //Attentuation Along the Y-Dimension
-  //  #pragma omp parallel for collapse(3)
-    //for (int kk = 0; kk < pmlDims[2]; kk++){
-       //for (int jj = 0; jj < pmlDims[1]; jj++){
-          //for (int ii = 0; ii < pmlDims[0]; ii++){
-         
-          //// // Get Global Arrays
-          //pos=pmlGrid.getGlobalIndices(ii,jj,kk);
-         
-         
-         
-          //if (P::pmlWidthYm>0 && pos[1]>=start && pos[1]<P::pmlWidthYm+start ){
-            
-             //// Get Local  Arrays
-             //pmlValue = pmlGrid.get(ii, jj, kk);
-
-             //xnum =P::pmlWidthYm-pos[1]+start;
-             //xd = P::pmlWidthYm;
-             //xxn =xnum/xd;
-             //xn =alpha*(xxn*xxn*xxn);
-             //pmlValue->at(fsgrids::pml::PGJ2)=1/(1+xn);
-             //pmlValue->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
-             //xxn=(xnum-0.5)/xd;
-             //xn=alpha*(xxn*xxn*xxn);
-             //pmlValue->at(fsgrids::pml::PFJ1)=xn;
-             //pmlValue->at(fsgrids::pml::PFJ2)=1/(1+xn);
-             //pmlValue->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
-            
-             //}  
-      
-      
-          //if (P::pmlWidthYp>0 && pos[1]>globalDims[1]-start- P::pmlWidthYp && pos[1] <=globalDims[1]-start){
-         
-             //// Get Local  Arrays
-             //pmlValue = pmlGrid.get(ii, jj, kk);
-
-             //xnum =start+P::pmlWidthYp-(globalDims[1]- pos[1]);
-             //xd = P::pmlWidthYp;
-             //xxn =xnum/xd;
-             //xn =alpha*(xxn*xxn*xxn);
-             //pmlValue->at(fsgrids::pml::PGJ2)=1/(1+xn);
-             //pmlValue->at(fsgrids::pml::PGJ3)=(1-xn)/(1+xn);
-             //xxn=(xnum-0.5)/xd;
-             //xn=alpha*(xxn*xxn*xxn);
-             //pmlValue->at(fsgrids::pml::PFJ1)=xn;
-             //pmlValue->at(fsgrids::pml::PFJ2)=1/(1+xn);
-             //pmlValue->at(fsgrids::pml::PFJ3)=(1-xn)/(1+xn);
-
-             //}              
-          //}
-       //}
-    //}
-
-
-   //Attentuation Along the Z-Dimension
-   // //#pragma omp parallel for collapse(3)
-   // for (int kk = 0; kk < pmlDims[2]; kk++){
-   //    for (int jj = 0; jj < pmlDims[1]; jj++){
-   //       for (int ii = 0; ii < pmlDims[0]; ii++){
-
-   //          // Get Global Arrays
-   //          pos=pmlGrid.getGlobalIndices(ii,jj,kk);
-            
-         
-   //          if (P::pmlWidthZm>0 && pos[2]>=start && pos[2]<P::pmlWidthZm+start ){
-               
-   //             // Get Local  ArraysP::pmlWidthXp>0 &&
-   //             pmlValue = pmlGrid.get(ii, jj, kk);
-
-   //             xnum =P::pmlWidthZm-pos[2]+start;
-   //             xd = P::pmlWidthZm;
-   //             xxn =xnum/xd;
-   //             xn =alpha*(xxn*xxn*xxn);
-   //             pmlValue->at(fsgrids::pml::PGK2)=1/(1+xn);
-   //             pmlValue->at(fsgrids::pml::PGK3)=(1-xn)/(1+xn);
-   //             xxn=(xnum-0.5)/xd;
-   //             xn=alpha*(xxn*xxn*xxn);
-   //             pmlValue->at(fsgrids::pml::PFK1)=xn;
-   //             pmlValue->at(fsgrids::pml::PFK2)=1/(1+xn);
-   //             pmlValue->at(fsgrids::pml::PFK3)=(1-xn)/(1+xn);
-               
-   //             }  
-         
-
-   //          if (P::pmlWidthZp>0 &&pos[2]>globalDims[2]-start- P::pmlWidthZp && pos[2] <=globalDims[2]-start){
-            
-   //             // Get Local  Arrays
-   //             pmlValue = pmlGrid.get(ii, jj, kk);
-
-   //             xnum =start+P::pmlWidthZp-(globalDims[2]- pos[2]);
-   //             xd = P::pmlWidthZp;
-   //             xxn =xnum/xd;
-   //             xn =alpha*(xxn*xxn*xxn);
-   //             pmlValue->at(fsgrids::pml::PGK2)=1/(1+xn);
-   //             pmlValue->at(fsgrids::pml::PGK3)=(1-xn)/(1+xn);
-   //             xxn=(xnum-0.5)/xd;
-   //             xn=alpha*(xxn*xxn*xxn);
-   //             pmlValue->at(fsgrids::pml::PFK1)=xn;
-   //             pmlValue->at(fsgrids::pml::PFK2)=1/(1+xn);
-   //             pmlValue->at(fsgrids::pml::PFK3)=(1-xn)/(1+xn);
-   //          }         
-   //       }
-   //    } 
-   // }  
-
-   // Update Ghost Cells
+   //printf(" pml widths = %d %d %d %d %d %d\n",P::pmlWidthXm,P::pmlWidthXp,P::pmlWidthYm,P::pmlWidthYp,P::pmlWidthZm,P::pmlWidthZp);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthXm,-1,0);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthYm,-1,1);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthZm,-1,2);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthXp, 1,0);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthYp, 1,1);
+   assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthZp, 1,2);
    pmlGrid.updateGhostCells();
 
    return true;

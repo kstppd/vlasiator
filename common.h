@@ -384,6 +384,7 @@ namespace fsgrids {
    };
    
    struct technical {
+      int pmlFlag;
       int sysBoundaryFlag;  /*!< System boundary flags. */
       int sysBoundaryLayer; /*!< System boundary layer index. */
       Real maxFsDt;         /*!< maximum timestep allowed in ordinary space by fieldsolver for this cell**/
@@ -405,6 +406,8 @@ namespace sysboundarytype {
       IONOSPHERE,       /*!< Initially a perfectly conducting sphere. */
       OUTFLOW,          /*!< No fixed conditions on the fields and distribution function. */
       SET_MAXWELLIAN,   /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
+      PMLCELL,
+      NONPMLCELL,
       N_SYSBOUNDARY_CONDITIONS
    };
 }

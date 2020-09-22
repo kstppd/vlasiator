@@ -470,7 +470,7 @@ int main(int argn,char* args[]) {
 
    /*Initialize PML Grid*/
    phiprof::start("Init PML Grid");
-   if (!buildPMLGrid(pmlGrid)){
+   if (!buildPMLGrid(pmlGrid,technicalGrid,mpiGrid)){
       std::cerr<<"PML Failed"<<std::endl;
       abort();
    }
