@@ -189,10 +189,25 @@ bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGr
     for (int kk = 0; kk < pmlDims[2]; kk++){
         for (int jj = 0; jj < pmlDims[1]; jj++){
             for (int ii = 0; ii < pmlDims[0]; ii++){
-               for (int c=0; c<fsgrids::pml::N_PML; c++){
-                  pmlValue=pmlGrid.get(ii,jj,kk);
-                  pmlValue->at(c) = 1.0;
-               }
+            
+               pmlValue=pmlGrid.get(ii,jj,kk);
+               pmlValue->at(fsgrids::pml::PFI1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFI2) = 1.0;
+               pmlValue->at(fsgrids::pml::PFI3) = 1.0;
+               pmlValue->at(fsgrids::pml::PGI2) = 1.0;
+               pmlValue->at(fsgrids::pml::PGI3) = 1.0;
+                
+               pmlValue->at(fsgrids::pml::PFJ1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFJ2) = 1.0;
+               pmlValue->at(fsgrids::pml::PFJ3) = 1.0;
+               pmlValue->at(fsgrids::pml::PGJ2) = 1.0;
+               pmlValue->at(fsgrids::pml::PGJ3) = 1.0;
+                   
+               pmlValue->at(fsgrids::pml::PFK1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFK2) = 1.0;
+               pmlValue->at(fsgrids::pml::PFK3) = 1.0;
+               pmlValue->at(fsgrids::pml::PGK2) = 1.0;
+               pmlValue->at(fsgrids::pml::PGK3) = 1.0;
             }
         }
     }

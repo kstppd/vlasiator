@@ -21,9 +21,7 @@
 #ifndef UPML_H
 #define UPML_H
 
-#include"/home/kostis/dccrg/dccrg_cartesian_geometry.hpp"
-#include"/home/kostis/dccrg/dccrg.hpp"
-//#include "sysboundarycondition.h"
+#include "sysboundarycondition.h"
 #include<vector>
 #include "fsgrid.hpp"
 #include "../definitions.h"

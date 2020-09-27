@@ -479,7 +479,7 @@ object_wrapper.o:  $(DEPS_COMMON)  object_wrapper.h object_wrapper.cpp
 	${CMP} ${CXXFLAGS} ${FLAGS} -c object_wrapper.cpp ${INC_DCCRG} ${INC_ZOLTAN} ${INC_BOOST} ${INC_FSGRID}
 
 upml.o:	sysboundary/upml.h
-	${CMP} ${CXXFLAGS} ${FLAG_OPENMP} ${FLAGS} -c sysboundary/upml.cpp ${INC_FSGRID}
+	${CMP} ${CXXFLAGS} ${FLAG_OPENMP} ${FLAGS} -c sysboundary/upml.cpp ${INC_FSGRID} ${INC_BOOST} ${INC_EIGEN} ${INC_DCCRG} ${INC_ZOLTAN}
 
 # Make executable
 vlasiator: $(OBJS) $(OBJS_FSOLVER)
