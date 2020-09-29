@@ -535,7 +535,9 @@ void calculateEdgeElectricFieldX(
    //Real Ex_SW = By_S*Vz0 - Bz_W*Vy0;
    std::array<Real, fsgrids::pml::N_PML> *pmlGrid0;
    pmlGrid0 = pmlGrid.get(i, j, k);
+
    Real Ex_SW = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2)*(By_S * Vz0 - Bz_W * Vy0);
+   //Real Ex_SW =  pmlGrid0->at(fsgrids::pml::PGJ3)*pmlGrid0->at(fsgrids::pml::PGK3)*Ex_SW  + pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2)*(By_S * Vz0 - Bz_W * Vy0);
    
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -585,7 +587,7 @@ void calculateEdgeElectricFieldX(
    az_pos   = max(ZERO,+Vz0 + c_z);
    maxV = max(maxV, calculateCflSpeed(Vy0, Vz0, vA, vS, vW));
 
-   // Ex and characteristic speeds on j-1 neighbour:
+    //Ex and characteristic speeds on j-1 neighbour:
    Vy0  = moments_SE->at(fsgrids::moments::VY);
    Vz0  = moments_SE->at(fsgrids::moments::VZ);
    
