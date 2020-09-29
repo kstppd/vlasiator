@@ -90,7 +90,16 @@ void propagateMagneticField(
 
             //perBGrid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBX) + pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) * (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
             
-            perBGrid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBX) + pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + pmlGrid0->at(fsgrids::pml::PFK2) * pmlGrid0->at(fsgrids::pml::PFJ2) * (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ))+ pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) *  (  (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) +  (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ))  )  ;
+            //perBGrid0->at(fsgrids::bfield::PERBX) = pmlGrid0->at(fsgrids::pml::PFJ3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBX) + pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + pmlGrid0->at(fsgrids::pml::PFK2) * pmlGrid0->at(fsgrids::pml::PFJ2) * (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ))+ pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1) *  (  (dt / dz) * (EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) +  (dt / dy) * (EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ))  )  ;
+
+            Real CurlE= dt/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + dt/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
+            
+            perBGrid0->at(fsgrids::bfield::PERBX)  =  pmlGrid0->at(fsgrids::pml::PFJ3) * pmlGrid0->at(fsgrids::pml::PFK3)*perBGrid0->at(fsgrids::bfield::PERBX)  +\
+                                                      pmlGrid0->at(fsgrids::pml::PFJ2) * pmlGrid0->at(fsgrids::pml::PFK2)*CurlE+\
+                                                      pmlGrid0->at(fsgrids::pml::PFJ1) * pmlGrid0->at(fsgrids::pml::PFK1)*CurlE;
+
+
+
 
             break;
             
@@ -141,7 +150,15 @@ void propagateMagneticField(
 
             //perBGrid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1) * (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
             
-            perBGrid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX))+  pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1)* (  (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)) )   ;
+            //perBGrid0->at(fsgrids::bfield::PERBY) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3) * perBGrid0->at(fsgrids::bfield::PERBY) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2) * (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX))+  pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1)* (  (dt / dx) * (EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + (dt / dz) * (EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)) )   ;
+
+            Real CurlE= dt/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + dt/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
+            perBGrid0->at(fsgrids::bfield::PERBY)  =  pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFK3)*perBGrid0->at(fsgrids::bfield::PERBY)  +\
+                                                      pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFK2)*CurlE+\
+                                                      pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFK1)*CurlE;
+
+
+
 
             break;
          case RK_ORDER2_STEP1:
@@ -183,8 +200,14 @@ void propagateMagneticField(
             // perBGrid0->at(fsgrids::bfield::PERBZ) += dt/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + dt/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
 
             //perBGrid0->at(fsgrids::bfield::PERBZ) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3) * perBGrid0->at(fsgrids::bfield::PERBZ) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2) * (dt / dy) * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + pmlGrid0->at(fsgrids::pml::PFK1) * pmlGrid0->at(fsgrids::pml::PFJ1)*(dt / dx) * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
-            
-            perBGrid0->at(fsgrids::bfield::PERBZ) = pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3) * perBGrid0->at(fsgrids::bfield::PERBZ) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2) * (dt / dy) * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2)*(dt / dx) * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY))+   pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFJ1) * ((dt / dy) * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + (dt / dx) * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)) ) ;
+          
+            Real CurlE= dt/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + dt/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
+            perBGrid0->at(fsgrids::bfield::PERBZ)  =  pmlGrid0->at(fsgrids::pml::PFI3) * pmlGrid0->at(fsgrids::pml::PFJ3)*perBGrid0->at(fsgrids::bfield::PERBZ)  +\
+                                                      pmlGrid0->at(fsgrids::pml::PFI2) * pmlGrid0->at(fsgrids::pml::PFJ2)*CurlE+\
+                                                      pmlGrid0->at(fsgrids::pml::PFI1) * pmlGrid0->at(fsgrids::pml::PFJ1)*CurlE;
+
+         
+           
 
             break;
          case RK_ORDER2_STEP1:
