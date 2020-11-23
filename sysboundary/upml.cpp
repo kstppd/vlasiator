@@ -49,8 +49,9 @@ bool assingFSGridCells(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid
    std::array<int32_t, 3> pos;
    Real xnum, xd;
    Real xxn, xn;
-   Real alpha = 3.;
-   int start = 2;
+   Real alpha = P::pmlAlpha;
+   typedef Parameters P;
+   int start = P::pmlStart ;
    int enumOrder =5*comp;
    std:: vector<CellID> cells = mpiGrid.get_cells();
    bool doAssign;
@@ -191,19 +192,19 @@ bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGr
             for (int ii = 0; ii < pmlDims[0]; ii++){
             
                pmlValue=pmlGrid.get(ii,jj,kk);
-               pmlValue->at(fsgrids::pml::PFI1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFI1) = 1.0;
                pmlValue->at(fsgrids::pml::PFI2) = 1.0;
                pmlValue->at(fsgrids::pml::PFI3) = 1.0;
                pmlValue->at(fsgrids::pml::PGI2) = 1.0;
                pmlValue->at(fsgrids::pml::PGI3) = 1.0;
                 
-               pmlValue->at(fsgrids::pml::PFJ1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFJ1) = 1.0;
                pmlValue->at(fsgrids::pml::PFJ2) = 1.0;
                pmlValue->at(fsgrids::pml::PFJ3) = 1.0;
                pmlValue->at(fsgrids::pml::PGJ2) = 1.0;
                pmlValue->at(fsgrids::pml::PGJ3) = 1.0;
                    
-               pmlValue->at(fsgrids::pml::PFK1) = 0.0;
+               pmlValue->at(fsgrids::pml::PFK1) = 1.0;
                pmlValue->at(fsgrids::pml::PFK2) = 1.0;
                pmlValue->at(fsgrids::pml::PFK3) = 1.0;
                pmlValue->at(fsgrids::pml::PGK2) = 1.0;
@@ -215,6 +216,7 @@ bool buildPMLGrid(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGr
 
 
    printf(" pml widths = %d %d %d %d %d %d\n",P::pmlWidthXm,P::pmlWidthXp,P::pmlWidthYm,P::pmlWidthYp,P::pmlWidthZm,P::pmlWidthZp);
+   printf(" pml start = %d ,alpha= %f \n",P::pmlStart,P::pmlAlpha);
    assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthXm,-1,0);
    assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthYm,-1,1);
    assingFSGridCells(pmlGrid,technicalGrid,mpiGrid,P::pmlWidthZm,-1,2);

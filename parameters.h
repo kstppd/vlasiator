@@ -150,6 +150,8 @@ struct Parameters {
    static int pmlWidthXm;            /*!< Sets the PML width at the  boundaries in the X dimension*/
    static int pmlWidthYm;            /*!< Sets the PML width at the  boundaries in the Y dimension*/
    static int pmlWidthZm;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
+   static int pmlStart;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
+   static Real pmlAlpha;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
    
     /*! \brief Add the global parameters.
     * 
