@@ -44,6 +44,7 @@
 #include "datareduction/datareducer.h"
 #include "sysboundary/sysboundary.h"
 #include "sysboundary/upml.h"
+#include "sysboundary/upmlNEW.h"
 
 #include "fieldsolver/fs_common.h"
 #include "projects/project.h"
@@ -417,6 +418,12 @@ int main(int argn,char* args[]) {
    FsGrid< fsgrids::technical, 2> technicalGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> pmlGrid(fsGridDimensions, comm, periodicity,gridCoupling);
 
+   ABC::UPML UPML(pmlGrid,technicalGrid,mpiGrid);
+
+
+
+
+
    // Set DX,DY and DZ
    // TODO: This is currently just taking the values from cell 1, and assuming them to be
    // constant throughout the simulation.
@@ -468,13 +475,13 @@ int main(int argn,char* args[]) {
    );
    isSysBoundaryCondDynamic = sysBoundaries.isDynamic();
 
-   /*Initialize PML Grid*/
-   phiprof::start("Init PML Grid");
-   if (!buildPMLGrid(pmlGrid,technicalGrid,mpiGrid)){
-      std::cerr<<"PML Failed"<<std::endl;
-      abort();
-   }
-   phiprof::stop("Init PML Grid");
+   //[>Initialize PML Grid<]
+   //phiprof::start("Init PML Grid");
+   //if (!buildPMLGrid(pmlGrid,technicalGrid,mpiGrid)){
+      //std::cerr<<"PML Failed"<<std::endl;
+      //abort();
+   //}
+   //phiprof::stop("Init PML Grid");
 
    
    const std::vector<CellID>& cells = getLocalCells();
@@ -589,6 +596,10 @@ int main(int argn,char* args[]) {
       phiprof::stop("propagate-velocity-space-dt/2");
 
    }
+   
+   //Reset PML with proper timestep
+   UPML.resetPML(pmlGrid,P::dt);
+
    
    phiprof::stop("Initialization");
 
@@ -843,6 +854,7 @@ int main(int argn,char* args[]) {
                calculateAcceleration(mpiGrid, 0.0);
             }
             
+            UPML.resetPML(pmlGrid,newDt);
             P::dt=newDt;
             
             logFile <<" dt changed to "<<P::dt <<"s, distribution function was half-stepped to real-time and back"<<endl<<writeVerbose;

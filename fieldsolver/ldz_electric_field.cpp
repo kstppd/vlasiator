@@ -532,11 +532,11 @@ void calculateEdgeElectricFieldX(
 
    // Ex and characteristic speeds on this cell:
    // 1st order terms:
-   //Real Ex_SW = By_S*Vz0 - Bz_W*Vy0;
+   Real Ex_SW = By_S*Vz0 - Bz_W*Vy0;
    std::array<Real, fsgrids::pml::N_PML> *pmlGrid0;
    pmlGrid0 = pmlGrid.get(i, j, k);
 
-   Real Ex_SW = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2)*(By_S * Vz0 - Bz_W * Vy0);
+   //Real Ex_SW = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2)*(By_S * Vz0 - Bz_W * Vy0);
    //Real Ex_SW =  pmlGrid0->at(fsgrids::pml::PGJ3)*pmlGrid0->at(fsgrids::pml::PGK3)*Ex_SW  + pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2)*(By_S * Vz0 - Bz_W * Vy0);
    
    // Resistive term
@@ -592,8 +592,8 @@ void calculateEdgeElectricFieldX(
    Vz0  = moments_SE->at(fsgrids::moments::VZ);
    
    // 1st order terms:
-   //Real Ex_SE = By_S*Vz0 - Bz_E*Vy0;
-   Real Ex_SE = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_S * Vz0 - Bz_E * Vy0);
+   Real Ex_SE = By_S*Vz0 - Bz_E*Vy0;
+   //Real Ex_SE = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_S * Vz0 - Bz_E * Vy0);
    
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -649,8 +649,8 @@ void calculateEdgeElectricFieldX(
    Vz0  = moments_NW->at(fsgrids::moments::VZ);
    
    // 1st order terms:
-   //Real Ex_NW    = By_N*Vz0 - Bz_W*Vy0;
-   Real Ex_NW = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_N * Vz0 - Bz_W * Vy0);
+   Real Ex_NW    = By_N*Vz0 - Bz_W*Vy0;
+   //Real Ex_NW = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_N * Vz0 - Bz_W * Vy0);
    
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -706,8 +706,8 @@ void calculateEdgeElectricFieldX(
    Vz0 = moments_NE->at(fsgrids::moments::VZ);
    
    // 1st order terms:
-   //Real Ex_NE    = By_N*Vz0 - Bz_E*Vy0;
-   Real Ex_NE = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_N * Vz0 - Bz_E * Vy0);
+   Real Ex_NE    = By_N*Vz0 - Bz_E*Vy0;
+   //Real Ex_NE = pmlGrid0->at(fsgrids::pml::PGK2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (By_N * Vz0 - Bz_E * Vy0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -902,10 +902,10 @@ void calculateEdgeElectricFieldY(
    
    // Ey and characteristic speeds on this cell:
    // 1st order terms:
-   // Real Ey_SW  = Bz_S*Vx0 - Bx_W*Vz0;
+    Real Ey_SW  = Bz_S*Vx0 - Bx_W*Vz0;
    std::array<Real, fsgrids::pml::N_PML> *pmlGrid0;
    pmlGrid0 = pmlGrid.get(i, j, k);
-   Real Ey_SW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_W * Vz0);
+   //Real Ey_SW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_W * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -961,7 +961,8 @@ void calculateEdgeElectricFieldY(
    Vz0  = moments_SE->at(fsgrids::moments::VZ);
 
    // 1st order terms:
-   Real Ey_SE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_E * Vz0);
+   Real Ey_SE =  (Bz_S * Vx0 - Bx_E * Vz0);
+   //Real Ey_SE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_S * Vx0 - Bx_E * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1017,7 +1018,8 @@ void calculateEdgeElectricFieldY(
    Vx0  = moments_NW->at(fsgrids::moments::VX);
    
    // 1st order terms:
-   Real Ey_NW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_W * Vz0);
+   Real Ey_NW = (Bz_N * Vx0 - Bx_W * Vz0);
+   //Real Ey_NW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_W * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1073,7 +1075,8 @@ void calculateEdgeElectricFieldY(
    Vx0 = moments_NE->at(fsgrids::moments::VX);
    
    // 1st order terms:
-   Real Ey_NE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_E * Vz0);
+   Real Ey_NE = (Bz_N * Vx0 - Bx_E * Vz0);
+   //Real Ey_NE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGK2) * (Bz_N * Vx0 - Bx_E * Vz0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1265,10 +1268,10 @@ void calculateEdgeElectricFieldZ(
 
    // Ez and characteristic speeds on SW cell:
    // 1st order terms:
-   //Real Ez_SW = Bx_S*Vy0 - By_W*Vx0;
+   Real Ez_SW = Bx_S*Vy0 - By_W*Vx0;
    std::array<Real, fsgrids::pml::N_PML> *pmlGrid0;
    pmlGrid0 = pmlGrid.get(i, j, k);
-   Real Ez_SW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_S * Vy0 - By_W * Vx0);
+   //Real Ez_SW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_S * Vy0 - By_W * Vx0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1326,8 +1329,8 @@ void calculateEdgeElectricFieldZ(
    Vy0  = moments_SE->at(fsgrids::moments::VY);
 
    // 1st order terms:
-   //Real Ez_SE = Bx_S*Vy0 - By_E*Vx0;
-   Real Ez_SE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_S * Vy0 - By_E * Vx0);
+   Real Ez_SE = Bx_S*Vy0 - By_E*Vx0;
+   //Real Ez_SE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_S * Vy0 - By_E * Vx0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1383,8 +1386,8 @@ void calculateEdgeElectricFieldZ(
    Vy0  = moments_NW->at(fsgrids::moments::VY);
 
    // 1st order terms:
-   //Real Ez_NW = Bx_N*Vy0 - By_W*Vx0;
-   Real Ez_NW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_N * Vy0 - By_W * Vx0);
+   Real Ez_NW = Bx_N*Vy0 - By_W*Vx0;
+   //Real Ez_NW = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_N * Vy0 - By_W * Vx0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
@@ -1440,8 +1443,8 @@ void calculateEdgeElectricFieldZ(
    Vy0  = moments_NE->at(fsgrids::moments::VY);
 
    // 1st order terms:
-   //Real Ez_NE = Bx_N*Vy0 - By_E*Vx0;
-   Real Ez_NE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_N * Vy0 - By_E * Vx0);
+   Real Ez_NE = Bx_N*Vy0 - By_E*Vx0;
+   //Real Ez_NE = pmlGrid0->at(fsgrids::pml::PGI2) * pmlGrid0->at(fsgrids::pml::PGJ2) * (Bx_N * Vy0 - By_E * Vx0);
 
    // Resistive term
    if (Parameters::resistivity > 0) {
