@@ -6,12 +6,12 @@
 
 
 ABC::UPML::UPML(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid,dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid){
-   std::cout<< "PML built"<<std::endl;
    getParameters();
    classifyCells(pmlGrid,technicalGrid,mpiGrid);
    buildConductivity(pmlGrid,1.0);
    calculateParameters(pmlGrid,1.0);
 
+   std::cout<< "PML built"<<std::endl;
 }
 
 bool ABC::UPML::resetPML(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt){
@@ -85,7 +85,8 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
             }
 
             if(isPmlCellYM){
-               index= widthYM-pos[1]+start;
+               index= widthYM-pos[1]+2*start;
+               val=pmlGrid.get(i,index,k);
                val->at(fsgrids::pml::sigy) = (0.5*1.0/dt)*(pos[1]-start)/widthYM;
             }
             if(isPmlCellYP){
@@ -94,7 +95,8 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
             }
             
             if(isPmlCellZM){
-               index= widthZM-pos[2]-start;
+               index= widthZM-pos[2]+2*start;
+               val=pmlGrid.get(i,j,index);
                val->at(fsgrids::pml::sigz) = (0.5*1.0/dt)*(pos[2]-start)/widthZM;
             }
             if(isPmlCellZP){

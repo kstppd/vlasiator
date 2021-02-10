@@ -25,7 +25,7 @@ AR ?= ar
 #londrillo_delzanna (no other options)
 FIELDSOLVER ?= londrillo_delzanna
 #Add -DFS_1ST_ORDER_SPACE or -DFS_1ST_ORDER_TIME to make the field solver first-order in space or time
-#COMPFLAGS += -DFS_1ST_ORDER_SPACE
+COMPFLAGS += -DFS_1ST_ORDER_SPACE
 COMPFLAGS += -DFS_1ST_ORDER_TIME
 
 
@@ -193,7 +193,7 @@ OBJS = 	version.o memoryallocation.o backgroundfield.o quadr.o dipole.o linedipo
 	Flowthrough.o Fluctuations.o Harris.o KHB.o Larmor.o Magnetosphere.o MultiPeak.o\
 	VelocityBox.o Riemann1.o Shock.o Template.o test_fp.o testAmr.o testHall.o test_trans.o\
 	IPShock.o object_wrapper.o\
-	verificationLarmor.o Shocktest.o grid.o upml.o ioread.o iowrite.o vlasiator.o logger.o\
+	verificationLarmor.o Shocktest.o grid.o upml.o upmlNEW.o ioread.o iowrite.o vlasiator.o logger.o\
 	common.o parameters.o readparameters.o spatial_cell.o mesh_data_container.o\
 	vlasovmover.o $(FIELDSOLVER).o fs_common.o fs_limiters.o gridGlue.o
 
@@ -480,6 +480,9 @@ object_wrapper.o:  $(DEPS_COMMON)  object_wrapper.h object_wrapper.cpp
 
 upml.o:	sysboundary/upml.h
 	${CMP} ${CXXFLAGS} ${FLAG_OPENMP} ${FLAGS} -c sysboundary/upml.cpp ${INC_FSGRID} ${INC_BOOST} ${INC_EIGEN} ${INC_DCCRG} ${INC_ZOLTAN}
+
+upmlNEW.o:	sysboundary/upmlNEW.h
+	${CMP} ${CXXFLAGS} ${FLAG_OPENMP} ${FLAGS} -c sysboundary/upmlNEW.cpp ${INC_FSGRID} ${INC_BOOST} ${INC_EIGEN} ${INC_DCCRG} ${INC_ZOLTAN}
 
 # Make executable
 vlasiator: $(OBJS) $(OBJS_FSOLVER)
