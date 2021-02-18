@@ -108,7 +108,6 @@ void propagateMagneticField(
             break;
             
          case RK_ORDER2_STEP1:
-            std::cout<<"X step 1"<<std::endl;
             perBDt2Grid0 = perBDt2Grid.get(i,j,k);
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j+1,k);
@@ -126,11 +125,9 @@ void propagateMagneticField(
             mHx4= pmlGrid0->at(fsgrids::pml::mHx4);
              //perBDt2Grid0->at(fsgrids::bfield::PERBX) = perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*(1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
             perBDt2Grid0->at(fsgrids::bfield::PERBX) = mHx1*perBDt2Grid0->at(fsgrids::bfield::PERBX) + mHx2*CurlE  + mHx3*pmlGrid0->at(fsgrids::pml::iCEx) + mHx4*pmlGrid0->at(fsgrids::pml::iHx);
-            std::cout<<"X step 1"<<std::endl;
             break;
 
          case RK_ORDER2_STEP2:
-            std::cout<<"X step 2"<<std::endl;
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i,j+1,k);
             EGrid2 = EDt2Grid.get(i,j,k+1);
@@ -149,7 +146,6 @@ void propagateMagneticField(
              //perBGrid0->at(fsgrids::bfield::PERBX) += dt * (1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
              perBGrid0->at(fsgrids::bfield::PERBX) = mHx1*perBGrid0->at(fsgrids::bfield::PERBX) + mHx2*CurlE  + mHx3*pmlGrid0->at(fsgrids::pml::iCEx) + mHx4*pmlGrid0->at(fsgrids::pml::iHx);
 
-            std::cout<<"X step 2"<<std::endl;
 
             break;
             
@@ -185,7 +181,6 @@ void propagateMagneticField(
 
             break;
          case RK_ORDER2_STEP1:
-            std::cout<<"Y step 1"<<std::endl;
             perBDt2Grid0 = perBDt2Grid.get(i,j,k);
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i,j,k+1);
@@ -205,11 +200,9 @@ void propagateMagneticField(
              //perBDt2Grid0->at(fsgrids::bfield::PERBY) = perBGrid0->at(fsgrids::bfield::PERBY) + 0.5*dt*(1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
             perBDt2Grid0->at(fsgrids::bfield::PERBY) = mHy1*perBDt2Grid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
             
-            std::cout<<"Ystep 1"<<std::endl;
             break;
          
          case RK_ORDER2_STEP2:
-            std::cout<<"Y step 2"<<std::endl;
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i,j,k+1);
             EGrid2 = EDt2Grid.get(i+1,j,k);
@@ -228,7 +221,6 @@ void propagateMagneticField(
             //perBGrid0->at(fsgrids::bfield::PERBY) += dt * (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
              perBGrid0->at(fsgrids::bfield::PERBY) = mHy1*perBGrid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
          
-            std::cout<<"Y step 2"<<std::endl;
             break;
          
          
@@ -263,7 +255,6 @@ void propagateMagneticField(
 
             break;
          case RK_ORDER2_STEP1:
-            std::cout<<"Z step 1"<<std::endl;
             perBDt2Grid0 = perBDt2Grid.get(i,j,k);
             EGrid0 = EGrid.get(i,j,k);
             EGrid1 = EGrid.get(i+1,j,k);
@@ -286,11 +277,9 @@ void propagateMagneticField(
              //perBDt2Grid0->at(fsgrids::bfield::PERBZ) = perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5*dt*(1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
             perBDt2Grid0->at(fsgrids::bfield::PERBZ) = mHz1*perBDt2Grid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
             
-            std::cout<<"Z step 1"<<std::endl;
             
             break;
          case RK_ORDER2_STEP2:
-            std::cout<<"Z step 2"<<std::endl;
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i+1,j,k);
             EGrid2 = EDt2Grid.get(i,j+1,k);
@@ -308,7 +297,6 @@ void propagateMagneticField(
            
             //perBGrid0->at(fsgrids::bfield::PERBZ) += dt  * (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
              perBGrid0->at(fsgrids::bfield::PERBZ) = mHz1*perBGrid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
-            std::cout<<"Z step 2"<<std::endl;
             break;
          default:
             std::cerr << __FILE__ << ":" << __LINE__ << ":" << "Invalid RK case." << std::endl;

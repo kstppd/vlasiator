@@ -31,6 +31,18 @@ bool ABC::UPML::getParameters(){
    this->widthZM=P::pmlWidthZm;
    this->widthZP=P::pmlWidthZp;
    this->start=P::pmlStart;
+   this->alpha=P::pmlAlpha;
+   this-> logcells=P::pmlCells;
+   std::cout<< "--------PML layers--------"<<std::endl;
+   std::cout<< "start-\t"<<this->start<<std::endl;
+   std::cout<< "alpha\t"<<this->alpha<<std::endl;
+   std::cout<< "x-\t"<<this->widthXM<<std::endl;
+   std::cout<< "x+\t"<<this->widthXP<<std::endl;
+   std::cout<< "y-\t"<<this->widthYM<<std::endl;
+   std::cout<< "y+\t"<<this->widthYP<<std::endl;
+   std::cout<< "z-\t"<<this->widthZM<<std::endl;
+   std::cout<< "z+\t"<<this->widthZP<<std::endl;
+   std::cout<< "---------------------------"<<std::endl;
 
    return true;
 }
@@ -75,33 +87,31 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
             if(isPmlCellXM){
                index= widthXM-pos[0]+2*start;
                val=pmlGrid.get(index,j,k);
-               val->at(fsgrids::pml::sigx) =1.0* (0.5*1.0/dt)*(pos[0]-start)/widthXM;
-               std::cout<< val->at(fsgrids::pml::sigx)<<" "<<i<<" "<<index<<std::endl;
+               val->at(fsgrids::pml::sigx) =1.0* (alpha*1.0/dt)*(pos[0]-start)/widthXM;
             }
             if(isPmlCellXP){
                index=pos[0]-(globalDims[0]-start-widthXP-1);
-               val->at(fsgrids::pml::sigx) = (0.5*1.0/dt)*index/widthXP;
-               std::cout<< val->at(fsgrids::pml::sigx)<<" "<<i<<" "<<index<<std::endl;
+               val->at(fsgrids::pml::sigx) = (alpha*1.0/dt)*index/widthXP;
             }
 
             if(isPmlCellYM){
                index= widthYM-pos[1]+2*start;
                val=pmlGrid.get(i,index,k);
-               val->at(fsgrids::pml::sigy) = (0.5*1.0/dt)*(pos[1]-start)/widthYM;
+               val->at(fsgrids::pml::sigy) = (alpha*1.0/dt)*(pos[1]-start)/widthYM;
             }
             if(isPmlCellYP){
                index=pos[1]-(globalDims[1]-start-widthYP-1);
-               val->at(fsgrids::pml::sigy) = (0.5*1.0/dt)*index/widthYP;
+               val->at(fsgrids::pml::sigy) = (alpha*1.0/dt)*index/widthYP;
             }
             
             if(isPmlCellZM){
                index= widthZM-pos[2]+2*start;
                val=pmlGrid.get(i,j,index);
-               val->at(fsgrids::pml::sigz) = (0.5*1.0/dt)*(pos[2]-start)/widthZM;
+               val->at(fsgrids::pml::sigz) = (alpha*1.0/dt)*(pos[2]-start)/widthZM;
             }
             if(isPmlCellZP){
                index=pos[2]-(globalDims[2]-start-widthZP-1);
-               val->at(fsgrids::pml::sigz) = (0.5*1.0/dt)*index/widthZP;
+               val->at(fsgrids::pml::sigz) = (alpha*1.0/dt)*index/widthZP;
             }
 
          }
@@ -155,19 +165,19 @@ bool ABC::UPML::calculateParameters(FsGrid <std::array<Real, fsgrids::pml::N_PML
 
             val->at(fsgrids::pml::mDx0) =  (1.0/dt)   + (Sy+Sz)/(2.0*epsilon) +(Sy*Sz)*dt/(4.0*epsilon*epsilon);
             val->at(fsgrids::pml::mDx1) =  (1.0/val->at(fsgrids::pml::mDx0)) * ((1/dt) - (Sy+Sz)/(2.0*epsilon) -(Sy*Sz)*dt/(4.0*epsilon*epsilon));
-            val->at(fsgrids::pml::mDx2) =  (1.0/val->at(fsgrids::pml::mDx0)) * (c);
+            val->at(fsgrids::pml::mDx2) =  (1./dt)*(1.0/val->at(fsgrids::pml::mDx0)) * (c);
             val->at(fsgrids::pml::mDx3) =  (1.0/val->at(fsgrids::pml::mDx0)) * (c*dt*Sx /epsilon);
             val->at(fsgrids::pml::mDx4) =  (1.0/val->at(fsgrids::pml::mDx0)) * (dt*Sy*Sz /epsilon*epsilon);
 
             val->at(fsgrids::pml::mDy0) =  (1.0/dt)   + (Sx+Sz)/(2.0*epsilon) +(Sx*Sz)*dt/(4.0*epsilon*epsilon);
             val->at(fsgrids::pml::mDy1) =  (1.0/val->at(fsgrids::pml::mDy0)) * ((1/dt) - (Sx+Sz)/(2.0*epsilon) -(Sx*Sz)*dt/(4.0*epsilon*epsilon));
-            val->at(fsgrids::pml::mDy2) =  (1.0/val->at(fsgrids::pml::mDy0)) * (c);
+            val->at(fsgrids::pml::mDy2) =  (1./dt)*(1.0/val->at(fsgrids::pml::mDy0)) * (c);
             val->at(fsgrids::pml::mDy3) =  (1.0/val->at(fsgrids::pml::mDy0)) * (c*dt*Sy /epsilon);
             val->at(fsgrids::pml::mDy4) =  (1.0/val->at(fsgrids::pml::mDy0)) * (dt*Sx*Sz /epsilon*epsilon) ;
  
             val->at(fsgrids::pml::mDz0) =  (1.0/dt)   + (Sx+Sy)/(2.0*epsilon) +(Sx*Sy)*dt/(4.0*epsilon*epsilon);
             val->at(fsgrids::pml::mDz1) =  (1.0/val->at(fsgrids::pml::mDz0)) * ((1/dt) - (Sx+Sy)/(2.0*epsilon) -(Sx*Sy)*dt/(4.0*epsilon*epsilon));
-            val->at(fsgrids::pml::mDz2) =  (1.0/val->at(fsgrids::pml::mDz0)) * (c);
+            val->at(fsgrids::pml::mDz2) =  ((1./dt)*1.0/val->at(fsgrids::pml::mDz0)) * (c);
             val->at(fsgrids::pml::mDz3) =  (1.0/val->at(fsgrids::pml::mDz0)) * (c*dt*Sz /epsilon);
             val->at(fsgrids::pml::mDz4) =  (1.0/val->at(fsgrids::pml::mDz0)) * (dt*Sx*Sy /epsilon*epsilon);
              
@@ -241,7 +251,7 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       
       doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
 
-      if(doAssign) {
+      if(doAssign && logcells) {
          mpiGrid[cells[i]]->pmlFlag = sysboundarytype::PMLCELL ;
       }
    }

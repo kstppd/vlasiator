@@ -152,6 +152,7 @@ struct Parameters {
    static int pmlWidthZm;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
    static int pmlStart;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
    static Real pmlAlpha;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
+   static bool  pmlCells;            /*!< Sets the PML width at the  boundaries in the Z dimension*/
    
     /*! \brief Add the global parameters.
     * 

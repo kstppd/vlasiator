@@ -60,6 +60,8 @@ int P::pmlWidthYm = 0;
 int P::pmlWidthZm = 0;
 int P::pmlStart = 2;
 Real P::pmlAlpha = 3.0;
+bool P::pmlCells = false;
+
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -222,6 +224,7 @@ bool Parameters::addParameters(){
    Readparameters::add("PML.WidthZm", "Width of PML areas in Z.", 0);
    Readparameters::add("PML.Start", "Width of PML areas in Z.", 2);
    Readparameters::add("PML.Alpha", "Width of PML areas in Z.", 3.);
+   Readparameters::add("PML.Cells", "Width of PML areas in Z.", 0);
 
 
    // Vlasov solver parameters
@@ -535,6 +538,7 @@ bool Parameters::getParameters(){
    Readparameters::get("PML.WidthZm", P::pmlWidthZm);
    Readparameters::get("PML.Start", P::pmlStart);
    Readparameters::get("PML.Alpha", P::pmlAlpha);
+   Readparameters::get("PML.Cells", P::pmlCells);
    // Get Vlasov solver parameters
    Readparameters::get("vlasovsolver.maxSlAccelerationRotation",P::maxSlAccelerationRotation);
    Readparameters::get("vlasovsolver.maxSlAccelerationSubcycles",P::maxSlAccelerationSubcycles);
