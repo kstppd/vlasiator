@@ -513,7 +513,8 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
       int index,my_x,my_y,my_z;
       orderedData->clear();
 
-      //Read into buffer
+      
+
       for (int task=0; task<numtasks; task++){
 
          my_x=task/thisDomainDecomp[2]/thisDomainDecomp[1];
@@ -533,53 +534,31 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
          taskEnd[1]= taskStart[1]+taskSize[1];
          taskEnd[2]= taskStart[2]+taskSize[2];
          
-         readSize= taskSize[0] * taskSize[1] * taskSize[2];
-         std::vector<Real> readIn(variableVectorSize * variableDataSize*readSize);
+         readSize=  taskSize[0] * taskSize[1] * taskSize[2] ;
+         std::vector<Real> buffer(readSize*variableVectorSize);
+        
+         if (vlsvReader.readArray("VARIABLE", variableAttributes, readOffset, readSize,  (char*)buffer.data()) == false) {
+            cerr << "ERROR, failed to read variable '" << _varToExtract << "' at " << __FILE__ << " " << __LINE__ << endl;
+            variableSuccess = false; 
+            break;
+         }
 
-         
-         int counter2=0;
-         uint64_t globalindex;
-         int64_t counter=0;
-         for(int z=taskStart[2]; z<taskEnd[2]; z++) {
-            for(int y=taskStart[1]; y<taskEnd[1]; y++) {
-               for(int x=taskStart[0]; x<taskEnd[0]; x++) {
-
-                  //Get global index
-                  globalindex= x + y*xcells + z*xcells*ycells;
-
-                  if (vlsvReader.readArray("VARIABLE", variableAttributes, readOffset+counter,1, variableBuffer) == false) {
-                     cerr << "ERROR, failed to read variable '" << _varToExtract << "' at " << __FILE__ << " " << __LINE__ << endl;
-                     variableSuccess = false; 
-                     abort();
-                     break;
+         uint64_t globalindex,counter=0;;
+         for (int z=taskStart[2]; z<taskEnd[2]; z++){
+               for (int y=taskStart[1]; y< taskEnd[1]; y++){
+                  for (int x=taskStart[0]; x<taskEnd[0]; x++){
+                     globalindex= x + y*xcells + z*xcells*ycells;
+                     Real data;
+                     memcpy(&data, &buffer[counter+compToExtract], sizeof(Real));
+                     orderedData->insert(pair<uint64_t, Real>(globalindex, data));
+                     std::cerr<<data<<std::endl;
+                     counter+=variableVectorSize;
                   }
-
-                  // Get the variable value
-                  Real extract = NAN;
-
-                  switch (variableDataType) {
-                     case datatype::type::FLOAT:
-                        if(variableDataSize == sizeof(float)) extract = (Real)(variablePtrFloat[compToExtract]);
-                        if(variableDataSize == sizeof(double)) extract = (Real)(variablePtrDouble[compToExtract]);
-                        break;
-                     case datatype::type::UINT:
-                        extract = (Real)(variablePtrUint[compToExtract]);
-                        break;
-                     case datatype::type::INT:
-                        extract = (Real)(variablePtrInt[compToExtract]);
-                        break;
-                     case datatype::type::UNKNOWN:
-                        cerr << "ERROR, BAD DATATYPE AT " << __FILE__ << " " << __LINE__ << endl;
-                        break;
-                  }
-                  orderedData->insert(pair<uint64_t, Real>(globalindex, extract));
-                  counter++;
-               
                }
             }
-         }
          readOffset+=readSize;
-      }
+     }
+
    }else{
     cerr<<"meshName not recognized\t" << __FILE__ << " " << __LINE__ <<endl;
     abort();
