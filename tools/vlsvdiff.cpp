@@ -421,14 +421,13 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
       cerr << "ERROR, failed to get array info for '" << _varToExtract << "' at " << __FILE__ << " " << __LINE__ << endl;
       return false;
    }
+   
+   if (gridName==gridType::SpatialGrid) {
       char *variableBuffer = new char[variableVectorSize * variableDataSize];
       float *variablePtrFloat = reinterpret_cast<float *>(variableBuffer);
       double *variablePtrDouble = reinterpret_cast<double *>(variableBuffer);
       uint *variablePtrUint = reinterpret_cast<uint *>(variableBuffer);
       int *variablePtrInt = reinterpret_cast<int *>(variableBuffer);
-
-
-   if (gridName==gridType::SpatialGrid){
   
       // Read the mesh array one node (of a spatial cell) at a time
       // and create a map which contains each cell's CellID and variable to be extracted
@@ -488,9 +487,9 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
          if (storeCellOrder == true) {
             cellOrder[CellID] = i;
          }
-       }
-  
-   }else if (gridName==gridType::fsgrid){
+      }
+      delete variableBuffer;
+   } else if (gridName==gridType::fsgrid) {
       
 
       // Get Spatial Grid's  max refinement Level
@@ -602,9 +601,57 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
                }
             }
          readOffset+=readSize;
+      }
+   } else if (gridName==gridType::ionosphere) {
+      char *variableBuffer = new char[variableArraySize * variableVectorSize * variableDataSize];
+      float *variablePtrFloat = reinterpret_cast<float *>(variableBuffer);
+      double *variablePtrDouble = reinterpret_cast<double *>(variableBuffer);
+      uint *variablePtrUint = reinterpret_cast<uint *>(variableBuffer);
+      int *variablePtrInt = reinterpret_cast<int *>(variableBuffer);
+      
+      if (compToExtract + 1 > variableVectorSize) {
+         cerr << "ERROR invalid component, this variable has size " << variableVectorSize << endl;
+         abort();
+      }
+      
+      if (storeCellOrder == true) {
+         cellOrder.clear();
+      }
+      
+      orderedData->clear();
+      
+      if (vlsvReader.readArray("VARIABLE", variableAttributes, 0, variableArraySize, variableBuffer) == false) {
+         cerr << "ERROR, failed to read variable '" << _varToExtract << "' at " << __FILE__ << " " << __LINE__ << endl;
+         variableSuccess = false;
+      }
+      
+      for (uint64_t i=0; i<variableArraySize; ++i) {
+         // Get the variable value
+         Real extract = NAN;
          
-     }
-   }else{
+         switch (variableDataType) {
+            case datatype::type::FLOAT:
+               if(variableDataSize == sizeof(float)) extract = (Real)(variablePtrFloat[i*variableVectorSize + compToExtract]);
+               if(variableDataSize == sizeof(double)) extract = (Real)(variablePtrDouble[i*variableVectorSize + compToExtract]);
+               break;
+            case datatype::type::UINT:
+               extract = (Real)(variablePtrUint[i*variableVectorSize + compToExtract]);
+               break;
+            case datatype::type::INT:
+               extract = (Real)(variablePtrInt[i*variableVectorSize + compToExtract]);
+               break;
+            case datatype::type::UNKNOWN:
+               cerr << "ERROR, BAD DATATYPE AT " << __FILE__ << " " << __LINE__ << endl;
+               break;
+         }
+         // Put those into the map
+         orderedData->insert(pair<uint64_t, Real>(i, extract));
+         if (storeCellOrder == true) {
+            cellOrder[i] = i;
+         }
+      }
+      delete variableBuffer;
+   } else {
     cerr<<"meshName not recognized\t" << __FILE__ << " " << __LINE__ <<endl;
     abort();
    }
@@ -615,7 +662,6 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
    if (variableSuccess == false) {
       cerr << "ERROR reading array VARIABLE " << varToExtract << endl;
    }
-   delete variableBuffer;
    return meshSuccess && variableSuccess;
 }
 
@@ -761,14 +807,12 @@ bool pDistance(const map<uint, Real>& orderedData1,
             value = abs(it1->second - it2->second);
             *absolute = max(*absolute, value);
             length    = max(length, abs(it1->second));
-         
-            }
-         if (gridName==gridType::SpatialGrid){  
+         }
+         if (gridName==gridType::SpatialGrid) {
             array[cellOrder.at(it1->first)] = value;
-         }else if (gridName==gridType::fsgrid) {   
-
+         } else if (gridName==gridType::fsgrid || gridName==gridType::ionosphere) {
             array.at(it1->first)=value;
-            }  
+         }
       }
    } else if (p == 1) {
       for (map<uint,Real>::const_iterator it1=orderedData1.begin(); it1!=orderedData1.end(); ++it1) {
@@ -778,13 +822,12 @@ bool pDistance(const map<uint, Real>& orderedData1,
             value = abs(it1->second - it2->second);
             *absolute += value;
             length    += abs(it1->second);
-         
-            }
-         if (gridName==gridType::SpatialGrid){  
+         }
+         if (gridName==gridType::SpatialGrid) {
             array[cellOrder.at(it1->first)] = value;
-         }else if (gridName==gridType::fsgrid){   
+         } else if (gridName==gridType::fsgrid || gridName==gridType::ionosphere) {
             array[it1->first]=value;
-            }  
+         }
       }
    } else {
       for (map<uint,Real>::const_iterator it1=orderedData1.begin(); it1!=orderedData1.end(); ++it1) {
@@ -794,13 +837,12 @@ bool pDistance(const map<uint, Real>& orderedData1,
             value = pow(abs(it1->second - it2->second), p);
             *absolute += value;
             length    += pow(abs(it1->second), p);
-         
-            }
-         if (gridName==gridType::SpatialGrid){  
+         }
+         if (gridName==gridType::SpatialGrid) {
             array[cellOrder.at(it1->first)] = pow(value,1.0/p);
-         }else if (gridName==gridType::fsgrid){   
+         }else if (gridName==gridType::fsgrid || gridName==gridType::ionosphere) {
             array[it1->first]=pow(value,1.0/p);
-            }  
+         }
       }
       *absolute = pow(*absolute, 1.0 / p);
       length = pow(length, 1.0 / p);
@@ -1812,13 +1854,13 @@ int main(int argn,char* args[]) {
    
 
    //Figure out Meshname
-   if (attributes["--meshname"] == "SpatialGrid") { 
-      gridName=gridType::SpatialGrid ;
-   }else if (attributes["--meshname"]=="fsgrid"){
-      gridName=gridType::fsgrid ;
-   }else if (attributes["--meshname"]=="ionosphere"){
-      gridName=gridType::ionosphere ;
-   }else{
+   if (attributes["--meshname"] == "SpatialGrid") {
+      gridName=gridType::SpatialGrid;
+   } else if (attributes["--meshname"]=="fsgrid") {
+      gridName=gridType::fsgrid;
+   } else if (attributes["--meshname"]=="ionosphere") {
+      gridName=gridType::ionosphere;
+   } else {
       std::cout<<attributes["--meshname"]<<std::endl;
       std::cerr<<"Wrong grid type"<<std::endl;
       abort();
