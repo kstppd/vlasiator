@@ -7,7 +7,7 @@
 
 ABC::UPML::UPML(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid,dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid){
    getParameters();
-   // classifyCells(pmlGrid,technicalGrid,mpiGrid);
+   classifyCells(pmlGrid,technicalGrid,mpiGrid);
    buildConductivity(pmlGrid,1.0);
    calculateParameters(pmlGrid,1.0);
 
@@ -117,6 +117,7 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
          }
       }
    }
+   pmlGrid.updateGhostCells();
 
    return true;
 }
@@ -186,6 +187,7 @@ bool ABC::UPML::calculateParameters(FsGrid <std::array<Real, fsgrids::pml::N_PML
       }
    }
 
+   pmlGrid.updateGhostCells();
 
    return true;
 }
@@ -266,6 +268,6 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       }
    }
 
-
+   pmlGrid.updateGhostCells();
    return true;
 }
