@@ -7,7 +7,7 @@
 
 ABC::UPML::UPML(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid,dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid){
    getParameters();
-   classifyCells(pmlGrid,technicalGrid,mpiGrid);
+   // classifyCells(pmlGrid,technicalGrid,mpiGrid);
    buildConductivity(pmlGrid,1.0);
    calculateParameters(pmlGrid,1.0);
 
@@ -220,15 +220,20 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
             isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP && pos[2]<=globalDims[2]-start; 
             
             doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
+            technicalGrid.get(i, j, k)->pmlFlag = 0;
+                // printf("-> %i %i %i %i %i %i \n ", isPmlCellXP, isPmlCellXM, isPmlCellYP, isPmlCellYM, isPmlCellZP, isPmlCellZM);
 
-            if (doAssign){
-               technicalGrid.get(i,j,k)->pmlFlag=sysboundarytype::PMLCELL;
+                if (doAssign)
+            {
+               // std::cerr<< "I am a PML FSGRID cell at "<< i<<" "<<j<<" "<<k<<std::endl;
+               technicalGrid.get(i,j,k)->pmlFlag=1;
+               // technicalGrid.get(i, j, k)->sysBoundaryFlag = sysboundarytype::PMLCELL;
             }
-
          }
       }
    }
 
+   
 
    //Assing DCCRG Cells
    for(uint i=0; i<cells.size(); i++) {
@@ -241,18 +246,23 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       creal y = cellParams[CellParams::YCRD] + 0.5*dy;
       creal z = cellParams[CellParams::ZCRD] + 0.5*dz;
       std::array<creal,3> p={x,y,z};
-
-      isPmlCellXM=widthXM>0 && p[0]>=start && p[0]<=widthXM + start;
-      isPmlCellXP=widthXP>0 && p[0]>globalDims[0]-start-widthXP && p[0]<=globalDims[0]-start; 
-      isPmlCellYM=widthYM>0 && p[1]>=start && p[1]<widthYM + start;
-      isPmlCellYP=widthYP>0 && p[1]>globalDims[1]-start-widthYP && p[1]<=globalDims[1]-start; 
-      isPmlCellZM=widthZM>0 && p[2]>=start && p[2]<widthZM + start;
-      isPmlCellZP=widthZP>0 && p[2]>globalDims[2]-start-widthZP && p[2]<=globalDims[2]-start; 
+      std::array<int32_t, 3> pos{ (x-Parameters::xmin)/dx ,(y-Parameters::ymin)/dy ,(z-Parameters::zmin)/dz  };
       
-      doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
 
-      if(doAssign && logcells) {
-         mpiGrid[cells[i]]->pmlFlag = sysboundarytype::PMLCELL ;
+      isPmlCellXM = widthXM > 0 && pos[0] >= start && pos[0] <= widthXM + start;
+      isPmlCellXP = widthXP > 0 && pos[0] > globalDims[0] - start - widthXP && pos[0] <= globalDims[0] - start;
+      isPmlCellYM = widthYM > 0 && pos[1] >= start && pos[1] < widthYM + start;
+      isPmlCellYP = widthYP > 0 && pos[1] > globalDims[1] - start - widthYP && pos[1] <= globalDims[1] - start;
+      isPmlCellZM = widthZM > 0 && pos[2] >= start && pos[2] < widthZM + start;
+      isPmlCellZP = widthZP > 0 && pos[2] > globalDims[2] - start - widthZP && pos[2] <= globalDims[2] - start;
+
+      // printf("-> %i %i %i %i %i %i \n " , isPmlCellXP, isPmlCellXM,  isPmlCellYP, isPmlCellYM, isPmlCellZP, isPmlCellZM);
+      doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
+      mpiGrid[cells[i]]->pmlFlag = 0;
+
+      if(doAssign && this->logcells) {
+         // std::cerr << "I am a PML MPIGRID cell at " << x << " " << y << " " << z << std::endl;
+         mpiGrid[cells[i]]->pmlFlag = 1 ;
       }
    }
 

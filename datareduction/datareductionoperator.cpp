@@ -276,6 +276,31 @@ namespace DRO {
    }
 
 
+   // PmlType
+   PmlType::PmlType(): DataReductionOperator() { }
+   PmlType::~PmlType() { }
+   
+   bool PmlType::getDataVectorInfo(std::string& dataType,unsigned int& dataSize,unsigned int& vectorSize) const {
+      dataType = "int";
+      dataSize = sizeof(int);
+      vectorSize = 1;
+      return true;
+   }
+   
+   std::string PmlType::getName() const {return "pmltype";}
+   
+   bool PmlType::reduceData(const SpatialCell* cell,char* buffer) {
+      const char* ptr = reinterpret_cast<const char*>(&pmlType);
+      for (uint i = 0; i < sizeof(int); ++i) buffer[i] = ptr[i];
+      return true;
+   }
+   
+   bool PmlType::setSpatialCell(const SpatialCell* cell) {
+      pmlType = (int)cell->pmlFlag;
+      return true;
+   }
+
+
       // BoundaryLayer
    BoundaryLayer::BoundaryLayer(): DataReductionOperator() { }
    BoundaryLayer::~BoundaryLayer() { }

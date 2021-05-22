@@ -599,8 +599,8 @@ int main(int argn,char* args[]) {
    
    //Reset PML with proper timestep
    UPML.resetPML(pmlGrid,P::dt);
+   UPML.classifyCells(pmlGrid, technicalGrid, mpiGrid);
 
-   
    phiprof::stop("Initialization");
 
    // ***********************************

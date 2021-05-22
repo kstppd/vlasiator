@@ -10,8 +10,6 @@
 namespace ABC{
    
    
-   
-   
    class UPML{
 
       public:
@@ -20,22 +18,16 @@ namespace ABC{
          int widthXP,widthXM,widthYP,widthYM,widthZP,widthZM,start;
          Real alpha;
          bool logcells;
+         bool classifyCells(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
+                            FsGrid<fsgrids::technical, 2> &technicalGrid,
+                            dccrg::Dccrg<spatial_cell::SpatialCell, dccrg::Cartesian_Geometry> &mpiGrid);
+
       private:
          bool calculateParameters(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt);
          bool buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt);
          bool getParameters();
-         bool classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,
-                               FsGrid< fsgrids::technical, 2> & technicalGrid,
-                               dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid);
+         
 
    };
-
-
-
-
-
-
-
-
 
 };

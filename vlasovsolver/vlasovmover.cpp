@@ -287,7 +287,7 @@ void calculateSpatialTranslation(
    // Figure out target spatial cells, result
    // independent of particle species.
    for (size_t c=0; c<localCells.size(); ++c) {
-      if (mpiGrid[localCells[c]]->sysBoundaryFlag == sysboundarytype::NOT_SYSBOUNDARY) {
+      if (mpiGrid[localCells[c]]->sysBoundaryFlag == sysboundarytype::NOT_SYSBOUNDARY && mpiGrid[localCells[c]]->pmlFlag==0) {
          local_target_cells.push_back(localCells[c]);
       }
    }
@@ -473,7 +473,12 @@ void calculateAcceleration(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
           SpatialCell* SC = mpiGrid[cells[c]];
           const vmesh::VelocityMesh<vmesh::GlobalID,vmesh::LocalID>& vmesh = SC->get_velocity_mesh(popID);
           // disregard boundary cells, in preparation for acceleration 
-          if (SC->sysBoundaryFlag == sysboundarytype::NOT_SYSBOUNDARY || SC->pmlFlag != sysboundarytype::PMLCELL ) {
+          if (SC->sysBoundaryFlag == sysboundarytype::NOT_SYSBOUNDARY && SC->pmlFlag==0  ) {
+
+             if (SC->pmlFlag==1){
+               //  std::cerr<< "I am a pml cell about to be accelerated"<<std::endl;
+             }
+
              if(vmesh.size() != 0){
                 //do not propagate spatial cells with no blocks
                 propagatedCells.push_back(cells[c]);
