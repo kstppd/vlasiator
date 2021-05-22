@@ -15,6 +15,12 @@ ABC::UPML::UPML(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGri
 }
 
 bool ABC::UPML::resetPML(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt){
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   if (myRank == MASTER_RANK){
+      logFile<<" (PML)  Reseting Parameters..."<<"dt="<<dt<<std::endl;
+   }
    buildConductivity(pmlGrid,dt);
    calculateParameters(pmlGrid,dt);
    return true;
