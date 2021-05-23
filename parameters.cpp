@@ -224,6 +224,7 @@ bool Parameters::addParameters(){
    Readparameters::add("PML.WidthYm", "Width of PML areas in Y.", 0);
    Readparameters::add("PML.WidthZm", "Width of PML areas in Z.", 0);
    Readparameters::add("PML.Start", "Width of PML areas in Z.", 2);
+   Readparameters::add("PML.Offset", "Width of PML areas in Z.", 2);
    Readparameters::add("PML.Alpha", "Width of PML areas in Z.", 3.);
    Readparameters::add("PML.Cells", "Width of PML areas in Z.", 0);
 
