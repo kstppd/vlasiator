@@ -91,6 +91,8 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
    //Now let's fill in the conductivity tensors based on the cfg file
    bool isPmlCellXM,isPmlCellXP,isPmlCellYM,isPmlCellYP,isPmlCellZM,isPmlCellZP;
    int index;
+   std::array<int32_t,3> maxCells={  Parameters::xcells_ini ,Parameters::ycells_ini ,Parameters::zcells_ini };
+
    
    for (int k=0; k < localDims[2];k++){
       for (int j=0; j < localDims[1]; j++){
@@ -98,10 +100,10 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
             pos=pmlGrid.getGlobalIndices(i,j,k);
             isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
             isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start && pos[0]<this->swOffset ;
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<this->swOffset ; 
-            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<this->swOffset ;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<this->swOffset ; 
+            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
+            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
 
             val=pmlGrid.get(i,j,k);
 
@@ -227,21 +229,25 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
    std:: vector<CellID> cells = mpiGrid.get_cells();
 
    //Now let's fill in the conductivity tensors based on the cfg file
+
    bool isPmlCellXM,isPmlCellXP,isPmlCellYM,isPmlCellYP,isPmlCellZM,isPmlCellZP;
    bool doAssign;
+  
+   std::array<int32_t,3> maxCells={  Parameters::xcells_ini ,Parameters::ycells_ini ,Parameters::zcells_ini };
    
    //Assign FsGrid cells
    for (int k=0; k < localDims[2];k++){
       for (int j=0; j < localDims[1]; j++){
          for (int i=0; i< localDims[0]; i++){
             pos=pmlGrid.getGlobalIndices(i,j,k);
+
             isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
             isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start && pos[0]<this->swOffset ;
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<this->swOffset ; 
-            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<this->swOffset ;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<this->swOffset ; 
- 
+            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
+            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
+
 
             
             doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
@@ -273,13 +279,14 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       std::array<creal,3> p={x,y,z};
       #warning "TODO: Fix casting below"
       std::array<int32_t, 3> pos{ (x-Parameters::xmin)/dx ,(y-Parameters::ymin)/dy ,(z-Parameters::zmin)/dz  };
+      std::array<int32_t,3> maxCells={ (Parameters::xmax - Parameters::xmin)/dx,(Parameters::ymax - Parameters::ymin)/dy, (Parameters::zmax - Parameters::zmin)/dz};
 
       isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
       isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-      isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start && pos[0]<this->swOffset ;
-      isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<this->swOffset ; 
-      isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<this->swOffset ;
-      isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<this->swOffset ; 
+      isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
+      isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
+      isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
+      isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
 
 
 
