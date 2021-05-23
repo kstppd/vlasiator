@@ -39,20 +39,24 @@ bool ABC::UPML::getParameters(){
    this->start=P::pmlStart;
    this->alpha=P::pmlAlpha;
    this-> logcells=P::pmlCells;
-   std::cout<< "--------PML layers--------"<<std::endl;
-   std::cout<< "start-\t"<<this->start<<std::endl;
-   std::cout<< "alpha\t"<<this->alpha<<std::endl;
-   std::cout<< "x-\t"<<this->widthXM<<std::endl;
-   std::cout<< "x+\t"<<this->widthXP<<std::endl;
-   std::cout<< "y-\t"<<this->widthYM<<std::endl;
-   std::cout<< "y+\t"<<this->widthYP<<std::endl;
-   std::cout<< "z-\t"<<this->widthZM<<std::endl;
-   std::cout<< "z+\t"<<this->widthZP<<std::endl;
-   std::cout<< "---------------------------"<<std::endl;
 
-   return true;
-}
-
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   if (myRank == MASTER_RANK){
+         std::cout << "--------PML layers--------" << std::endl;
+         std::cout << "start-\t" << this->start << std::endl;
+         std::cout << "alpha\t" << this->alpha << std::endl;
+         std::cout << "x-\t" << this->widthXM << std::endl;
+         std::cout << "x+\t" << this->widthXP << std::endl;
+         std::cout << "y-\t" << this->widthYM << std::endl;
+         std::cout << "y+\t" << this->widthYP << std::endl;
+         std::cout << "z-\t" << this->widthZM << std::endl;
+         std::cout << "z+\t" << this->widthZP << std::endl;
+         std::cout << "ACC " << this->logcells << std::endl;
+         std::cout << "---------------------------" << std::endl;
+   }
+      return true;
+   }
 
 bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt){
 
@@ -81,12 +85,12 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
       for (int j=0; j < localDims[1]; j++){
          for (int i=0; i< localDims[0]; i++){
             pos=pmlGrid.getGlobalIndices(i,j,k);
-            isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<=widthXM + start;
-            isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP && pos[0]<=globalDims[0]-start; 
+            isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
+            isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
             isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start;
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP && pos[1]<=globalDims[1]-start; 
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1; 
             isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP && pos[2]<=globalDims[2]-start; 
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1; 
 
             val=pmlGrid.get(i,j,k);
 
@@ -220,12 +224,13 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       for (int j=0; j < localDims[1]; j++){
          for (int i=0; i< localDims[0]; i++){
             pos=pmlGrid.getGlobalIndices(i,j,k);
-            isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<=widthXM + start;
-            isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP && pos[0]<=globalDims[0]-start; 
+            isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
+            isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
             isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start;
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP && pos[1]<=globalDims[1]-start; 
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1; 
             isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP && pos[2]<=globalDims[2]-start; 
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1; 
+
             
             doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;
             technicalGrid.get(i, j, k)->pmlFlag = 0;
@@ -254,15 +259,17 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
       creal y = cellParams[CellParams::YCRD] + 0.5*dy;
       creal z = cellParams[CellParams::ZCRD] + 0.5*dz;
       std::array<creal,3> p={x,y,z};
+      #warning "TODO: Fix casting below"
       std::array<int32_t, 3> pos{ (x-Parameters::xmin)/dx ,(y-Parameters::ymin)/dy ,(z-Parameters::zmin)/dz  };
       
 
-      isPmlCellXM = widthXM > 0 && pos[0] >= start && pos[0] <= widthXM + start;
-      isPmlCellXP = widthXP > 0 && pos[0] > globalDims[0] - start - widthXP && pos[0] <= globalDims[0] - start;
-      isPmlCellYM = widthYM > 0 && pos[1] >= start && pos[1] < widthYM + start;
-      isPmlCellYP = widthYP > 0 && pos[1] > globalDims[1] - start - widthYP && pos[1] <= globalDims[1] - start;
-      isPmlCellZM = widthZM > 0 && pos[2] >= start && pos[2] < widthZM + start;
-      isPmlCellZP = widthZP > 0 && pos[2] > globalDims[2] - start - widthZP && pos[2] <= globalDims[2] - start;
+            isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
+            isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
+            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start;
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1; 
+            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start;
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1; 
+
 
       // printf("-> %i %i %i %i %i %i \n " , isPmlCellXP, isPmlCellXM,  isPmlCellYP, isPmlCellYM, isPmlCellZP, isPmlCellZM);
       doAssign = isPmlCellXM || isPmlCellXP || isPmlCellYM || isPmlCellYP || isPmlCellZM || isPmlCellZP;

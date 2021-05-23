@@ -25,8 +25,8 @@ AR ?= ar
 #londrillo_delzanna (no other options)
 FIELDSOLVER ?= londrillo_delzanna
 #Add -DFS_1ST_ORDER_SPACE or -DFS_1ST_ORDER_TIME to make the field solver first-order in space or time
-COMPFLAGS += -DFS_1ST_ORDER_SPACE
-COMPFLAGS += -DFS_1ST_ORDER_TIME
+#COMPFLAGS += -DFS_1ST_ORDER_SPACE
+#COMPFLAGS += -DFS_1ST_ORDER_TIME
 
 
 

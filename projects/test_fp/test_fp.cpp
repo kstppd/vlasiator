@@ -156,9 +156,9 @@ namespace projects {
                               cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
                         break;
                      case BALLCASE:
-                        cell->at(fsgrids::bfield::PERBX) = 0.1 * this->B0 * areaFactor;
-                        cell->at(fsgrids::bfield::PERBY) = 0.1 * this->B0 * areaFactor;
-                        cell->at(fsgrids::bfield::PERBZ) = 0.1 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBX) = 0.0 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBY) = 0.0 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBZ) = 0.0 * this->B0 * areaFactor;
 
                         if (rtemp < 30e3){
 
@@ -254,9 +254,9 @@ namespace projects {
             VZ = 0.0;
             break;
           case BALLCASE:
-            VX = 0.5 / sqrt(3.0);
-            VY = 0.5 / sqrt(3.0);
-            VZ = 0.5 / sqrt(3.0);
+            VX = 0.0 ;// /sqrt(3.0);
+            VY = 0.0;// /sqrt(3.0);
+            VZ = -0.5;// / sqrt(3.0);
             break;
          }
       }
