@@ -15,7 +15,7 @@ namespace ABC{
       public:
          UPML(FsGrid< std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,FsGrid< fsgrids::technical, 2> & technicalGrid,dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid);
          bool resetPML(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,Real dt);
-         int widthXP,widthXM,widthYP,widthYM,widthZP,widthZM,start;
+         int widthXP,widthXM,widthYP,widthYM,widthZP,widthZM,start,swOffset;
          Real alpha;
          bool logcells;
          bool classifyCells(FsGrid<std::array<Real, fsgrids::pml::N_PML>, 2> &pmlGrid,

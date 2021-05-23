@@ -59,6 +59,7 @@ int P::pmlWidthXm = 0;
 int P::pmlWidthYm = 0;
 int P::pmlWidthZm = 0;
 int P::pmlStart = 2;
+int P::pmlSWoffset = 0;
 Real P::pmlAlpha = 3.0;
 bool P::pmlCells = false;
 
@@ -537,6 +538,7 @@ bool Parameters::getParameters(){
    Readparameters::get("PML.WidthYm", P::pmlWidthYm);
    Readparameters::get("PML.WidthZm", P::pmlWidthZm);
    Readparameters::get("PML.Start", P::pmlStart);
+   Readparameters::get("PML.Offset", P::pmlSWoffset);
    Readparameters::get("PML.Alpha", P::pmlAlpha);
    Readparameters::get("PML.Cells", P::pmlCells);
    // Get Vlasov solver parameters
