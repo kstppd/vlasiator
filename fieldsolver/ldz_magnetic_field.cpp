@@ -123,8 +123,8 @@ void propagateMagneticField(
             mHx2= pmlGrid0->at(fsgrids::pml::mHx2);
             mHx3= pmlGrid0->at(fsgrids::pml::mHx3);
             mHx4= pmlGrid0->at(fsgrids::pml::mHx4);
-             //perBDt2Grid0->at(fsgrids::bfield::PERBX) = perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*(1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
-            perBDt2Grid0->at(fsgrids::bfield::PERBX) = mHx1*perBDt2Grid0->at(fsgrids::bfield::PERBX) + mHx2*CurlE  + mHx3*pmlGrid0->at(fsgrids::pml::iCEx) + mHx4*pmlGrid0->at(fsgrids::pml::iHx);
+             perBDt2Grid0->at(fsgrids::bfield::PERBX) = perBGrid0->at(fsgrids::bfield::PERBX) + 0.5*dt*(1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+            // perBDt2Grid0->at(fsgrids::bfield::PERBX) = mHx1*perBDt2Grid0->at(fsgrids::bfield::PERBX) + mHx2*CurlE  + mHx3*pmlGrid0->at(fsgrids::pml::iCEx) + mHx4*pmlGrid0->at(fsgrids::pml::iHx);
             break;
 
          case RK_ORDER2_STEP2:
@@ -143,7 +143,7 @@ void propagateMagneticField(
             mHx3= pmlGrid0->at(fsgrids::pml::mHx3);
             mHx4= pmlGrid0->at(fsgrids::pml::mHx4);
 
-             //perBGrid0->at(fsgrids::bfield::PERBX) += dt * (1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
+            //  perBGrid0->at(fsgrids::bfield::PERBX) += dt * (1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ)));
              perBGrid0->at(fsgrids::bfield::PERBX) = mHx1*perBGrid0->at(fsgrids::bfield::PERBX) + mHx2*CurlE  + mHx3*pmlGrid0->at(fsgrids::pml::iCEx) + mHx4*pmlGrid0->at(fsgrids::pml::iHx);
 
 
@@ -173,8 +173,8 @@ void propagateMagneticField(
             mHy4= pmlGrid0->at(fsgrids::pml::mHy4);
            
          // Update BY
-             //perBGrid0->at(fsgrids::bfield::PERBY) += dt/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + dt/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
-             perBGrid0->at(fsgrids::bfield::PERBY) = mHy1*perBGrid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
+             perBGrid0->at(fsgrids::bfield::PERBY) += dt/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + dt/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX));
+            //  perBGrid0->at(fsgrids::bfield::PERBY) = mHy1*perBGrid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
 
 
 
@@ -197,8 +197,8 @@ void propagateMagneticField(
             mHy3= pmlGrid0->at(fsgrids::pml::mHy3);
             mHy4= pmlGrid0->at(fsgrids::pml::mHy4);
 
-             //perBDt2Grid0->at(fsgrids::bfield::PERBY) = perBGrid0->at(fsgrids::bfield::PERBY) + 0.5*dt*(1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
-            perBDt2Grid0->at(fsgrids::bfield::PERBY) = mHy1*perBDt2Grid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
+             perBDt2Grid0->at(fsgrids::bfield::PERBY) = perBGrid0->at(fsgrids::bfield::PERBY) + 0.5*dt*(1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            // perBDt2Grid0->at(fsgrids::bfield::PERBY) = mHy1*perBDt2Grid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
             
             break;
          
@@ -218,7 +218,7 @@ void propagateMagneticField(
             mHy3= pmlGrid0->at(fsgrids::pml::mHy3);
             mHy4= pmlGrid0->at(fsgrids::pml::mHy4);
          
-            //perBGrid0->at(fsgrids::bfield::PERBY) += dt * (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
+            // perBGrid0->at(fsgrids::bfield::PERBY) += dt * (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
              perBGrid0->at(fsgrids::bfield::PERBY) = mHy1*perBGrid0->at(fsgrids::bfield::PERBY) + mHy2*CurlE  + mHy3*pmlGrid0->at(fsgrids::pml::iCEy) + mHy4*pmlGrid0->at(fsgrids::pml::iHy);
          
             break;
@@ -248,8 +248,8 @@ void propagateMagneticField(
             mHz4= pmlGrid0->at(fsgrids::pml::mHz4);
 
             // Update Bz
-
-             perBGrid0->at(fsgrids::bfield::PERBZ) = mHz1*perBGrid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
+            perBGrid0->at(fsgrids::bfield::PERBZ) += dt / dy * (EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + dt / dx * (EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY));
+            // perBGrid0->at(fsgrids::bfield::PERBZ) = mHz1 * perBGrid0->at(fsgrids::bfield::PERBZ) + mHz2 * CurlE + mHz3 * pmlGrid0->at(fsgrids::pml::iCEz) + mHz4 * pmlGrid0->at(fsgrids::pml::iHz);
          
            
 
@@ -274,8 +274,8 @@ void propagateMagneticField(
             mHz4= pmlGrid0->at(fsgrids::pml::mHz4);
 
 
-             //perBDt2Grid0->at(fsgrids::bfield::PERBZ) = perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5*dt*(1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
-            perBDt2Grid0->at(fsgrids::bfield::PERBZ) = mHz1*perBDt2Grid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
+             perBDt2Grid0->at(fsgrids::bfield::PERBZ) = perBGrid0->at(fsgrids::bfield::PERBZ) + 0.5*dt*(1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            // perBDt2Grid0->at(fsgrids::bfield::PERBZ) = mHz1*perBDt2Grid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
             
             
             break;
@@ -295,7 +295,7 @@ void propagateMagneticField(
             mHz4= pmlGrid0->at(fsgrids::pml::mHz4);
             
            
-            //perBGrid0->at(fsgrids::bfield::PERBZ) += dt  * (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
+            // perBGrid0->at(fsgrids::bfield::PERBZ) += dt  * (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
              perBGrid0->at(fsgrids::bfield::PERBZ) = mHz1*perBGrid0->at(fsgrids::bfield::PERBZ) + mHz2*CurlE  + mHz3*pmlGrid0->at(fsgrids::pml::iCEz) + mHz4*pmlGrid0->at(fsgrids::pml::iHz);
             break;
          default:
