@@ -100,10 +100,10 @@ bool ABC::UPML::buildConductivity(FsGrid< std::array<Real, fsgrids::pml::N_PML>,
             pos=pmlGrid.getGlobalIndices(i,j,k);
             isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
             isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
-            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
+            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  ;
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 ; 
+            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start  ;
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1  ; 
 
             val=pmlGrid.get(i,j,k);
 
@@ -243,10 +243,10 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
 
             isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
             isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
-            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
-            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
-            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
+            isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  ;
+            isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 ; 
+            isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start  ;
+            isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1  ; 
 
 
             
@@ -283,10 +283,10 @@ bool ABC::UPML::classifyCells(FsGrid <std::array<Real, fsgrids::pml::N_PML>, 2> 
 
       isPmlCellXM=widthXM>0 && pos[0]>=start && pos[0]<widthXM + start;
       isPmlCellXP=widthXP>0 && pos[0]>globalDims[0]-start-widthXP -1&& pos[0]<=globalDims[0]-start-1; 
-      isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  && pos[0]<(maxCells[0] - this->swOffset);
-      isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 && pos[0]<(maxCells[0] - this->swOffset); 
-      isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start && pos[0]<(maxCells[0] - this->swOffset) ;
-      isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1 && pos[0]<(maxCells[0] - this->swOffset) ; 
+      isPmlCellYM=widthYM>0 && pos[1]>=start && pos[1]<widthYM + start  ;
+      isPmlCellYP=widthYP>0 && pos[1]>globalDims[1]-start-widthYP -1&& pos[1]<=globalDims[1]-start-1 ; 
+      isPmlCellZM=widthZM>0 && pos[2]>=start && pos[2]<widthZM + start  ;
+      isPmlCellZP=widthZP>0 && pos[2]>globalDims[2]-start-widthZP -1&& pos[2]<=globalDims[2]-start-1  ; 
 
 
 
