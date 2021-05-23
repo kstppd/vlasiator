@@ -773,8 +773,10 @@ void calculateEdgeElectricFieldX(
       efield_SW->at(fsgrids::efield::EX) += ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*(perBz_W-perBz_E);
 #else
       // 2nd     order diffusive terms
-      efield_SW->at(fsgrids::efield::EX) -= az_pos*az_neg/(az_pos+az_neg+EPS)*((perBy_S-HALF*dperBydz_S) - (perBy_N+HALF*dperBydz_N));
-      efield_SW->at(fsgrids::efield::EX) += ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*((perBz_W-HALF*dperBzdy_W) - (perBz_E+HALF*dperBzdy_E));
+      // efield_SW->at(fsgrids::efield::EX) -= az_pos*az_neg/(az_pos+az_neg+EPS)*((perBy_S-HALF*dperBydz_S) - (perBy_N+HALF*dperBydz_N));
+      // efield_SW->at(fsgrids::efield::EX) += ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*((perBz_W-HALF*dperBzdy_W) - (perBz_E+HALF*dperBzdy_E));
+      efield_SW->at(fsgrids::efield::EX) -= pmlGrid0->at(fsgrids::pml::mDx2)* az_pos * az_neg / (az_pos + az_neg + EPS) * ((perBy_S - HALF * dperBydz_S) - (perBy_N + HALF * dperBydz_N));
+      efield_SW->at(fsgrids::efield::EX) += pmlGrid0->at(fsgrids::pml::mDx2)* ay_pos * ay_neg / (ay_pos + ay_neg + EPS) * ((perBz_W - HALF * dperBzdy_W) - (perBz_E + HALF * dperBzdy_E));
 #endif
    }
    
@@ -1147,8 +1149,10 @@ void calculateEdgeElectricFieldY(
       efield_SW->at(fsgrids::efield::EY) -= ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*(perBz_S-perBz_N);
       efield_SW->at(fsgrids::efield::EY) += az_pos*az_neg/(az_pos+az_neg+EPS)*(perBx_W-perBx_E);
 #else
-      efield_SW->at(fsgrids::efield::EY) -= ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*((perBz_S-HALF*dperBzdx_S) - (perBz_N+HALF*dperBzdx_N));
-      efield_SW->at(fsgrids::efield::EY) += az_pos*az_neg/(az_pos+az_neg+EPS)*((perBx_W-HALF*dperBxdz_W) - (perBx_E+HALF*dperBxdz_E));
+      // efield_SW->at(fsgrids::efield::EY) -= ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*((perBz_S-HALF*dperBzdx_S) - (perBz_N+HALF*dperBzdx_N));
+      // efield_SW->at(fsgrids::efield::EY) += az_pos*az_neg/(az_pos+az_neg+EPS)*((perBx_W-HALF*dperBxdz_W) - (perBx_E+HALF*dperBxdz_E));
+      efield_SW->at(fsgrids::efield::EY) -= pmlGrid0->at(fsgrids::pml::mDy2) *ax_pos * ax_neg / (ax_pos + ax_neg + EPS) * ((perBz_S - HALF * dperBzdx_S) - (perBz_N + HALF * dperBzdx_N));
+      efield_SW->at(fsgrids::efield::EY) += pmlGrid0->at(fsgrids::pml::mDy2)* az_pos * az_neg / (az_pos + az_neg + EPS) * ((perBx_W - HALF * dperBxdz_W) - (perBx_E + HALF * dperBxdz_E));
 #endif
    }
    
@@ -1524,8 +1528,10 @@ void calculateEdgeElectricFieldZ(
       efield_SW->at(fsgrids::efield::EZ) -= ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*(perBx_S-perBx_N);
       efield_SW->at(fsgrids::efield::EZ) += ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*(perBy_W-perBy_E);
 #else
-      efield_SW->at(fsgrids::efield::EZ) -= ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*((perBx_S-HALF*dperBxdy_S) - (perBx_N+HALF*dperBxdy_N));
-      efield_SW->at(fsgrids::efield::EZ) += ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*((perBy_W-HALF*dperBydx_W) - (perBy_E+HALF*dperBydx_E));
+      // efield_SW->at(fsgrids::efield::EZ) -= ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*((perBx_S-HALF*dperBxdy_S) - (perBx_N+HALF*dperBxdy_N));
+      // efield_SW->at(fsgrids::efield::EZ) += ax_pos*ax_neg/(ax_pos+ax_neg+EPS)*((perBy_W-HALF*dperBydx_W) - (perBy_E+HALF*dperBydx_E));
+      efield_SW->at(fsgrids::efield::EZ) -= pmlGrid0->at(fsgrids::pml::mDz2) *ay_pos * ay_neg / (ay_pos + ay_neg + EPS) * ((perBx_S - HALF * dperBxdy_S) - (perBx_N + HALF * dperBxdy_N));
+      efield_SW->at(fsgrids::efield::EZ) += pmlGrid0->at(fsgrids::pml::mDz2) *ax_pos * ax_neg / (ax_pos + ax_neg + EPS) * ((perBy_W - HALF * dperBydx_W) - (perBy_E + HALF * dperBydx_E));
 #endif
    }
 
