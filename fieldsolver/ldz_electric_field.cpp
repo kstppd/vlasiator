@@ -566,8 +566,10 @@ void calculateEdgeElectricFieldX(
 
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ex_SW += +HALF*((By_S - HALF*dBydz_S)*(-dmoments_SW->at(fsgrids::dmoments::dVzdy) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBydz_S*Vz0 + SIXTH*dBydx_S*dmoments_SW->at(fsgrids::dmoments::dVzdx));
-      Ex_SW += -HALF*((Bz_W - HALF*dBzdy_W)*(-dmoments_SW->at(fsgrids::dmoments::dVydy) - dmoments_SW->at(fsgrids::dmoments::dVydz)) - dBzdy_W*Vy0 + SIXTH*dBzdx_W*dmoments_SW->at(fsgrids::dmoments::dVydx));
+      Ex_SW += + pmlGrid0->at(fsgrids::pml::mDx2) *HALF*((By_S - HALF*dBydz_S)*(-dmoments_SW->at(fsgrids::dmoments::dVzdy) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBydz_S*Vz0 + SIXTH*dBydx_S*dmoments_SW->at(fsgrids::dmoments::dVzdx));
+      Ex_SW += - pmlGrid0->at(fsgrids::pml::mDx2) *HALF*((Bz_W - HALF*dBzdy_W)*(-dmoments_SW->at(fsgrids::dmoments::dVydy) - dmoments_SW->at(fsgrids::dmoments::dVydz)) - dBzdy_W*Vy0 + SIXTH*dBzdx_W*dmoments_SW->at(fsgrids::dmoments::dVydx));
+      // Ex_SW += +HALF*((By_S - HALF*dBydz_S)*(-dmoments_SW->at(fsgrids::dmoments::dVzdy) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBydz_S*Vz0 + SIXTH*dBydx_S*dmoments_SW->at(fsgrids::dmoments::dVzdx));
+      // Ex_SW += -HALF*((Bz_W - HALF*dBzdy_W)*(-dmoments_SW->at(fsgrids::dmoments::dVydy) - dmoments_SW->at(fsgrids::dmoments::dVydz)) - dBzdy_W*Vy0 + SIXTH*dBzdx_W*dmoments_SW->at(fsgrids::dmoments::dVydx));
    #endif
    calculateWaveSpeedYZ(
       perBGrid,
@@ -679,9 +681,11 @@ void calculateEdgeElectricFieldX(
    
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ex_NW += +HALF*((By_N + HALF*dBydz_N)*(-dmoments_NW->at(fsgrids::dmoments::dVzdy) + dmoments_NW->at(fsgrids::dmoments::dVzdz)) + dBydz_N*Vz0 + SIXTH*dBydx_N*dmoments_NW->at(fsgrids::dmoments::dVzdx));
-      Ex_NW += -HALF*((Bz_W - HALF*dBzdy_W)*(-dmoments_NW->at(fsgrids::dmoments::dVydy) + dmoments_NW->at(fsgrids::dmoments::dVydz)) - dBzdy_W*Vy0 + SIXTH*dBzdx_W*dmoments_NW->at(fsgrids::dmoments::dVydx));
-   #endif
+      // Ex_NW += +HALF*((By_N + HALF*dBydz_N)*(-dmoments_NW->at(fsgrids::dmoments::dVzdy) + dmoments_NW->at(fsgrids::dmoments::dVzdz)) + dBydz_N*Vz0 + SIXTH*dBydx_N*dmoments_NW->at(fsgrids::dmoments::dVzdx));
+      // Ex_NW += -HALF*((Bz_W - HALF*dBzdy_W)*(-dmoments_NW->at(fsgrids::dmoments::dVydy) + dmoments_NW->at(fsgrids::dmoments::dVydz)) - dBzdy_W*Vy0 + SIXTH*dBzdx_W*dmoments_NW->at(fsgrids::dmoments::dVydx));
+      Ex_NW += +pmlGrid0->at(fsgrids::pml::mDx2) *HALF * ((By_N + HALF * dBydz_N) * (-dmoments_NW->at(fsgrids::dmoments::dVzdy) + dmoments_NW->at(fsgrids::dmoments::dVzdz)) + dBydz_N * Vz0 + SIXTH * dBydx_N * dmoments_NW->at(fsgrids::dmoments::dVzdx));
+      Ex_NW += -pmlGrid0->at(fsgrids::pml::mDx2) *HALF * ((Bz_W - HALF * dBzdy_W) * (-dmoments_NW->at(fsgrids::dmoments::dVydy) + dmoments_NW->at(fsgrids::dmoments::dVydz)) - dBzdy_W * Vy0 + SIXTH * dBzdx_W * dmoments_NW->at(fsgrids::dmoments::dVydx));
+#endif
    
    calculateWaveSpeedYZ(
       perBGrid,
@@ -736,9 +740,11 @@ void calculateEdgeElectricFieldX(
    
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ex_NE += +HALF*((By_N + HALF*dBydz_N)*(+dmoments_NE->at(fsgrids::dmoments::dVzdy) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBydz_N*Vz0 + SIXTH*dBydx_N*dmoments_NE->at(fsgrids::dmoments::dVzdx));
-      Ex_NE += -HALF*((Bz_E + HALF*dBzdy_E)*(+dmoments_NE->at(fsgrids::dmoments::dVydy) + dmoments_NE->at(fsgrids::dmoments::dVydz)) + dBzdy_E*Vy0 + SIXTH*dBzdx_E*dmoments_NE->at(fsgrids::dmoments::dVydx));
-   #endif
+      // Ex_NE += +HALF*((By_N + HALF*dBydz_N)*(+dmoments_NE->at(fsgrids::dmoments::dVzdy) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBydz_N*Vz0 + SIXTH*dBydx_N*dmoments_NE->at(fsgrids::dmoments::dVzdx));
+      // Ex_NE += -HALF*((Bz_E + HALF*dBzdy_E)*(+dmoments_NE->at(fsgrids::dmoments::dVydy) + dmoments_NE->at(fsgrids::dmoments::dVydz)) + dBzdy_E*Vy0 + SIXTH*dBzdx_E*dmoments_NE->at(fsgrids::dmoments::dVydx));
+   Ex_NE += +pmlGrid0->at(fsgrids::pml::mDx2) *HALF * ((By_N + HALF * dBydz_N) * (+dmoments_NE->at(fsgrids::dmoments::dVzdy) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBydz_N * Vz0 + SIXTH * dBydx_N * dmoments_NE->at(fsgrids::dmoments::dVzdx));
+   Ex_NE += -pmlGrid0->at(fsgrids::pml::mDx2) *HALF * ((Bz_E + HALF * dBzdy_E) * (+dmoments_NE->at(fsgrids::dmoments::dVydy) + dmoments_NE->at(fsgrids::dmoments::dVydz)) + dBzdy_E * Vy0 + SIXTH * dBzdx_E * dmoments_NE->at(fsgrids::dmoments::dVydx));
+#endif
    
    calculateWaveSpeedYZ(
       perBGrid,
@@ -934,9 +940,11 @@ void calculateEdgeElectricFieldY(
    
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms
-      Ey_SW += +HALF*((Bz_S - HALF*dBzdx_S)*(-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdz)) - dBzdx_S*Vx0 + SIXTH*dBzdy_S*dmoments_SW->at(fsgrids::dmoments::dVxdy));
-      Ey_SW += -HALF*((Bx_W - HALF*dBxdz_W)*(-dmoments_SW->at(fsgrids::dmoments::dVzdx) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W*Vz0 + SIXTH*dBxdy_W*dmoments_SW->at(fsgrids::dmoments::dVzdy));
-   #endif
+      // Ey_SW += +HALF*((Bz_S - HALF*dBzdx_S)*(-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdz)) - dBzdx_S*Vx0 + SIXTH*dBzdy_S*dmoments_SW->at(fsgrids::dmoments::dVxdy));
+      // Ey_SW += -HALF*((Bx_W - HALF*dBxdz_W)*(-dmoments_SW->at(fsgrids::dmoments::dVzdx) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W*Vz0 + SIXTH*dBxdy_W*dmoments_SW->at(fsgrids::dmoments::dVzdy));
+   Ey_SW += +pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bz_S - HALF * dBzdx_S) * (-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdz)) - dBzdx_S * Vx0 + SIXTH * dBzdy_S * dmoments_SW->at(fsgrids::dmoments::dVxdy));
+   Ey_SW += -pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bx_W - HALF * dBxdz_W) * (-dmoments_SW->at(fsgrids::dmoments::dVzdx) - dmoments_SW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W * Vz0 + SIXTH * dBxdy_W * dmoments_SW->at(fsgrids::dmoments::dVzdy));
+#endif
    
    calculateWaveSpeedXZ(
       perBGrid,
@@ -1048,9 +1056,11 @@ void calculateEdgeElectricFieldY(
    
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ey_NW += +HALF*((Bz_N + HALF*dBzdx_N)*(+dmoments_NW->at(fsgrids::dmoments::dVxdx) - dmoments_NW->at(fsgrids::dmoments::dVxdz)) + dBzdx_N*Vx0 + SIXTH*dBzdy_N*dmoments_NW->at(fsgrids::dmoments::dVxdy));
-      Ey_NW += -HALF*((Bx_W - HALF*dBxdz_W)*(+dmoments_NW->at(fsgrids::dmoments::dVzdx) - dmoments_NW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W*Vz0 + SIXTH*dBxdy_W*dmoments_NW->at(fsgrids::dmoments::dVzdy));
-   #endif
+      // Ey_NW += +HALF*((Bz_N + HALF*dBzdx_N)*(+dmoments_NW->at(fsgrids::dmoments::dVxdx) - dmoments_NW->at(fsgrids::dmoments::dVxdz)) + dBzdx_N*Vx0 + SIXTH*dBzdy_N*dmoments_NW->at(fsgrids::dmoments::dVxdy));
+      // Ey_NW += -HALF*((Bx_W - HALF*dBxdz_W)*(+dmoments_NW->at(fsgrids::dmoments::dVzdx) - dmoments_NW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W*Vz0 + SIXTH*dBxdy_W*dmoments_NW->at(fsgrids::dmoments::dVzdy));
+   Ey_NW += +pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bz_N + HALF * dBzdx_N) * (+dmoments_NW->at(fsgrids::dmoments::dVxdx) - dmoments_NW->at(fsgrids::dmoments::dVxdz)) + dBzdx_N * Vx0 + SIXTH * dBzdy_N * dmoments_NW->at(fsgrids::dmoments::dVxdy));
+   Ey_NW += -pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bx_W - HALF * dBxdz_W) * (+dmoments_NW->at(fsgrids::dmoments::dVzdx) - dmoments_NW->at(fsgrids::dmoments::dVzdz)) - dBxdz_W * Vz0 + SIXTH * dBxdy_W * dmoments_NW->at(fsgrids::dmoments::dVzdy));
+#endif
    
    calculateWaveSpeedXZ(
       perBGrid,
@@ -1105,9 +1115,11 @@ void calculateEdgeElectricFieldY(
    
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ey_NE += +HALF*((Bz_N + HALF*dBzdx_N)*(+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdz)) + dBzdx_N*Vx0 + SIXTH*dBzdy_N*dmoments_NE->at(fsgrids::dmoments::dVxdy));
-      Ey_NE += -HALF*((Bx_E + HALF*dBxdz_E)*(+dmoments_NE->at(fsgrids::dmoments::dVzdx) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBxdz_E*Vz0 + SIXTH*dBxdy_E*dmoments_NE->at(fsgrids::dmoments::dVzdy));
-   #endif
+      // Ey_NE += +HALF*((Bz_N + HALF*dBzdx_N)*(+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdz)) + dBzdx_N*Vx0 + SIXTH*dBzdy_N*dmoments_NE->at(fsgrids::dmoments::dVxdy));
+      // Ey_NE += -HALF*((Bx_E + HALF*dBxdz_E)*(+dmoments_NE->at(fsgrids::dmoments::dVzdx) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBxdz_E*Vz0 + SIXTH*dBxdy_E*dmoments_NE->at(fsgrids::dmoments::dVzdy));
+   Ey_NE += +pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bz_N + HALF * dBzdx_N) * (+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdz)) + dBzdx_N * Vx0 + SIXTH * dBzdy_N * dmoments_NE->at(fsgrids::dmoments::dVxdy));
+   Ey_NE += -pmlGrid0->at(fsgrids::pml::mDy2) *HALF * ((Bx_E + HALF * dBxdz_E) * (+dmoments_NE->at(fsgrids::dmoments::dVzdx) + dmoments_NE->at(fsgrids::dmoments::dVzdz)) + dBxdz_E * Vz0 + SIXTH * dBxdy_E * dmoments_NE->at(fsgrids::dmoments::dVzdy));
+#endif
    
    calculateWaveSpeedXZ(
       perBGrid,
@@ -1300,9 +1312,11 @@ void calculateEdgeElectricFieldZ(
 
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ez_SW  += +HALF*((Bx_S - HALF*dBxdy_S)*(-dmoments_SW->at(fsgrids::dmoments::dVydx) - dmoments_SW->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SW->at(fsgrids::dmoments::dVydz));
-      Ez_SW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_SW->at(fsgrids::dmoments::dVxdz));
-   #endif
+      // Ez_SW  += +HALF*((Bx_S - HALF*dBxdy_S)*(-dmoments_SW->at(fsgrids::dmoments::dVydx) - dmoments_SW->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SW->at(fsgrids::dmoments::dVydz));
+      // Ez_SW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_SW->at(fsgrids::dmoments::dVxdz));
+   Ez_SW += +pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((Bx_S - HALF * dBxdy_S) * (-dmoments_SW->at(fsgrids::dmoments::dVydx) - dmoments_SW->at(fsgrids::dmoments::dVydy)) - dBxdy_S * Vy0 + SIXTH * dBxdz_S * dmoments_SW->at(fsgrids::dmoments::dVydz));
+   Ez_SW += -pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((By_W - HALF * dBydx_W) * (-dmoments_SW->at(fsgrids::dmoments::dVxdx) - dmoments_SW->at(fsgrids::dmoments::dVxdy)) - dBydx_W * Vx0 + SIXTH * dBydz_W * dmoments_SW->at(fsgrids::dmoments::dVxdz));
+#endif
 
    // Calculate maximum wave speed (fast magnetosonic speed) on SW cell. In order
    // to get Alfven speed we need to calculate some reconstruction coeff. for Bz:
@@ -1359,9 +1373,11 @@ void calculateEdgeElectricFieldZ(
 
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ez_SE  += +HALF*((Bx_S - HALF*dBxdy_S)*(+dmoments_SE->at(fsgrids::dmoments::dVydx) - dmoments_SE->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SE->at(fsgrids::dmoments::dVydz));
-      Ez_SE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_SE->at(fsgrids::dmoments::dVxdx) - dmoments_SE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_SE->at(fsgrids::dmoments::dVxdz));
-   #endif
+      // Ez_SE  += +HALF*((Bx_S - HALF*dBxdy_S)*(+dmoments_SE->at(fsgrids::dmoments::dVydx) - dmoments_SE->at(fsgrids::dmoments::dVydy)) - dBxdy_S*Vy0 + SIXTH*dBxdz_S*dmoments_SE->at(fsgrids::dmoments::dVydz));
+      // Ez_SE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_SE->at(fsgrids::dmoments::dVxdx) - dmoments_SE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_SE->at(fsgrids::dmoments::dVxdz));
+   Ez_SE += +pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((Bx_S - HALF * dBxdy_S) * (+dmoments_SE->at(fsgrids::dmoments::dVydx) - dmoments_SE->at(fsgrids::dmoments::dVydy)) - dBxdy_S * Vy0 + SIXTH * dBxdz_S * dmoments_SE->at(fsgrids::dmoments::dVydz));
+   Ez_SE += -pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((By_E + HALF * dBydx_E) * (+dmoments_SE->at(fsgrids::dmoments::dVxdx) - dmoments_SE->at(fsgrids::dmoments::dVxdy)) + dBydx_E * Vx0 + SIXTH * dBydz_E * dmoments_SE->at(fsgrids::dmoments::dVxdz));
+#endif
 
    calculateWaveSpeedXY(
       perBGrid,
@@ -1416,9 +1432,11 @@ void calculateEdgeElectricFieldZ(
 
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ez_NW  += +HALF*((Bx_N + HALF*dBxdy_N)*(-dmoments_NW->at(fsgrids::dmoments::dVydx) + dmoments_NW->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NW->at(fsgrids::dmoments::dVydz));
-      Ez_NW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_NW->at(fsgrids::dmoments::dVxdx) + dmoments_NW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_NW->at(fsgrids::dmoments::dVxdz));
-   #endif
+      // Ez_NW  += +HALF*((Bx_N + HALF*dBxdy_N)*(-dmoments_NW->at(fsgrids::dmoments::dVydx) + dmoments_NW->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NW->at(fsgrids::dmoments::dVydz));
+      // Ez_NW  += -HALF*((By_W - HALF*dBydx_W)*(-dmoments_NW->at(fsgrids::dmoments::dVxdx) + dmoments_NW->at(fsgrids::dmoments::dVxdy)) - dBydx_W*Vx0 + SIXTH*dBydz_W*dmoments_NW->at(fsgrids::dmoments::dVxdz));
+   Ez_NW += +pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((Bx_N + HALF * dBxdy_N) * (-dmoments_NW->at(fsgrids::dmoments::dVydx) + dmoments_NW->at(fsgrids::dmoments::dVydy)) + dBxdy_N * Vy0 + SIXTH * dBxdz_N * dmoments_NW->at(fsgrids::dmoments::dVydz));
+   Ez_NW += -pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((By_W - HALF * dBydx_W) * (-dmoments_NW->at(fsgrids::dmoments::dVxdx) + dmoments_NW->at(fsgrids::dmoments::dVxdy)) - dBydx_W * Vx0 + SIXTH * dBydz_W * dmoments_NW->at(fsgrids::dmoments::dVxdz));
+#endif
 
    calculateWaveSpeedXY(
       perBGrid,
@@ -1473,9 +1491,11 @@ void calculateEdgeElectricFieldZ(
 
    #ifndef FS_1ST_ORDER_SPACE
       // 2nd order terms:
-      Ez_NE  += +HALF*((Bx_N + HALF*dBxdy_N)*(+dmoments_NE->at(fsgrids::dmoments::dVydx) + dmoments_NE->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NE->at(fsgrids::dmoments::dVydz));
-      Ez_NE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_NE->at(fsgrids::dmoments::dVxdz));
-   #endif
+      // Ez_NE  += +HALF*((Bx_N + HALF*dBxdy_N)*(+dmoments_NE->at(fsgrids::dmoments::dVydx) + dmoments_NE->at(fsgrids::dmoments::dVydy)) + dBxdy_N*Vy0 + SIXTH*dBxdz_N*dmoments_NE->at(fsgrids::dmoments::dVydz));
+      // Ez_NE  += -HALF*((By_E + HALF*dBydx_E)*(+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdy)) + dBydx_E*Vx0 + SIXTH*dBydz_E*dmoments_NE->at(fsgrids::dmoments::dVxdz));
+   Ez_NE += +pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((Bx_N + HALF * dBxdy_N) * (+dmoments_NE->at(fsgrids::dmoments::dVydx) + dmoments_NE->at(fsgrids::dmoments::dVydy)) + dBxdy_N * Vy0 + SIXTH * dBxdz_N * dmoments_NE->at(fsgrids::dmoments::dVydz));
+   Ez_NE += -pmlGrid0->at(fsgrids::pml::mDz2) *HALF * ((By_E + HALF * dBydx_E) * (+dmoments_NE->at(fsgrids::dmoments::dVxdx) + dmoments_NE->at(fsgrids::dmoments::dVxdy)) + dBydx_E * Vx0 + SIXTH * dBydz_E * dmoments_NE->at(fsgrids::dmoments::dVxdz));
+#endif
 
    calculateWaveSpeedXY(
       perBGrid,
