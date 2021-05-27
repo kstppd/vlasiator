@@ -40,8 +40,8 @@ else
 	VECTORCLASS = VEC4D_AGNER
 endif
 
-FLAGS =
-#CXXFLAGS = -I $(HOME)/include  -L $(HOME)/lib -g  -funroll-loops -std=c++0x -fopenmp -W -Wall -pedantic -Wno-unused -fabi-version=0 -mavx
+FLAGS =-DUSEHDF5
+#CXXFLAGS = -I $(HOME)/include  -L $(HOME)/lib -g  -funroll-loops -std=c++0x -fopenmp -W -Wall -pedantic -Wno-unused -fabi-version=0 -mavx 
 CXXFLAGS = -I $(HOME)/include  -L $(HOME)/lib -O3  -g -funroll-loops -std=c++0x -fopenmp -W -Wall -Wno-unused -fabi-version=0 -mavx
 MATHFLAGS = -ffast-math
 LDFLAGS = -L $(HOME)/lib
@@ -69,6 +69,12 @@ LIB_SILO = -L$(LIBRARY_PREFIX)/lib -lsilo
 INC_DCCRG = -I$(LIBRARY_PREFIX)/dccrg
 
 INC_FSGRID = -I$(LIBRARY_PREFIX)/fsgrid
+# INC_FSGRID += -I/usr/include/hdf5/mpich -Wdate-time -D_FORTIFY_SOURCE=2 -g -O2 -fdebug-prefix-map=/build/hdf5-X9JKIg/hdf5-1.10.0-patch1+docs=. -fstack-protector-strong -Wformat -Werror=format-security
+# LIB_FSGRID = -L/usr/lib/x86_64-linux-gnu/hdf5/mpich /usr/lib/x86_64-linux-gnu/hdf5/mpich/libhdf5_hl.a /usr/lib/x86_64-linux-gnu/hdf5/mpich/libhdf5.a -Wl,-Bsymbolic-functions -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/mpich -DUSEHDF5
+
+INC_FSGRID += -I/usr/include/hdf5/openmpi
+LIB_FSGRID =-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5hl_fortran.a /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5_hl.a /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5_fortran.a /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5.a -Wl,-Bsymbolic-functions -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/openmpi
+
 
 #INC_JEMALLOC = -I$(LIBRARY_PREFIX)/include/jemalloc
 #LIB_JEMALLOC = -L$(LIBRARY_PREFIX)/lib -ljemalloc

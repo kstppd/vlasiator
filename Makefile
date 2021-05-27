@@ -116,6 +116,7 @@ LIBS += ${LIB_PROFILE}
 LIBS += ${LIB_VLSV}
 LIBS += ${LIB_JEMALLOC} 
 LIBS += ${LIB_PAPI}
+LIBS += ${LIB_FSGRID}
 
 # Define common dependencies
 DEPS_COMMON = common.h common.cpp definitions.h mpiconversion.h logger.h object_wrapper.h

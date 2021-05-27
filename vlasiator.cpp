@@ -646,6 +646,12 @@ int main(int argn,char* args[]) {
    double beforeSimulationTime=P::t_min;
    double beforeStep=P::tstep_min;
    
+   //Output map
+   std::map<int, std::string> outputData;
+   outputData.insert(std::pair<int, std::string>(fsgrids::efield::EX, "Ex"));
+   outputData.insert(std::pair<int, std::string>(fsgrids::efield::EY, "Ey"));
+   outputData.insert(std::pair<int, std::string>(fsgrids::efield::EZ, "Ez"));
+
    while(P::tstep <= P::tstep_max  &&
          P::t-P::dt <= P::t_max+DT_EPSILON &&
          wallTimeRestartCounter <= P::exitAfterRestarts) {
@@ -705,6 +711,14 @@ int main(int argn,char* args[]) {
       for (uint i = 0; i < P::systemWriteTimeInterval.size(); i++) {
          if (P::systemWriteTimeInterval[i] >= 0.0 &&
              P::t >= P::systemWrites[i] * P::systemWriteTimeInterval[i] - DT_EPSILON) {
+
+            phiprof::start("write-hdf5");
+            MPI_Barrier(MPI_COMM_WORLD);
+            EGrid.writeHDF("test.0000.h5", outputData);
+
+            phiprof::stop("write-hdf5");
+
+
             
             phiprof::start("write-system");
             logFile << "(IO): Writing spatial cell and reduced system data to disk, tstep = " << P::tstep << " t = " << P::t << endl << writeVerbose;
