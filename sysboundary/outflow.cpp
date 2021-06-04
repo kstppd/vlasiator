@@ -221,7 +221,7 @@ namespace SBC {
       std::array<bool,6> isThisCellOnAFace;
       
       // Assign boundary flags to local DCCRG cells
-      vector<CellID> cells = mpiGrid.get_cells();
+      const vector<CellID>& cells = getLocalCells();
       for(const auto& dccrgId : cells) {
          if(mpiGrid[dccrgId]->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) continue;
          creal* const cellParams = &(mpiGrid[dccrgId]->parameters[0]);
@@ -357,6 +357,14 @@ namespace SBC {
       }
    }
 
+   void Outflow::fieldSolverBoundaryCondMagneticFieldProjection(
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & bGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+      cint i,
+      cint j,
+      cint k
+   ) {
+   }
    void Outflow::fieldSolverBoundaryCondElectricField(
       FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
       cint i,
