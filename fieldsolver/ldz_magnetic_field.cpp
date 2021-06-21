@@ -88,6 +88,7 @@ void propagateMagneticField(
             break;
             
          case RK_ORDER2_STEP2:
+            std::cout<<"Solving 2nd Order"<<std::endl;
             EGrid0 = EDt2Grid.get(i,j,k);
             EGrid1 = EDt2Grid.get(i,j+1,k);
             EGrid2 = EDt2Grid.get(i,j,k+1);
