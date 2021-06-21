@@ -111,16 +111,16 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    
-   if (myRank ==MASTER_RANK){
-      std::cout<<"-----UPML-------\n";
-      std::cout<<"Width= "<<this->upmlWidth<<"\n";
-      std::cout<<"Xp= "<<this->pml_Xp<<"\n";
-      std::cout<<"Xm= "<<this->pml_Xm<<"\n";
-      std::cout<<"Yp= "<<this->pml_Yp<<"\n";
-      std::cout<<"Ym= "<<this->pml_Ym<<"\n";
-      std::cout<<"Zp= "<<this->pml_Zp<<"\n";
-      std::cout<<"Zm= "<<this->pml_Zm<<std::endl;;
-   }
+   // if (myRank ==MASTER_RANK){
+   //    std::cout<<"-----UPML-------\n";
+   //    std::cout<<"Width= "<<this->upmlWidth<<"\n";
+   //    std::cout<<"Xp= "<<this->pml_Xp<<"\n";
+   //    std::cout<<"Xm= "<<this->pml_Xm<<"\n";
+   //    std::cout<<"Yp= "<<this->pml_Yp<<"\n";
+   //    std::cout<<"Ym= "<<this->pml_Ym<<"\n";
+   //    std::cout<<"Zp= "<<this->pml_Zp<<"\n";
+   //    std::cout<<"Zm= "<<this->pml_Zm<<std::endl;;
+   // }
 
 
 
