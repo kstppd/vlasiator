@@ -15,7 +15,7 @@ namespace PerfectlyMatchedLayer{
               const FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid, const Real dt);
 
       private:
-         void outputVarsPML(std::map<int, std::string>& output); 
+         // void outputVarsPML(std::map<int, std::string>& output); 
          bool getParameters();
          void addParameters();
          int upmlWidth;

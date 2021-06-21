@@ -212,7 +212,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
       }
    }
 
-   Real ds = Parameters::dx_ini;
+   Real ds = 0.3;
    Real orderbc=4.0;
    Real rmax=1e-16;
    Real delbc = this->upmlWidth * ds;
@@ -363,42 +363,42 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
 
 
-void PML::UPML::outputVarsPML(std::map<int, std::string> &output){
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1EX,"C1EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2EX,"C2EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3EX,"C3EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4EX,"C4EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5EX,"C5EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6EX,"C6EX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1EY,"C1EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2EY,"C2EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3EY,"C3EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4EY,"C4EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5EY,"C5EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6EY,"C6EY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1EZ,"C1EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2EZ,"C2EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3EZ,"C3EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4EZ,"C4EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5EZ,"C5EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6EZ,"C6EZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1BX,"C1BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2BX,"C2BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3BX,"C3BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4BX,"C4BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5BX,"C5BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6BX,"C6BX"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1BY,"C1BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2BY,"C2BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3BY,"C3BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4BY,"C4BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5BY,"C5BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6BY,"C6BY"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C1BZ,"C1BZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C2BZ,"C2BZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C3BZ,"C3BZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C4BZ,"C4BZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C5BZ,"C5BZ"));
-   output.insert(std::pair<int, std::string>(fsgrids::upml::C6BZ,"C6BZ"));
+// void PML::UPML::outputVarsPML(std::map<int, std::string> &output){
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EX,"C1EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EX,"C2EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EX,"C3EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EX,"C4EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EX,"C5EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EX,"C6EX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EY,"C1EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EY,"C2EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EY,"C3EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EY,"C4EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EY,"C5EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EY,"C6EY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EZ,"C1EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EZ,"C2EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EZ,"C3EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EZ,"C4EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EZ,"C5EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EZ,"C6EZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BX,"C1BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BX,"C2BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BX,"C3BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BX,"C4BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BX,"C5BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BX,"C6BX"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BY,"C1BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BY,"C2BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BY,"C3BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BY,"C4BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BY,"C5BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BY,"C6BY"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BZ,"C1BZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BZ,"C2BZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BZ,"C3BZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BZ,"C4BZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BZ,"C5BZ"));
+//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BZ,"C6BZ"));
    
-}
+// }
