@@ -106,9 +106,9 @@ namespace projects {
    }
    
    void test_fp::setProjectBField(
-      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
-      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
-      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2>& BgBGrid,
+      FsGrid< fsgrids::technical, 2>& technicalGrid
    ) {
       setBackgroundFieldToZero(BgBGrid);
       
@@ -132,6 +132,7 @@ namespace projects {
                   creal y = xyz[1] + 0.5 * perBGrid.DY;
                   creal z = xyz[2] + 0.5 * perBGrid.DZ;
                   
+                  creal rtemp =sqrt(x*x +y*y +z*z);
                   switch (this->CASE) {
                      case BXCASE:         
                         cell->at(fsgrids::bfield::PERBX) = 0.1 * this->B0 * areaFactor;
@@ -155,21 +156,30 @@ namespace projects {
                               cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
                         break;
                      case BALLCASE:
-                        cell->at(fsgrids::bfield::PERBX) = 0.1 * this->B0 * areaFactor;
-                        cell->at(fsgrids::bfield::PERBY) = 0.1 * this->B0 * areaFactor;
-                        cell->at(fsgrids::bfield::PERBZ) = 0.1 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBX) = 0.0 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBY) = 0.0 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBZ) = 0.0 * this->B0 * areaFactor;
+
+                        if (rtemp < 30e3){
+
+
+                              cell->at(fsgrids::bfield::PERBX) = this->B0 * areaFactor;
+                              cell->at(fsgrids::bfield::PERBY) = this->B0 * areaFactor;
+                              //cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
+
+                        }
                         
                         //areaFactor = (CellParams::DX * CellParams::DY) / (dx * dy);
                         
-                        if (y >= -dy && y <= dy)
-                           if (z >= -dz && z <= dz)
-                              cell->at(fsgrids::bfield::PERBX) = this->B0 * areaFactor;
-                        if (x >= -dx && x <= dx)
-                           if (z >= -dz && z <= dz)
-                              cell->at(fsgrids::bfield::PERBY) = this->B0 * areaFactor;
-                        if (x >= -dx && x <= dx)
-                           if (y >= -dy && y <= dy)
-                              cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
+                        //if (y >= -dy && y <= dy)
+                           //if (z >= -dz && z <= dz)
+                              //cell->at(fsgrids::bfield::PERBX) = this->B0 * areaFactor;
+                        //if (x >= -dx && x <= dx)
+                           //if (z >= -dz && z <= dz)
+                              //cell->at(fsgrids::bfield::PERBY) = this->B0 * areaFactor;
+                        //if (x >= -dx && x <= dx)
+                           //if (y >= -dy && y <= dy)
+                              //cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
                         break;
                   }
                }
@@ -244,9 +254,9 @@ namespace projects {
             VZ = 0.0;
             break;
           case BALLCASE:
-            VX = 0.5 / sqrt(3.0);
-            VY = 0.5 / sqrt(3.0);
-            VZ = 0.5 / sqrt(3.0);
+            VY = 0.0 ;// /sqrt(3.0);
+            VZ = 0.0;// /sqrt(3.0);
+            VX = -0.5;// / sqrt(3.0);
             break;
          }
       }
@@ -314,7 +324,7 @@ namespace projects {
                   
       mpiGrid.balance_load();
 
-//       const vector<CellID>& cells = getLocalCells();
+//       auto cells = mpiGrid.get_cells();           
 //       if(cells.empty()) {
 //          std::cout << "Rank " << myRank << " has no cells!" << std::endl;
 //       } else {
