@@ -43,6 +43,7 @@
 #include "spatial_cell.hpp"
 #include "datareduction/datareducer.h"
 #include "sysboundary/sysboundary.h"
+#include "sysboundary/upml.h"
 
 #include "fieldsolver/fs_common.h"
 #include "projects/project.h"
@@ -403,6 +404,7 @@ int main(int argn,char* args[]) {
    FsGridCouplingInformation gridCoupling;
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH> fsUpml(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> EHallGrid(fsGridDimensions, comm, periodicity,gridCoupling);
@@ -414,6 +416,8 @@ int main(int argn,char* args[]) {
    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> BgBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, FS_STENCIL_WIDTH> volGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> technicalGrid(fsGridDimensions, comm, periodicity,gridCoupling);
+
+   
 
    // Set DX,DY and DZ
    // TODO: This is currently just taking the values from cell 1, and assuming them to be
@@ -442,6 +446,13 @@ int main(int argn,char* args[]) {
    }
    phiprof::stop("Init fieldsolver grids");
    
+   phiprof::start("Init UPML grids");
+   PerfectlyMatchedLayer::UPML UPML;
+   UPML.update(fsUpml,technicalGrid,0.0);
+   phiprof::stop("Init UPML grids");
+
+
+
    // Initialize grid.  After initializeGrid local cells have dist
    // functions, and B fields set. Cells have also been classified for
    // the various sys boundary conditions.  All remote cells have been
@@ -496,7 +507,8 @@ int main(int argn,char* args[]) {
 		   BgBGrid,
 		   volGrid,
 		   technicalGrid,
-		   sysBoundaries, 0.0, 1.0
+		   sysBoundaries,
+         fsUpml, 0.0, 1.0
 		   );
 
    phiprof::start("getFieldsFromFsGrid");
@@ -628,6 +640,9 @@ int main(int argn,char* args[]) {
    double beforeSimulationTime=P::t_min;
    double beforeStep=P::tstep_min;
    
+   UPML.update(fsUpml,technicalGrid,P::dt);
+
+
    while(P::tstep <= P::tstep_max  &&
          P::t-P::dt <= P::t_max+DT_EPSILON &&
          wallTimeRestartCounter <= P::exitAfterRestarts) {
@@ -903,6 +918,8 @@ int main(int argn,char* args[]) {
       
       // Propagate fields forward in time by dt. This needs to be done before the
       // moments for t + dt are computed (field uses t and t+0.5dt)
+       UPML.update(fsUpml,technicalGrid,P::dt);
+
       if (P::propagateField) {
          phiprof::start("Propagate Fields");
 
@@ -928,6 +945,7 @@ int main(int argn,char* args[]) {
             volGrid,
             technicalGrid,
             sysBoundaries,
+            fsUpml,
             P::dt,
             P::fieldSolverSubcycles
          );

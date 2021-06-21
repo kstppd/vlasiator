@@ -231,6 +231,9 @@ namespace fsgrids {
       PERBX,  /*!< Perturbed Magnetic field x-component, averaged over cell x-face. Propagated by field solver.*/
       PERBY,  /*!< Perturbed Magnetic field y-component, averaged over cell y-face. Propagated by field solver.*/
       PERBZ,  /*!< Perturbed Magnetic field z-component, averaged over cell z-face. Propagated by field solver.*/
+      PERHX,  /*!< Perturbed Magnetic Interm  field x-component, averaged over cell x-face. Propagated by field solver.*/
+      PERHY,  /*!< Perturbed Magnetic Interm field y-component, averaged over cell y-face. Propagated by field solver.*/
+      PERHZ,  /*!< Perturbed Magnetic Interm field z-component, averaged over cell z-face. Propagated by field solver.*/
       N_BFIELD
    };
    
@@ -238,9 +241,52 @@ namespace fsgrids {
       EX,     /*!< Total electric field x-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       EY,     /*!< Total electric field y-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       EZ,     /*!< Total electric field z-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
+      DX,     /*!< Total electric intrerm field x-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
+      DY,     /*!< Total electric intrerm field y-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
+      DZ,     /*!< Total electric intrerm field z-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       N_EFIELD
    };
-   
+
+   enum upml {
+      C1EX,
+      C2EX,
+      C3EX,
+      C4EX,
+      C5EX,
+      C6EX,
+      C1EY,
+      C2EY,
+      C3EY,
+      C4EY,
+      C5EY,
+      C6EY,
+      C1EZ,
+      C2EZ,
+      C3EZ,
+      C4EZ,
+      C5EZ,
+      C6EZ,
+      C1BX,
+      C2BX,
+      C3BX,
+      C4BX,
+      C5BX,
+      C6BX,
+      C1BY,
+      C2BY,
+      C3BY,
+      C4BY,
+      C5BY,
+      C6BY,
+      C1BZ,
+      C2BZ,
+      C3BZ,
+      C4BZ,
+      C5BZ,
+      C6BZ,
+      N_UPML
+   };
+
    enum ehall {
       EXHALL_000_100,   /*!< Hall term x averaged along x on -y/-z edge of spatial cell.*/
       EYHALL_000_010,   /*!< Hall term y averaged along y on -x/-z edge of spatial cell.*/

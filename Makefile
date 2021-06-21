@@ -116,6 +116,7 @@ LIBS += ${LIB_PROFILE}
 LIBS += ${LIB_VLSV}
 LIBS += ${LIB_JEMALLOC} 
 LIBS += ${LIB_PAPI}
+LIBS += ${LIB_FSGRID}
 
 # Define common dependencies
 DEPS_COMMON = common.h common.cpp definitions.h mpiconversion.h logger.h object_wrapper.h
@@ -195,7 +196,8 @@ OBJS = 	version.o memoryallocation.o backgroundfield.o quadr.o dipole.o linedipo
 	IPShock.o object_wrapper.o\
 	verificationLarmor.o Shocktest.o grid.o ioread.o iowrite.o vlasiator.o logger.o\
 	common.o parameters.o readparameters.o spatial_cell.o mesh_data_container.o\
-	vlasovmover.o $(FIELDSOLVER).o fs_common.o fs_limiters.o gridGlue.o
+	vlasovmover.o $(FIELDSOLVER).o fs_common.o fs_limiters.o gridGlue.o\
+	upml.o
 
 # Add Vlasov solver objects (depend on mesh: AMR or non-AMR)
 ifeq ($(MESH),AMR)
@@ -284,6 +286,8 @@ mesh_data_container.o: ${DEPS_COMMON} mesh_data_container.h mesh_data.h
 outflow.o: ${DEPS_COMMON} sysboundary/outflow.h sysboundary/outflow.cpp projects/project.h projects/project.cpp fieldsolver/ldz_magnetic_field.cpp
 	${CMP} ${CXXFLAGS} ${FLAGS} -c sysboundary/outflow.cpp ${INC_FSGRID} ${INC_DCCRG} ${INC_ZOLTAN} ${INC_BOOST} ${INC_EIGEN}
 
+upml.o: ${DEPS_COMMON} sysboundary/upml.h sysboundary/upml.cpp 
+	${CMP} ${CXXFLAGS} ${FLAGS} -c sysboundary/upml.cpp ${INC_FSGRID} 
 
 setmaxwellian.o: ${DEPS_SYSBOUND} sysboundary/setmaxwellian.h sysboundary/setmaxwellian.cpp sysboundary/setbyuser.h sysboundary/setbyuser.cpp
 	${CMP} ${CXXFLAGS} ${FLAGS} ${MATHFLAGS} -c sysboundary/setmaxwellian.cpp ${INC_DCCRG} ${INC_FSGRID} ${INC_ZOLTAN} ${INC_BOOST} ${INC_EIGEN}

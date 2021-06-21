@@ -98,6 +98,7 @@ bool propagateFields(
    FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, FS_STENCIL_WIDTH> & volGrid,
    FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    SysBoundary& sysBoundaries,
+   FsGrid< std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH> &fsUpml,
    creal& dt,
    cuint subcycles
 );
