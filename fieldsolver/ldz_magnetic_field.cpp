@@ -105,7 +105,7 @@ void propagateMagneticField(
             pml = fsUpml.get(i, j, k);
             CurlEx_dt2 = 1.0/dz*(EGrid2->at(fsgrids::efield::EY) - EGrid0->at(fsgrids::efield::EY)) + 1.0/dy*(EGrid0->at(fsgrids::efield::EZ) - EGrid1->at(fsgrids::efield::EZ));
             bstore_x_dt2 = perBGrid0->at(fsgrids::bfield::PERHXdt2);
-            perBGrid0->at(fsgrids::bfield::PERHXdt2) = pml->at(fsgrids::upml::C1BXdt2) * perBGrid0->at(fsgrids::bfield::PERHXdt2) + pml->at(fsgrids::upml::C2BXdt2) * CurlEx_dt2;
+            perBDt2Grid0->at(fsgrids::bfield::PERHXdt2) = pml->at(fsgrids::upml::C1BXdt2) * perBGrid0->at(fsgrids::bfield::PERHXdt2) + pml->at(fsgrids::upml::C2BXdt2) * CurlEx_dt2;
             perBDt2Grid0->at(fsgrids::bfield::PERBX) = pml->at(fsgrids::upml::C3BXdt2) * perBGrid0->at(fsgrids::bfield::PERBX) + pml->at(fsgrids::upml::C4BXdt2) * (pml->at(fsgrids::upml::C5BXdt2) * perBGrid0->at(fsgrids::bfield::PERHXdt2) - bstore_x_dt2 * pml->at(fsgrids::upml::C6BXdt2));
             break;
             
@@ -157,7 +157,7 @@ void propagateMagneticField(
             pml = fsUpml.get(i, j, k);
             CurlEy_dt2 = (1.0/dx*(EGrid2->at(fsgrids::efield::EZ) - EGrid0->at(fsgrids::efield::EZ)) + 1.0/dz*(EGrid0->at(fsgrids::efield::EX) - EGrid1->at(fsgrids::efield::EX)));
             bstore_y_dt2 = perBGrid0->at(fsgrids::bfield::PERHYdt2);
-            perBGrid0->at(fsgrids::bfield::PERHYdt2) = pml->at(fsgrids::upml::C1BYdt2) * perBGrid0->at(fsgrids::bfield::PERHYdt2) + pml->at(fsgrids::upml::C2BYdt2) * CurlEy_dt2;
+            perBDt2Grid0->at(fsgrids::bfield::PERHYdt2) = pml->at(fsgrids::upml::C1BYdt2) * perBGrid0->at(fsgrids::bfield::PERHYdt2) + pml->at(fsgrids::upml::C2BYdt2) * CurlEy_dt2;
             perBDt2Grid0->at(fsgrids::bfield::PERBY) = pml->at(fsgrids::upml::C3BYdt2) * perBGrid0->at(fsgrids::bfield::PERBY) + pml->at(fsgrids::upml::C4BYdt2) * (pml->at(fsgrids::upml::C5BYdt2) * perBGrid0->at(fsgrids::bfield::PERHYdt2) - bstore_y_dt2 * pml->at(fsgrids::upml::C6BYdt2));
 
             break;
@@ -213,7 +213,7 @@ void propagateMagneticField(
             pml = fsUpml.get(i, j, k);
             CurlEz_dt2 = (1.0/dy*(EGrid2->at(fsgrids::efield::EX) - EGrid0->at(fsgrids::efield::EX)) + 1.0/dx*(EGrid0->at(fsgrids::efield::EY) - EGrid1->at(fsgrids::efield::EY)));
             bstore_z_dt2 = perBGrid0->at(fsgrids::bfield::PERHZdt2);
-            perBGrid0->at(fsgrids::bfield::PERHZdt2) = pml->at(fsgrids::upml::C1BZdt2) * perBGrid0->at(fsgrids::bfield::PERHZdt2) + pml->at(fsgrids::upml::C2BZdt2) * CurlEz_dt2;
+            perBDt2Grid0->at(fsgrids::bfield::PERHZdt2) = pml->at(fsgrids::upml::C1BZdt2) * perBGrid0->at(fsgrids::bfield::PERHZdt2) + pml->at(fsgrids::upml::C2BZdt2) * CurlEz_dt2;
             perBDt2Grid0->at(fsgrids::bfield::PERBZ) = pml->at(fsgrids::upml::C3BZdt2) * perBGrid0->at(fsgrids::bfield::PERBZ) + pml->at(fsgrids::upml::C4BZdt2) * (pml->at(fsgrids::upml::C5BZdt2) * perBGrid0->at(fsgrids::bfield::PERHZdt2) - bstore_z_dt2 * pml->at(fsgrids::upml::C6BZdt2));
 
            
