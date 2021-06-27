@@ -99,7 +99,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
    Real mur = 1.0;
    Real epsr = 1.0;
    Real eta = etaz * sqrt(mur / epsr);
-   this->upmlWidth = 12;
+   this->upmlWidth = 20;
    this->pml_Xm = true;
    this->pml_Xp = false;
    this->pml_Ym = true;
@@ -344,6 +344,207 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
             val->at(fsgrids::upml::C4EZ) = 1.0 / facp / epsr / epsz;
             val->at(fsgrids::upml::C5BY) = facp;
             val->at(fsgrids::upml::C6BY) = facm;
+         }
+      }
+   }
+
+
+
+
+/*********************************/
+/*********************************/
+/*********************************/
+/****2nd ORDER********************/
+/*********************************/
+/*********************************/
+/*********************************/
+   // Set some constants for inner part of domain
+   Real C1dt2 = 1.0;
+   Real C2dt2 = dt/2.0;
+   Real C3dt2 = 1.0;
+   Real C4dt2 = 1.0 / 2.0 / epsr / epsr / epsz / epsz;
+   Real C5dt2 = 2.0 * epsr * epsz;
+   Real C6dt2 = 2.0 * epsr * epsz;
+
+   Real D1dt2 = 1.0;
+   Real D2dt2 = dt / 2.0;
+   Real D3dt2 = 1.0;
+   Real D4dt2 = 1.0 / 2.0 / epsr / epsz / mur / muz;
+   Real D5dt2 = 2.0 * epsr * epsz;
+   Real D6dt2 = 2.0 * epsr * epsz;
+
+   for (int k = 0; k < localDims[2]; k++) {
+      for (int j = 0; j < localDims[1]; j++) {
+         for (int i = 0; i < localDims[0]; i++) {
+
+            std::array<Real, fsgrids::upml::N_UPML>* val;
+            val = fsUpml.get(i, j, k);
+
+            val->at(fsgrids::upml::C1EXdt2) = C1dt2;
+            val->at(fsgrids::upml::C1EYdt2) = C1dt2;
+            val->at(fsgrids::upml::C1EZdt2) = C1dt2;
+            val->at(fsgrids::upml::C1BXdt2) = D1dt2;
+            val->at(fsgrids::upml::C1BYdt2) = D1dt2;
+            val->at(fsgrids::upml::C1BZdt2) = D1dt2;
+
+            val->at(fsgrids::upml::C2EXdt2) = C2dt2;
+            val->at(fsgrids::upml::C2EYdt2) = C2dt2;
+            val->at(fsgrids::upml::C2EZdt2) = C2dt2;
+            val->at(fsgrids::upml::C2BXdt2) = D2dt2;
+            val->at(fsgrids::upml::C2BYdt2) = D2dt2;
+            val->at(fsgrids::upml::C2BZdt2) = D2dt2;
+
+            val->at(fsgrids::upml::C3EXdt2) = C3dt2;
+            val->at(fsgrids::upml::C3EYdt2) = C3dt2;
+            val->at(fsgrids::upml::C3EZdt2) = C3dt2;
+            val->at(fsgrids::upml::C3BXdt2) = D3dt2;
+            val->at(fsgrids::upml::C3BYdt2) = D3dt2;
+            val->at(fsgrids::upml::C3BZdt2) = D3dt2;
+
+            val->at(fsgrids::upml::C4EXdt2) = C4dt2;
+            val->at(fsgrids::upml::C4EYdt2) = C4dt2;
+            val->at(fsgrids::upml::C4EZdt2) = C4dt2;
+            val->at(fsgrids::upml::C4BXdt2) = D4dt2;
+            val->at(fsgrids::upml::C4BYdt2) = D4dt2;
+            val->at(fsgrids::upml::C4BZdt2) = D4dt2;
+
+            val->at(fsgrids::upml::C5EXdt2) = C5dt2;
+            val->at(fsgrids::upml::C5EYdt2) = C5dt2;
+            val->at(fsgrids::upml::C5EZdt2) = C5dt2;
+            val->at(fsgrids::upml::C5BXdt2) = D5dt2;
+            val->at(fsgrids::upml::C5BYdt2) = D5dt2;
+            val->at(fsgrids::upml::C5BZdt2) = D5dt2;
+
+            val->at(fsgrids::upml::C6EXdt2) = C6dt2;
+            val->at(fsgrids::upml::C6EYdt2) = C6dt2;
+            val->at(fsgrids::upml::C6EZdt2) = C6dt2;
+            val->at(fsgrids::upml::C6BXdt2) = D6dt2;
+            val->at(fsgrids::upml::C6BYdt2) = D6dt2;
+            val->at(fsgrids::upml::C6BZdt2) = D6dt2;
+         }
+      }
+   }
+
+   // X component
+   for (int i = 0; i < localDims[0]; i++) {
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+
+            std::array<int32_t, 3> pos;
+            pos = fsUpml.getGlobalIndices(i, j, k);
+
+            // Skip cells that do not belong to the X- PML layers
+            if (pos[0] > this->upmlWidth)
+               continue;
+
+            Real x1 = (this->upmlWidth - pos[0] + 1) * ds;
+            Real x2 = (this->upmlWidth - pos[0]) * ds;
+            Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            // if (pos[2]==15 ) std::cout<<pos[0]<<" "<<x1<<" " <<x2<<" "<<sigmam<<" "<<sigma<<std::endl;
+
+            Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            Real facm = (2 * epsr * epsz * ki - sigma * dt/2.0);
+            Real facp = (2 * epsr * epsz * ki + sigma * dt/2.0);
+
+            std::array<Real, fsgrids::upml::N_UPML>* val;
+            val = fsUpml.get(i, j, k);
+            val->at(fsgrids::upml::C5EXdt2) = facp;
+            val->at(fsgrids::upml::C6EXdt2) = facm;
+            val->at(fsgrids::upml::C1BZdt2) = facm / facp;
+            val->at(fsgrids::upml::C2BZdt2) = 2.0 * epsr * epsz * 0.5*dt / facp;
+            val->at(fsgrids::upml::C3BYdt2) = facm / facp;
+            val->at(fsgrids::upml::C4BYdt2) = 1.0 / facp / mur / muz;
+         }
+      }
+   }
+
+   for (int i = 0; i < localDims[0]; i++) {
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+
+            std::array<int32_t, 3> pos;
+            pos = fsUpml.getGlobalIndices(i, j, k);
+
+            // Skip cells that do not belong to the X- PML layers
+            if (pos[0] > this->upmlWidth)
+               continue;
+
+            Real x1 = (this->upmlWidth - pos[0] + 1.5) * ds;
+            Real x2 = (this->upmlWidth - pos[0] + 0.5) * ds;
+            Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            Real facm = (2 * epsr * epsz * ki - sigma * dt/2.0);
+            Real facp = (2 * epsr * epsz * ki + sigma * dt/2.0);
+
+            std::array<Real, fsgrids::upml::N_UPML>* val;
+            val = fsUpml.get(i, j, k);
+            val->at(fsgrids::upml::C1EZdt2) = facm / facp;
+            val->at(fsgrids::upml::C2EZdt2) = 2.0 * epsr * epsz * 0.5*dt / facp;
+            val->at(fsgrids::upml::C3EYdt2) = facm / facp;
+            val->at(fsgrids::upml::C4EYdt2) = 1.0 / facp / epsr / epsz;
+            val->at(fsgrids::upml::C5BXdt2) = facp;
+            val->at(fsgrids::upml::C6BXdt2) = facm;
+         }
+      }
+   }
+
+   // Y component
+   for (int i = 0; i < localDims[0]; i++) {
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+
+            std::array<int32_t, 3> pos;
+            pos = fsUpml.getGlobalIndices(i, j, k);
+
+            // Skip cells that do not belong to the X- PML layers
+            if (pos[1] > this->upmlWidth)
+               continue;
+
+            Real y1 = (this->upmlWidth - pos[1] + 1) * ds;
+            Real y2 = (this->upmlWidth - pos[1]) * ds;
+            Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            Real facm = (2 * epsr * epsz * ki - sigma * dt/2.0);
+            Real facp = (2 * epsr * epsz * ki + sigma * dt/2.0);
+
+            std::array<Real, fsgrids::upml::N_UPML>* val;
+            val = fsUpml.get(i, j, k);
+            val->at(fsgrids::upml::C5EYdt2) = facp;
+            val->at(fsgrids::upml::C6EYdt2) = facm;
+            val->at(fsgrids::upml::C1BXdt2) = facm / facp;
+            val->at(fsgrids::upml::C2BXdt2) = 2.0 * epsr * epsz * 0.5*dt / facp;
+            val->at(fsgrids::upml::C3BZdt2) = facm / facp;
+            val->at(fsgrids::upml::C4BZdt2) = 1.0 / facp / mur / muz;
+         }
+      }
+   }
+
+   for (int i = 0; i < localDims[0]; i++) {
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+
+            std::array<int32_t, 3> pos;
+            pos = fsUpml.getGlobalIndices(i, j, k);
+
+            // Skip cells that do not belong to the X- PML layers
+            if (pos[1] > this->upmlWidth)
+               continue;
+
+            Real y1 = (this->upmlWidth - pos[1] + 1.5) * ds;
+            Real y2 = (this->upmlWidth - pos[1] + 0.5) * ds;
+            Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            Real facm = (2 * epsr * epsz * ki - sigma * dt/2.0);
+            Real facp = (2 * epsr * epsz * ki + sigma * dt/2.0);
+
+            std::array<Real, fsgrids::upml::N_UPML>* val;
+            val = fsUpml.get(i, j, k);
+            val->at(fsgrids::upml::C1EXdt2) = facm / facp;
+            val->at(fsgrids::upml::C2EXdt2) = 2.0 * epsr * epsz * 0.5*dt / facp;
+            val->at(fsgrids::upml::C3EZdt2) = facm / facp;
+            val->at(fsgrids::upml::C4EZdt2) = 1.0 / facp / epsr / epsz;
+            val->at(fsgrids::upml::C5BYdt2) = facp;
+            val->at(fsgrids::upml::C6BYdt2) = facm;
          }
       }
    }

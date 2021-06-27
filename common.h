@@ -234,6 +234,9 @@ namespace fsgrids {
       PERHX,  /*!< Perturbed Magnetic Interm  field x-component, averaged over cell x-face. Propagated by field solver.*/
       PERHY,  /*!< Perturbed Magnetic Interm field y-component, averaged over cell y-face. Propagated by field solver.*/
       PERHZ,  /*!< Perturbed Magnetic Interm field z-component, averaged over cell z-face. Propagated by field solver.*/
+      PERHXdt2,  /*!< Perturbed Magnetic Interm  field x-component, averaged over cell x-face. Propagated by field solver.*/
+      PERHYdt2,  /*!< Perturbed Magnetic Interm field y-component, averaged over cell y-face. Propagated by field solver.*/
+      PERHZdt2,  /*!< Perturbed Magnetic Interm field z-component, averaged over cell z-face. Propagated by field solver.*/
       N_BFIELD
    };
    
@@ -284,6 +287,43 @@ namespace fsgrids {
       C4BZ,
       C5BZ,
       C6BZ,
+      C1EXdt2,
+      C2EXdt2,
+      C3EXdt2,
+      C4EXdt2,
+      C5EXdt2,
+      C6EXdt2,
+      C1EYdt2,
+      C2EYdt2,
+      C3EYdt2,
+      C4EYdt2,
+      C5EYdt2,
+      C6EYdt2,
+      C1EZdt2,
+      C2EZdt2,
+      C3EZdt2,
+      C4EZdt2,
+      C5EZdt2,
+      C6EZdt2,
+      C1BXdt2,
+      C2BXdt2,
+      C3BXdt2,
+      C4BXdt2,
+      C5BXdt2,
+      C6BXdt2,
+      C1BYdt2,
+      C2BYdt2,
+      C3BYdt2,
+      C4BYdt2,
+      C5BYdt2,
+      C6BYdt2,
+      C1BZdt2,
+      C2BZdt2,
+      C3BZdt2,
+      C4BZdt2,
+      C5BZdt2,
+      C6BZdt2,
+
       N_UPML
    };
 
