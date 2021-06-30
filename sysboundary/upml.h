@@ -18,7 +18,7 @@ namespace PerfectlyMatchedLayer{
          // void outputVarsPML(std::map<int, std::string>& output); 
          bool getParameters();
          void addParameters();
-         int upmlWidth;
+         Real upmlWidth;
          bool pml_Xp,pml_Xm;
          bool pml_Yp,pml_Ym;
          bool pml_Zp,pml_Zm;

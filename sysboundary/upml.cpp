@@ -212,16 +212,24 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
       }
    }
 
-   Real ds = 0.3;
-   Real orderbc=4.0;
+   // Real ds = 3;
+   Real ds= Parameters::dx_ini;
+   Real orderbc=5.0;
    Real rmax=1e-16;
    Real delbc = this->upmlWidth * ds;
    Real sigmam = -log(rmax) * (orderbc + 1.0) / (2.0 * eta * delbc);
+   sigmam*=500;
    Real sigfactor = sigmam / (ds * pow(delbc,orderbc) * (orderbc + 1.0));
    Real kmax = 1.0;
    Real kfactor = (kmax - 1.0) / ds / (orderbc + 1.0) / pow(delbc, orderbc);
 
 
+   // if (myRank==0){
+   //    std::cout<<"DS= "<<ds<<"\n";
+   //    std::cout<<"Sfactor= "<<sigfactor<<"\n";
+   //    std::cout<<"Kfactor= "<<kfactor<<"\n";
+   //    std::cout<<"Smax= "<<sigmam<<"\n";
+   // }
  //X component
    for (int i=0; i < localDims[0];i++){
       for (int k=0; k < localDims[2];k++){
@@ -235,10 +243,15 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
             Real x1 = (this->upmlWidth - pos[0] + 1) * ds;
             Real x2 = (this->upmlWidth - pos[0]) * ds;
-            Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
-            // if (pos[2]==15 ) std::cout<<pos[0]<<" "<<x1<<" " <<x2<<" "<<sigmam<<" "<<sigma<<std::endl;
 
-            Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            Real ksi = (this->upmlWidth - pos[0]) / this->upmlWidth;
+            Real sigma = sigmam * pow(ksi, orderbc);
+            Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+
+            // Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            // Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+
+            // if (pos[1]==15 ) std::cout<<pos[0]<<" "<<x1<<" " <<x2<<" "<<sigmam<<" "<<sigma<<std::endl;
             Real facm = (2 * epsr * epsz * ki - sigma * dt);
             Real facp = (2 * epsr * epsz * ki + sigma * dt);
 
@@ -268,8 +281,13 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
             Real x1 = (this->upmlWidth - pos[0] + 1.5) * ds;
             Real x2 = (this->upmlWidth - pos[0] + 0.5) * ds;
-            Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
-            Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+
+            Real ksi = (this->upmlWidth - pos[0] + .5) / this->upmlWidth;
+            Real sigma = sigmam * pow(ksi, orderbc);
+            Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+
+            // Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
+            // Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
             Real facm = (2 * epsr * epsz * ki - sigma * dt);
             Real facp = (2 * epsr * epsz * ki + sigma * dt);
 
@@ -299,8 +317,13 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
             Real y1 = (this->upmlWidth - pos[1] + 1) * ds;
             Real y2 = (this->upmlWidth - pos[1]) * ds;
-            Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
-            Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+
+            Real ksi = (this->upmlWidth - pos[1]) / this->upmlWidth;
+            Real sigma = sigmam * pow(ksi, orderbc);
+            Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+
+            // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
             Real facm = (2 * epsr * epsz * ki - sigma * dt);
             Real facp = (2 * epsr * epsz * ki + sigma * dt);
 
@@ -331,8 +354,12 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
             Real y1 = (this->upmlWidth - pos[1] + 1.5) * ds;
             Real y2 = (this->upmlWidth - pos[1] + 0.5) * ds;
-            Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
-            Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            Real ksi = (this->upmlWidth - pos[1] + .5) / this->upmlWidth;
+            Real sigma = sigmam * pow(ksi, orderbc);
+            Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+
+            // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
+            // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
             Real facm = (2 * epsr * epsz * ki - sigma * dt);
             Real facp = (2 * epsr * epsz * ki + sigma * dt);
 
