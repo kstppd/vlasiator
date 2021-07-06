@@ -53,6 +53,8 @@ Real P::zmax = NAN;
 Real P::dx_ini = NAN;
 Real P::dy_ini = NAN;
 Real P::dz_ini = NAN;
+Real P::upmlFactor = NAN;
+int P::upmlOffset = NAN;
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -320,6 +322,10 @@ bool Parameters::addParameters(){
    Readparameters::add("AMR.box_center_y","y coordinate of the center of the box that is refined (for testing)",0.0);
    Readparameters::add("AMR.box_center_z","z coordinate of the center of the box that is refined (for testing)",0.0);
    Readparameters::addComposing("AMR.filterpasses", std::string("AMR filter passes for each individual refinement level"));
+
+   Readparameters::add("UPML.factor", "z coordinate of the center of the box that is refined (for testing)", 1.0);
+   Readparameters::add("UPML.offset", "z coordinate of the center of the box that is refined (for testing)", 0.0);
+
    return true;
 }
 
@@ -496,8 +502,10 @@ bool Parameters::getParameters(){
    Readparameters::get("AMR.coarsen_limit",P::amrCoarsenLimit);
   
   /*Read Blur Passes per Refinement Level*/
-   Readparameters::get("AMR.filterpasses",P::blurPassString);
-   
+   Readparameters::get("AMR.filterpasses", P::blurPassString);
+   Readparameters::get("UPML.factor", P::upmlFactor);
+   Readparameters::get("UPML.offset", P::upmlOffset);
+
    // Construct Vector of Passes used in grid.cpp
    bool isEmpty = blurPassString.size()==0;
    std::vector<int>::iterator  maxNumPassesPtr;
