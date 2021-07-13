@@ -23,54 +23,6 @@ bool PML::UPML::getParameters(){
    using namespace std;
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   
-   // if (!Readparameters::get("UPML.width", this->upmlWidth)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.xp", this->pml_Xp)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.xm", this->pml_Xm)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.yp", this->pml_Yp)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.Ym", this->pml_Ym)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.zp", this->pml_Zp)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // }
-   // if (!Readparameters::get("UPML.zm", this->pml_Zm)) {
-   //    if (myRank == MASTER_RANK)
-   //       cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-   //    exit(1);
-   // // }
-
-
-   // if (myRank ==MASTER_RANK){
-   //    cout<<"-----UPML-------\n";
-   //    cout<<"Width= "<<this->upmlWidth<<"\n";
-   //    cout<<"Xp= "<<this->pml_Xp<<"\n";
-   //    cout<<"Xm= "<<this->pml_Xm<<"\n";
-   //    cout<<"Yp= "<<this->pml_Yp<<"\n";
-   //    cout<<"Ym= "<<this->pml_Ym<<"\n";
-   //    cout<<"Zp= "<<this->pml_Zp<<"\n";
-   //    cout<<"Zm= "<<this->pml_Zm<<endl;;
-   // }
 
    return true;
 
@@ -117,7 +69,6 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
    const int* localDims = &fsUpml.getLocalSize()[0];
 
    // Zero Out PML 
-   // #pragma omp parallel for collapse(3)
    for (int k = 0; k < localDims[2]; k++) {
       for (int j = 0; j < localDims[1]; j++) {
          for (int i = 0; i < localDims[0]; i++) {
@@ -129,9 +80,6 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
          }
       }
    }
-
-
-
 
    //Set some constants for inner part of domain
    Real C1 = 1.0;
@@ -200,7 +148,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
       }
    }
 
-   // Real ds = 3;
+   
    Real ds= Parameters::dx_ini;
    int offset = Parameters::upmlOffset;
    Real orderbc=5.0;
@@ -213,12 +161,6 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
    Real kfactor = (kmax - 1.0) / ds / (orderbc + 1.0) / pow(delbc, orderbc);
 
 
-   // if (myRank==0){
-      // std::cout<<"Factor= "<<Parameters::upmlFactor<<"\n";
-   //    std::cout<<"Sfactor= "<<sigfactor<<"\n";
-   //    std::cout<<"Kfactor= "<<kfactor<<"\n";
-   //    std::cout<<"Smax= "<<sigmam<<"\n";
-   // }
  //X component
    for (int i=0; i < localDims[0];i++){
       for (int k=0; k < localDims[2];k++){
@@ -314,10 +256,6 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
          }
       }
    }
-
-
-
-
 
 
    //Y component
@@ -416,60 +354,4 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
       }
    }
 
-
-
-
-   // //IO
-   // std::map<int, std::string> outputData;
-   // this->outputVarsPML(outputData);
-   // std::vector<std::map<int, std::string>> outputPML {outputData};
-   // std::vector<FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH>*> vecpml {&fsUpml};
-
-   // hdfIO<Real> IO;
-   // IO.writeHDF(vecpml,99999, outputPML);
-   // IO.Hello();
-
 }
-                                       
-
-
-
-// void PML::UPML::outputVarsPML(std::map<int, std::string> &output){
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EX,"C1EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EX,"C2EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EX,"C3EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EX,"C4EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EX,"C5EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EX,"C6EX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EY,"C1EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EY,"C2EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EY,"C3EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EY,"C4EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EY,"C5EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EY,"C6EY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1EZ,"C1EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2EZ,"C2EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3EZ,"C3EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4EZ,"C4EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5EZ,"C5EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6EZ,"C6EZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BX,"C1BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BX,"C2BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BX,"C3BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BX,"C4BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BX,"C5BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BX,"C6BX"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BY,"C1BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BY,"C2BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BY,"C3BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BY,"C4BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BY,"C5BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BY,"C6BY"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C1BZ,"C1BZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C2BZ,"C2BZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C3BZ,"C3BZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C4BZ,"C4BZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C5BZ,"C5BZ"));
-//    output.insert(std::pair<int, std::string>(fsgrids::upml::C6BZ,"C6BZ"));
-   
-// }
