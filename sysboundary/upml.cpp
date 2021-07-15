@@ -510,9 +510,12 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real x1 = (this->upmlWidth - pos[0] + 1) * ds;
                Real x2 = (this->upmlWidth - pos[0]) * ds;
 
-               Real ksi = (this->upmlWidth - (Nx-pos[0]+offset)) / this->upmlWidth;
+               Real ksi = (this->upmlWidth - (Nx-pos[0]-offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               // if (pos[1]==15 && pos[2]==15 ) std::cout<<pos[0]<<" "<<ksi<<" "<<sigmam<<" "<<sigma<<std::endl;
+
+               // Real ksi = (this->upmlWidth - pos[0] + offset) / this->upmlWidth;
 
                // Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
@@ -601,9 +604,10 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real y1 = (this->upmlWidth - pos[1] + 1) * ds;
                Real y2 = (this->upmlWidth - pos[1]) * ds;
 
-               Real ksi = (this->upmlWidth - (Ny - pos[1] + offset)) / this->upmlWidth;
+               Real ksi = (this->upmlWidth - (Ny - pos[1] - offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               // if (pos[0]==15 && pos[2]==15 ) std::cout<<pos[1]<<" "<<ksi<<" "<<sigmam<<" "<<sigma<<std::endl;
 
                // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
@@ -688,7 +692,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real z1 = (this->upmlWidth - pos[2] + 1) * ds;
                Real z2 = (this->upmlWidth - pos[2]) * ds;
 
-               Real ksi = (this->upmlWidth - (Nz - pos[2] + offset)) / this->upmlWidth;
+               Real ksi = (this->upmlWidth - (Nz - pos[2] - offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
 
