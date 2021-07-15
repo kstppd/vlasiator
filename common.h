@@ -419,6 +419,7 @@ namespace fsgrids {
       int fsGridRank;       /*!< Rank in the fsGrids cartesian coordinator */
       uint SOLVE;           /*!< Bit mask to determine whether a given cell should solve E or B components. */
       int refLevel;         /*!<AMR Refinement Level*/
+      int pmlCell;
    };
    
 }
@@ -435,6 +436,14 @@ namespace sysboundarytype {
       OUTFLOW,          /*!< No fixed conditions on the fields and distribution function. */
       SET_MAXWELLIAN,   /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
       N_SYSBOUNDARY_CONDITIONS
+   };
+}
+
+namespace UPMLCELLS{
+   enum {
+      NORMALCELL,
+      UPMLCELL,
+      N_UPMLCELLS
    };
 }
 

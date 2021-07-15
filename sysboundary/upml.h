@@ -12,11 +12,11 @@ namespace PerfectlyMatchedLayer{
 
          UPML();
          void update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH>& fsUpml,
-              const FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid, const Real dt);
+               FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid, const Real dt);
 
       private:
          // void outputVarsPML(std::map<int, std::string>& output); 
-         bool getParameters();
+         void getParameters();
          void addParameters();
          Real upmlWidth;
          bool pml_Xp,pml_Xm;
