@@ -33,7 +33,7 @@ void PML::UPML::getParameters(){
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-   this->upmlWidth = 10;
+   this->upmlWidth = P::upmlCells;
    this->pml_Xp = false;
    this->pml_Xm = false;
    this->pml_Yp = false;

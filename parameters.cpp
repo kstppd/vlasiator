@@ -55,6 +55,7 @@ Real P::dy_ini = NAN;
 Real P::dz_ini = NAN;
 Real P::upmlFactor = NAN;
 int P::upmlOffset = NAN;
+int P::upmlCells = NAN;
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -325,6 +326,7 @@ bool Parameters::addParameters(){
 
    Readparameters::add("UPML.factor", "z coordinate of the center of the box that is refined (for testing)", 1.0);
    Readparameters::add("UPML.offset", "z coordinate of the center of the box that is refined (for testing)", 0.0);
+   Readparameters::add("UPML.cells", "Number of UPML Cells", 0.0);
 
    return true;
 }
@@ -505,6 +507,7 @@ bool Parameters::getParameters(){
    Readparameters::get("AMR.filterpasses", P::blurPassString);
    Readparameters::get("UPML.factor", P::upmlFactor);
    Readparameters::get("UPML.offset", P::upmlOffset);
+   Readparameters::get("UPML.cells", P::upmlCells);
 
    // Construct Vector of Passes used in grid.cpp
    bool isEmpty = blurPassString.size()==0;
