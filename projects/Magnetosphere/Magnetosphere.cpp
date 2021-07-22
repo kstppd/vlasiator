@@ -507,6 +507,42 @@ namespace projects {
          bgConstantField.initialize(this->constBgB[0], this->constBgB[1], this->constBgB[2]);
          setBackgroundField(bgConstantField, BgBGrid, true);
       }
+
+      // Here we merge  bgB to perB
+      const int* localDims = &perBGrid.getLocalSize()[0];
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+            for (int i = 0; i < localDims[0]; i++) {
+
+               std::array<Real, fsgrids::bfield::N_BFIELD>* perB;
+               std::array<Real, fsgrids::bgbfield::N_BGB>* bgB;
+
+               //Merge bgB into perB
+               perB=perBGrid.get(i,j,k);
+               bgB=BgBGrid.get(i,j,k);
+               perB->at(fsgrids::bfield::PERBX)+= bgB->at(fsgrids::bgbfield::BGBX);
+               perB->at(fsgrids::bfield::PERBY)+= bgB->at(fsgrids::bgbfield::BGBY);
+               perB->at(fsgrids::bfield::PERBZ)+= bgB->at(fsgrids::bgbfield::BGBZ);
+
+            }
+         }
+      }
+
+
+      //Now zero out all the BgB members
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+            for (int i = 0; i < localDims[0]; i++) {
+               for (int e = 0; e < fsgrids::bgbfield::N_BGB; ++e) {
+                  std::array<Real, fsgrids::bgbfield::N_BGB>* bgB;
+                  bgB = BgBGrid.get(i, j, k);
+                  bgB->at(e) = 0.0;
+               }
+            }
+         }
+      }
+
+
    }
    
    
