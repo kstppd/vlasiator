@@ -405,6 +405,7 @@ int main(int argn,char* args[]) {
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH> fsUpml(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBGridAvg(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> EHallGrid(fsGridDimensions, comm, periodicity,gridCoupling);
@@ -448,6 +449,7 @@ int main(int argn,char* args[]) {
    
    phiprof::start("Init UPML grids");
    PerfectlyMatchedLayer::UPML UPML;
+   PerfectlyMatchedLayer::History UpmlHistory;
    UPML.update(fsUpml,technicalGrid,0.0);
    phiprof::stop("Init UPML grids");
 
@@ -640,6 +642,7 @@ int main(int argn,char* args[]) {
    double beforeSimulationTime=P::t_min;
    double beforeStep=P::tstep_min;
    
+   //Update PML with current dt
    UPML.update(fsUpml,technicalGrid,P::dt);
 
 
@@ -657,6 +660,13 @@ int main(int argn,char* args[]) {
          checkExternalCommands();
       }
       phiprof::stop("checkExternalCommands");
+
+      
+      UpmlHistory.push(perBGrid);
+      UpmlHistory.getAvg(perBGridAvg);
+      UpmlHistory.getDiffB(perBGrid,perBGridAvg,technicalGrid);
+
+
 
       //write out phiprof profiles and logs with a lower interval than normal
       //diagnostic (every 10 diagnostic intervals).

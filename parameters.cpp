@@ -56,6 +56,14 @@ Real P::dz_ini = NAN;
 Real P::upmlFactor = NAN;
 int P::upmlOffset = NAN;
 int P::upmlCells = NAN;
+int P::upmlXm = NAN;
+int P::upmlYm = NAN;
+int P::upmlZm = NAN;
+int P::upmlXp = NAN;
+int P::upmlYp = NAN;
+int P::upmlZp = NAN;
+int P::upmlHistoryLength = NAN;
+int P::upmlHistory = NAN;
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -324,9 +332,18 @@ bool Parameters::addParameters(){
    Readparameters::add("AMR.box_center_z","z coordinate of the center of the box that is refined (for testing)",0.0);
    Readparameters::addComposing("AMR.filterpasses", std::string("AMR filter passes for each individual refinement level"));
 
+   //UPML Parameters
    Readparameters::add("UPML.factor", "z coordinate of the center of the box that is refined (for testing)", 1.0);
    Readparameters::add("UPML.offset", "z coordinate of the center of the box that is refined (for testing)", 0.0);
    Readparameters::add("UPML.cells", "Number of UPML Cells", 0.0);
+   Readparameters::add("UPML.xm", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.ym", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.zm", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.xp", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.yp", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.zp", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.history", "Number of UPML timesteps ", 0.0);
+   Readparameters::add("UPML.historyLength", "Number of UPML timesteps ", 0.0);
 
    return true;
 }
@@ -505,9 +522,19 @@ bool Parameters::getParameters(){
   
   /*Read Blur Passes per Refinement Level*/
    Readparameters::get("AMR.filterpasses", P::blurPassString);
+
+   //UPML parameter parsing
    Readparameters::get("UPML.factor", P::upmlFactor);
    Readparameters::get("UPML.offset", P::upmlOffset);
    Readparameters::get("UPML.cells", P::upmlCells);
+   Readparameters::get("UPML.xm", P::upmlXm);
+   Readparameters::get("UPML.ym", P::upmlYm);
+   Readparameters::get("UPML.zm", P::upmlZm);
+   Readparameters::get("UPML.xp", P::upmlXp);
+   Readparameters::get("UPML.yp", P::upmlYp);
+   Readparameters::get("UPML.zp", P::upmlZp);
+   Readparameters::get("UPML.history", P::upmlHistory);
+   Readparameters::get("UPML.historyLength", P::upmlHistoryLength);
 
    // Construct Vector of Passes used in grid.cpp
    bool isEmpty = blurPassString.size()==0;

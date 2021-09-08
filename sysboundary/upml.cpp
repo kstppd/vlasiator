@@ -1,10 +1,94 @@
 #include "upml.h"
-#include "../parameters.h"
-#include "../readparameters.h"
 #include <cmath>
 
 namespace PML=PerfectlyMatchedLayer;
 
+
+PML::History::History(){};
+
+bool PML::History::push(const FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid){
+
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   int size = this->fgVec.size();
+   
+   if (size >= this->maxLength){
+      this->fgVec.erase(this->fgVec.begin());
+   }
+   this->fgVec.push_back(perBGrid);
+
+   //if (myRank == MASTER_RANK) {std::cout<<"Upml History size="<<this->fgVec.size()<<std::endl;}
+   return true;;
+
+}
+
+bool PML::History::getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg){
+
+   const int* globalDims = &perBGridAvg.getGlobalSize()[0];
+   const int* localDims = &perBGridAvg.getLocalSize()[0];
+   int len = this->fgVec.size();
+
+   for (int grid = 0; grid < fsgrids::bfield::N_BFIELD; grid++) {
+      for (int k = 0; k < localDims[2]; k++) {
+         for (int j = 0; j < localDims[1]; j++) {
+            for (int i = 0; i < localDims[0]; i++) {
+            
+               std::array<Real, fsgrids::bfield::N_BFIELD>* val;
+               val = perBGridAvg.get(i, j, k);
+               Real sum =0.0;
+               for (int c=0; c<this->fgVec.size(); c++){
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* thisGrid;
+                  thisGrid = this->fgVec.at(c).get(i,j,k);
+                  sum+= thisGrid->at(grid);
+               }
+               val->at(grid) = sum/(Real)this->maxLength;
+            
+            }
+         }
+      }
+   }
+   return true;
+}
+      
+   
+
+bool PML::History::getDiffB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
+                             FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+                             FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid){
+
+
+   
+   if (!this->active){
+      //std::cout<<"Not active"<<std::endl;
+      return true;
+   }
+
+   const int* localDims = &technicalGrid.getLocalSize()[0];
+   for (int k = 0; k < localDims[2]; k++) {
+      for (int j = 0; j < localDims[1]; j++) {
+         for (int i = 0; i < localDims[0]; i++) {
+         
+            bool doApply = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
+            if (doApply && this->maxLength>0){
+
+               std::array<Real, fsgrids::bfield::N_BFIELD>* avgVal;
+               std::array<Real, fsgrids::bfield::N_BFIELD>* currVal;
+               avgVal  = perBGridAvg.get(i, j, k);
+               currVal = perBGrid.get(i, j, k);
+               for (int grid = 0; grid < fsgrids::bfield::N_BFIELD; grid++) {
+                  currVal->at(grid)-=avgVal->at(grid);
+               }
+
+            }
+         }
+      }
+   }
+   return true;
+}
+
+
+
+/*-------------------------------------------------------------------------------------------------*/
 
 
 
@@ -34,12 +118,12 @@ void PML::UPML::getParameters(){
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
    this->upmlWidth = Parameters::upmlCells;
-   this->pml_Xp = false;
-   this->pml_Xm = false;
-   this->pml_Yp = false;
-   this->pml_Ym = false;
-   this->pml_Zp = false;
-   this->pml_Zm = false;
+   this->pml_Xp  =  Parameters::upmlXp;
+   this->pml_Xm  =  Parameters::upmlXm;
+   this->pml_Yp  =  Parameters::upmlYp;
+   this->pml_Ym  =  Parameters::upmlYm;
+   this->pml_Zp  =  Parameters::upmlZp;
+   this->pml_Zm  =  Parameters::upmlZm;
 
 
 

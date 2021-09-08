@@ -2,9 +2,31 @@
 #include "../definitions.h"
 #include "../common.h"
 #include <fsgrid.hpp>
+#include "../readparameters.h"
+#include "../parameters.h"
 
 namespace PerfectlyMatchedLayer{
 
+
+   class History{
+
+      public:
+
+         History();
+         bool push(const FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid);
+         bool getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg);
+         bool getDiffB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
+                        FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+                        FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid);
+      private:
+
+         int maxLength = Parameters::upmlHistoryLength;
+         int active = Parameters::upmlHistory;
+         std::vector<FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH>> fgVec;
+
+
+
+   };
 
    class UPML{
 
