@@ -34,51 +34,13 @@ void PML::UPML::getParameters(){
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
    this->upmlWidth = Parameters::upmlCells;
-   this->pml_Xp = false;
-   this->pml_Xm = false;
-   this->pml_Yp = false;
-   this->pml_Ym = false;
-   this->pml_Zp = false;
-   this->pml_Zm = false;
+   this->pml_Xp  =  Parameters::upmlXp;
+   this->pml_Xm  =  Parameters::upmlXm;
+   this->pml_Yp  =  Parameters::upmlYp;
+   this->pml_Ym  =  Parameters::upmlYm;
+   this->pml_Zp  =  Parameters::upmlZp;
+   this->pml_Zm  =  Parameters::upmlZm;
 
-
-
-
-   //if(!Readparameters::get("UPML.width",this->upmlWidth)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-
-
-   //if(!Readparameters::get("UPML.xp",this->pml_Xp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.xm",this->pml_Xm)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-
-   //if(!Readparameters::get("UPML.yp",this->pml_Yp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.ym",this->pml_Ym)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.zp",this->pml_Zp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.zm",this->pml_Zm)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
 
 
    if (myRank == MASTER_RANK){

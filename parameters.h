@@ -47,7 +47,12 @@ struct Parameters {
    static Real upmlFactor;
    static int upmlOffset;
    static int upmlCells;
-
+   static int upmlXm;
+   static int upmlYm;
+   static int upmlZm;
+   static int upmlXp;
+   static int upmlYp;
+   static int upmlZp;
    static uint xcells_ini; /*!< Initial number of spatial cells in x-direction. */
    static uint ycells_ini; /*!< Initial number of spatial cells in y-direction. */
    static uint zcells_ini; /*!< Initial number of spatial cells in z-direction. */
