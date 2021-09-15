@@ -6,6 +6,11 @@
 namespace PerfectlyMatchedLayer{
 
 
+   bool madFilter(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &EGrid,
+                  FsGrid<fsgrids::technical, FS_STENCIL_WIDTH> &technicalGrid);
+
+
+
    class UPML{
 
       public:

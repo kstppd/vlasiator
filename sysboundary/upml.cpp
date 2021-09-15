@@ -8,6 +8,75 @@ namespace PML=PerfectlyMatchedLayer;
 
 
 
+bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> &EGrid,
+      FsGrid<fsgrids::technical, FS_STENCIL_WIDTH> &technicalGrid){
+
+
+   const int stencilWidth = 3;          //  1D kernel stencil
+   const int kernelOffset = 1;          // offset of 3 point stencil 1D kernel
+   const Real kernelWeight= 1.0/27.0;   // 3D boxcar kernel weight
+   const int passes=9; 
+   FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> swapGrid = EGrid;  
+   
+   const int* LocalSize=&EGrid.getLocalSize()[0];
+
+   for (int pass=0; pass<passes; pass++){
+      for (int k=0; k<LocalSize[2]; k++){
+         for (int j=0; j<LocalSize[1]; j++){
+            for (int i=0; i< LocalSize[0];i++){
+
+               bool isPML = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
+               if (!isPML ||
+                   technicalGrid.get(i, j,k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                   (technicalGrid.get(i, j,k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY && technicalGrid.get(i, j,k)->sysBoundaryLayer == 2)
+                     ){
+                  continue;
+               }
+
+               std::array<Real, fsgrids::efield::N_EFIELD> *cell;  
+               std::array<Real,fsgrids::efield::N_EFIELD> *swap;
+              
+               // Set Cell to zero before passing filter
+               swap = swapGrid.get(i,j,k);
+               for (int e = 0; e < fsgrids::efield::N_EFIELD; ++e) {
+                 swap->at(e)=0.0;
+               }
+               
+               for (int a=0; a<stencilWidth; a++){
+                 for (int b=0; b<stencilWidth; b++){
+                   for (int c=0; c<stencilWidth; c++){
+
+                     int xn=i+a-kernelOffset;
+                     int yn=j+b-kernelOffset;
+                     int zn=k+c-kernelOffset;
+
+                     cell = EGrid.get(xn, yn, zn);
+                     swap = swapGrid.get(i,j,k);
+
+                     for (int e = 0; e < fsgrids::efield::N_EFIELD; ++e) {
+                       swap->at(e)+=cell->at(e) * kernelWeight;
+
+                    } 
+                  }
+                }
+              }
+
+
+            }
+         }
+      }
+
+      //Swap buffers
+      EGrid=swapGrid;
+   }
+
+
+   return true;
+}
+
+
+
+
 PML::UPML::UPML(){
     this->addParameters();
      this->getParameters();

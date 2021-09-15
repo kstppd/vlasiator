@@ -950,6 +950,10 @@ int main(int argn,char* args[]) {
             P::fieldSolverSubcycles
          );
 
+         phiprof::start("MadFilter");
+         PerfectlyMatchedLayer::madFilter(EGrid,technicalGrid);
+         phiprof::start("MadFilter");
+
          phiprof::start("getFieldsFromFsGrid");
          // Copy results back from fsgrid.
          volGrid.updateGhostCells();

@@ -845,7 +845,7 @@ namespace SBC {
          abort();
       }
 
-      return bGrid.get(closestCells[0][0], closestCells[0][1], closestCells[0][2])->at(fsgrids::bfield::PERBX+component);
+      return 0.0;//bGrid.get(closestCells[0][0], closestCells[0][1], closestCells[0][2])->at(fsgrids::bfield::PERBX+component);
    }
    
    /*! Function used in some cases to know which faces the system boundary condition is being applied to.
