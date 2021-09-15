@@ -20,6 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "common.h"
 #include <cstdlib>
 #include <iostream>
 #include <cmath>
@@ -169,7 +170,10 @@ bool computeNewTimeStep(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpi
          for (int i=0; i<gridDims[0]; i++) {
             fsgrids::technical* cell = technicalGrid.get(i,j,k);
             if ( cell->sysBoundaryFlag == sysboundarytype::NOT_SYSBOUNDARY ||
-                (cell->sysBoundaryLayer == 1 && cell->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY )) {
+               (cell->sysBoundaryLayer == 1 && cell->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY )) {
+               if (cell->pmlCell==UPMLCELLS::UPMLCELL){
+                  continue;
+               }
                dtMaxLocal[2]=min(dtMaxLocal[2], cell->maxFsDt);
             }
          }
@@ -405,7 +409,8 @@ int main(int argn,char* args[]) {
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH> fsUpml(fsGridDimensions, comm, periodicity,gridCoupling);
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBGridAvg(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBLF(fsGridDimensions, comm, periodicity,gridCoupling);
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> perBHF(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EGrid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> EDt2Grid(fsGridDimensions, comm, periodicity,gridCoupling);
    FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> EHallGrid(fsGridDimensions, comm, periodicity,gridCoupling);
@@ -481,6 +486,12 @@ int main(int argn,char* args[]) {
    
    const std::vector<CellID>& cells = getLocalCells();
    
+
+   UpmlHistory.push(perBGrid);
+   //UpmlHistory.getAvg(perBLF);
+   perBLF=perBGrid;
+   perBHF=perBGrid;
+   
    phiprof::stop("Init grids");
    
    // Initialize data reduction operators. This should be done elsewhere in order to initialize 
@@ -496,6 +507,8 @@ int main(int argn,char* args[]) {
    // Run the field solver once with zero dt. This will initialize
    // Fieldsolver dt limits, and also calculate volumetric B-fields.
    propagateFields(
+		   perBGrid,
+		   perBGrid,
 		   perBGrid,
 		   perBDt2Grid,
 		   EGrid,
@@ -663,8 +676,8 @@ int main(int argn,char* args[]) {
 
       
       UpmlHistory.push(perBGrid);
-      UpmlHistory.getAvg(perBGridAvg);
-      UpmlHistory.getDiffB(perBGrid,perBGridAvg,technicalGrid);
+      UpmlHistory.getAvg(perBLF,technicalGrid);
+      UpmlHistory.getHFB(perBGrid,perBLF,perBHF,technicalGrid);
 
 
 
@@ -942,6 +955,8 @@ int main(int argn,char* args[]) {
          
          propagateFields(
             perBGrid,
+            perBHF,
+            perBLF,
             perBDt2Grid,
             EGrid,
             EDt2Grid,
@@ -1073,6 +1088,9 @@ int main(int argn,char* args[]) {
    BgBGrid.finalize();
    volGrid.finalize();
    technicalGrid.finalize();
+   fsUpml.finalize();
+   perBLF.finalize();
+   perBHF.finalize();
    
    MPI_Finalize();
    return 0;

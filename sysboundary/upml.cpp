@@ -22,7 +22,8 @@ bool PML::History::push(const FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD
 
 }
 
-bool PML::History::getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg){
+bool PML::History::getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+                             FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid){
 
    const int* globalDims = &perBGridAvg.getGlobalSize()[0];
    const int* localDims = &perBGridAvg.getLocalSize()[0];
@@ -33,16 +34,25 @@ bool PML::History::getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, F
          for (int j = 0; j < localDims[1]; j++) {
             for (int i = 0; i < localDims[0]; i++) {
             
-               std::array<Real, fsgrids::bfield::N_BFIELD>* val;
-               val = perBGridAvg.get(i, j, k);
-               Real sum =0.0;
-               for (int c=0; c<this->fgVec.size(); c++){
+               bool doApply = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
+               if (doApply){
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* val;
+                  val = perBGridAvg.get(i, j, k);
+                  Real sum =0.0;
+                  for (int c=0; c<this->fgVec.size(); c++){
+                     std::array<Real, fsgrids::bfield::N_BFIELD>* thisGrid;
+                     thisGrid = this->fgVec.at(c).get(i,j,k);
+                     sum+= thisGrid->at(grid);
+                  }
+                  val->at(grid) = sum/(Real)len;
+               }else{
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* val;
+                  val = perBGridAvg.get(i, j, k);
                   std::array<Real, fsgrids::bfield::N_BFIELD>* thisGrid;
-                  thisGrid = this->fgVec.at(c).get(i,j,k);
-                  sum+= thisGrid->at(grid);
+                  thisGrid = this->fgVec.back().get(i,j,k);
+                  val->at(grid) = thisGrid->at(grid);
+
                }
-               val->at(grid) = sum/(Real)this->maxLength;
-            
             }
          }
       }
@@ -52,8 +62,9 @@ bool PML::History::getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, F
       
    
 
-bool PML::History::getDiffB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
-                             FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+bool PML::History::getHFB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
+                             FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBLF,
+                             FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBHF,
                              FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid){
 
 
@@ -71,12 +82,14 @@ bool PML::History::getDiffB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>,
             bool doApply = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
             if (doApply && this->maxLength>0){
 
-               std::array<Real, fsgrids::bfield::N_BFIELD>* avgVal;
+               std::array<Real, fsgrids::bfield::N_BFIELD>* lfVal;
+               std::array<Real, fsgrids::bfield::N_BFIELD>* hfVal;
                std::array<Real, fsgrids::bfield::N_BFIELD>* currVal;
-               avgVal  = perBGridAvg.get(i, j, k);
+               lfVal  = perBLF.get(i, j, k);
+               hfVal  = perBHF.get(i, j, k);
                currVal = perBGrid.get(i, j, k);
                for (int grid = 0; grid < fsgrids::bfield::N_BFIELD; grid++) {
-                  currVal->at(grid)-=avgVal->at(grid);
+                  hfVal->at(grid)=  currVal->at(grid)-lfVal->at(grid);
                }
 
             }
@@ -124,46 +137,6 @@ void PML::UPML::getParameters(){
    this->pml_Ym  =  Parameters::upmlYm;
    this->pml_Zp  =  Parameters::upmlZp;
    this->pml_Zm  =  Parameters::upmlZm;
-
-
-
-
-   //if(!Readparameters::get("UPML.width",this->upmlWidth)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-
-
-   //if(!Readparameters::get("UPML.xp",this->pml_Xp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.xm",this->pml_Xm)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-
-   //if(!Readparameters::get("UPML.yp",this->pml_Yp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.ym",this->pml_Ym)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.zp",this->pml_Zp)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-      
-   //if(!Readparameters::get("UPML.zm",this->pml_Zm)) {
-      //if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-      //exit(1);
-   //}   
-
 
    if (myRank == MASTER_RANK){
 
@@ -844,8 +817,5 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
          }
       }
    }
-
-
-
 
 }

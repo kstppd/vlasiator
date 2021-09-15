@@ -40,7 +40,8 @@ void propagateMagneticField(
    cint& RKCase,
    const bool doX=true,
    const bool doY=true,
-   const bool doZ=true
+   const bool doZ=true,
+   bool usePML=false
 );
 
 void propagateMagneticFieldSimple(
@@ -52,7 +53,8 @@ void propagateMagneticFieldSimple(
    SysBoundary& sysBoundaries,
    FsGrid< std::array<Real, fsgrids::upml::N_UPML>, FS_STENCIL_WIDTH> &fsUpml,
    creal& dt,
-   cint& RKCase
+   cint& RKCase,
+   bool usePML=false
 );
 
 #endif

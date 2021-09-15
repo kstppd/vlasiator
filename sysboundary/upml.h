@@ -14,9 +14,11 @@ namespace PerfectlyMatchedLayer{
 
          History();
          bool push(const FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid);
-         bool getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg);
-         bool getDiffB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
-                        FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+         bool getAvg(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGridAvg,
+                             FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid);
+         bool getHFB(FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
+                        FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBLF,
+                        FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBHF,
                         FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid);
       private:
 
