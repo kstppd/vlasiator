@@ -18,6 +18,7 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
    const int passes=9; 
    FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> swapGrid = EGrid;  
    
+   EGrid.updateGhostCells();
    const int* LocalSize=&EGrid.getLocalSize()[0];
 
    for (int pass=0; pass<passes; pass++){
@@ -26,12 +27,12 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
             for (int i=0; i< LocalSize[0];i++){
 
                bool isPML = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
-               if (!isPML ||
-                   technicalGrid.get(i, j,k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-                   (technicalGrid.get(i, j,k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY && technicalGrid.get(i, j,k)->sysBoundaryLayer == 2)
-                     ){
-                  continue;
-               }
+               int nLayer= technicalGrid.get(i,j,k)-> sysBoundaryLayer;
+               technicalGrid.get(i,j,k)->filtered = 0.0;
+               if (!isPML )  continue;
+               if (  nLayer <3 && nLayer >0 ) continue;
+
+               technicalGrid.get(i,j,k)->filtered = 1.0;
 
                std::array<Real, fsgrids::efield::N_EFIELD> *cell;  
                std::array<Real,fsgrids::efield::N_EFIELD> *swap;
@@ -60,6 +61,7 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
                   }
                 }
               }
+               //std::cerr<<i<<" "<<j<<" "<<k<<std::endl;
 
 
             }
@@ -67,7 +69,9 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
       }
 
       //Swap buffers
+      swapGrid.updateGhostCells();
       EGrid=swapGrid;
+      EGrid.updateGhostCells();
    }
 
 
