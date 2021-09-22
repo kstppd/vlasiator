@@ -62,6 +62,8 @@ int P::upmlZm = NAN;
 int P::upmlXp = NAN;
 int P::upmlYp = NAN;
 int P::upmlZp = NAN;
+bool P::upmlFilter = NAN;
+int P::upmlFilterPasses = NAN;
 
 uint P::xcells_ini = numeric_limits<uint>::max();
 uint P::ycells_ini = numeric_limits<uint>::max();
@@ -339,6 +341,8 @@ bool Parameters::addParameters(){
    Readparameters::add("UPML.xp", "Pml on or off switch", 0.0);
    Readparameters::add("UPML.yp", "Pml on or off switch", 0.0);
    Readparameters::add("UPML.zp", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.filter", "Pml on or off switch", 0.0);
+   Readparameters::add("UPML.filterpasses", "Pml on or off switch", 0.0);
    return true;
 }
 
@@ -525,6 +529,8 @@ bool Parameters::getParameters(){
    Readparameters::get("UPML.xp", P::upmlXp);
    Readparameters::get("UPML.yp", P::upmlYp);
    Readparameters::get("UPML.zp", P::upmlZp);
+   Readparameters::get("UPML.filter", P::upmlFilter);
+   Readparameters::get("UPML.filterpasses", P::upmlFilterPasses);
    // Construct Vector of Passes used in grid.cpp
    bool isEmpty = blurPassString.size()==0;
    std::vector<int>::iterator  maxNumPassesPtr;
