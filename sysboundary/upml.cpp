@@ -18,6 +18,7 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
    const int passes=9; 
    FsGrid<std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> swapGrid = EGrid;  
    
+   EGrid.updateGhostCells();
    const int* LocalSize=&EGrid.getLocalSize()[0];
 
    for (int pass=0; pass<passes; pass++){
@@ -26,12 +27,12 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
             for (int i=0; i< LocalSize[0];i++){
 
                bool isPML = technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL;
-               if (!isPML ||
-                   technicalGrid.get(i, j,k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-                   (technicalGrid.get(i, j,k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY && technicalGrid.get(i, j,k)->sysBoundaryLayer == 2)
-                     ){
-                  continue;
-               }
+               int nLayer= technicalGrid.get(i,j,k)-> sysBoundaryLayer;
+               technicalGrid.get(i,j,k)->filtered = 0.0;
+               if (!isPML )  continue;
+               if (  nLayer <3 && nLayer >0 ) continue;
+
+               technicalGrid.get(i,j,k)->filtered = 1.0;
 
                std::array<Real, fsgrids::efield::N_EFIELD> *cell;  
                std::array<Real,fsgrids::efield::N_EFIELD> *swap;
@@ -60,6 +61,7 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
                   }
                 }
               }
+               //std::cerr<<i<<" "<<j<<" "<<k<<std::endl;
 
 
             }
@@ -67,7 +69,9 @@ bool PML::madFilter(FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STEN
       }
 
       //Swap buffers
+      swapGrid.updateGhostCells();
       EGrid=swapGrid;
+      EGrid.updateGhostCells();
    }
 
 
@@ -408,26 +412,26 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
 
 
-   //Y PEC wall
-      for (int i=0; i < localDims[0];i++){
-         for (int k=0; k < localDims[2];k++){
-            for (int j=0; j < localDims[1]; j++){
+   //Y PEC wal/*l*/
+      /*for (int i=0; i < localDims[0];i++){*/
+         /*for (int k=0; k < localDims[2];k++){*/
+            /*for (int j=0; j < localDims[1]; j++){*/
 
-               std::array<int32_t, 3> pos;
-               pos = fsUpml.getGlobalIndices(i, j, k);
+               /*std::array<int32_t, 3> pos;*/
+               /*pos = fsUpml.getGlobalIndices(i, j, k);*/
 
-               //Skip cells that do not belong to the X- PML layers
-               if (pos[1] != offset  ) continue;
+               /*//Skip cells that do not belong to the X- PML layers*/
+               /*if (pos[1] != offset  ) continue;*/
 
-               std::array<Real, fsgrids::upml::N_UPML> *val;
-               val = fsUpml.get(i,j,k);
-               val->at(fsgrids::upml::C1EX) = -1.0;
-               val->at(fsgrids::upml::C2EX) = 0.0;
-               val->at(fsgrids::upml::C3EZ) = -1.0;
-               val->at(fsgrids::upml::C4EZ) = 0.0;
-            }
-         }
-      }
+               /*std::array<Real, fsgrids::upml::N_UPML> *val;*/
+               /*val = fsUpml.get(i,j,k);*/
+               /*val->at(fsgrids::upml::C1EX) = -1.0;*/
+               /*val->at(fsgrids::upml::C2EX) = 0.0;*/
+               /*val->at(fsgrids::upml::C3EZ) = -1.0;*/
+               /*val->at(fsgrids::upml::C4EZ) = 0.0;*/
+            /*}*/
+         /*}*/
+      /*}*/
    }
 
 
@@ -683,26 +687,26 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
 
 
 
-   //Y+ PEC wall
-      for (int i=0; i < localDims[0];i++){
-         for (int k=0; k < localDims[2];k++){
-            for (int j=0; j < localDims[1]; j++){
+   ////Y+ PEC wall
+      //for (int i=0; i < localDims[0];i++){
+         //for (int k=0; k < localDims[2];k++){
+            //for (int j=0; j < localDims[1]; j++){
 
-               std::array<int32_t, 3> pos;
-               pos = fsUpml.getGlobalIndices(i, j, k);
+               //std::array<int32_t, 3> pos;
+               //pos = fsUpml.getGlobalIndices(i, j, k);
 
-               //Skip cells that do not belong to the X- PML layers
-               if (pos[1] != Ny-offset  ) continue;
+               ////Skip cells that do not belong to the X- PML layers
+               //if (pos[1] != Ny-offset  ) continue;
 
-               std::array<Real, fsgrids::upml::N_UPML> *val;
-               val = fsUpml.get(i,j,k);
-               val->at(fsgrids::upml::C1EX) = -1.0;
-               val->at(fsgrids::upml::C2EX) = 0.0;
-               val->at(fsgrids::upml::C3EZ) = -1.0;
-               val->at(fsgrids::upml::C4EZ) = 0.0;
-            }
-         }
-      }
+               //std::array<Real, fsgrids::upml::N_UPML> *val;
+               //val = fsUpml.get(i,j,k);
+               //val->at(fsgrids::upml::C1EX) = -1.0;
+               //val->at(fsgrids::upml::C2EX) = 0.0;
+               //val->at(fsgrids::upml::C3EZ) = -1.0;
+               //val->at(fsgrids::upml::C4EZ) = 0.0;
+            //}
+         //}
+      //}
    }
 
   //Z+ component

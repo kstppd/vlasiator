@@ -445,7 +445,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    mpiGrid.update_copies_of_remote_neighbors(SYSBOUNDARIES_NEIGHBORHOOD_ID);
 
    /*Compute distances*/
-   uint maxLayers=3;//max(max(P::xcells_ini, P::ycells_ini), P::zcells_ini);
+   uint maxLayers=5;//max(max(P::xcells_ini, P::ycells_ini), P::zcells_ini);
    for(uint layer=1;layer<maxLayers;layer++){
       for(uint i=0; i<cells.size(); i++) {
          if(mpiGrid[cells[i]]->sysBoundaryLayer==0){
@@ -488,7 +488,7 @@ bool SysBoundary::classifyCells(dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Ca
    
    // Now the layers need to be set on fsgrid too
    // In dccrg initialization the max number of boundary layers is set to 3.
-   const uint MAX_NUMBER_OF_BOUNDARY_LAYERS = 3 * pow(2,mpiGrid.get_maximum_refinement_level());
+   const uint MAX_NUMBER_OF_BOUNDARY_LAYERS = 5 * pow(2,mpiGrid.get_maximum_refinement_level());
    
    technicalGrid.updateGhostCells();
    
