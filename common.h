@@ -421,6 +421,7 @@ namespace fsgrids {
       int refLevel;         /*!<AMR Refinement Level*/
       int pmlCell;
       int filtered;
+      Real scaling;
    };
    
 }

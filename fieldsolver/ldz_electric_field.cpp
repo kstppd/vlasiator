@@ -534,7 +534,7 @@ void calculateEdgeElectricFieldX(
 
    // Resistive term
    if (Parameters::resistivity > 0) {
-     Ex_SW += Parameters::resistivity *
+     Ex_SW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
        sqrt((bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX))*
             (bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX)) +
             (bgb_SW->at(fsgrids::bgbfield::BGBY)+perb_SW->at(fsgrids::bfield::PERBY))*
@@ -589,7 +589,7 @@ void calculateEdgeElectricFieldX(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-     Ex_SE += Parameters::resistivity *
+     Ex_SE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
        sqrt((bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX))*
             (bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX)) +
             (bgb_SE->at(fsgrids::bgbfield::BGBY)+perb_SE->at(fsgrids::bfield::PERBY))*
@@ -645,7 +645,7 @@ void calculateEdgeElectricFieldX(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-     Ex_NW += Parameters::resistivity *
+     Ex_NW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
        sqrt((bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX))*
             (bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX)) +
             (bgb_NW->at(fsgrids::bgbfield::BGBY)+perb_NW->at(fsgrids::bfield::PERBY))*
@@ -701,7 +701,7 @@ void calculateEdgeElectricFieldX(
 
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ex_NE += Parameters::resistivity *
+      Ex_NE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
                sqrt((bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX))*
                     (bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX)) +
                     (bgb_NE->at(fsgrids::bgbfield::BGBY)+perb_NE->at(fsgrids::bfield::PERBY))*
@@ -900,7 +900,7 @@ void calculateEdgeElectricFieldY(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ey_SW += Parameters::resistivity *
+      Ey_SW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX))*
              (bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX)) +
              (bgb_SW->at(fsgrids::bgbfield::BGBY)+perb_SW->at(fsgrids::bfield::PERBY))*
@@ -956,7 +956,7 @@ void calculateEdgeElectricFieldY(
 
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ey_SE += Parameters::resistivity *
+      Ey_SE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX))*
              (bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX)) +
              (bgb_SE->at(fsgrids::bgbfield::BGBY)+perb_SE->at(fsgrids::bfield::PERBY))*
@@ -1012,7 +1012,7 @@ void calculateEdgeElectricFieldY(
 
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ey_NW += Parameters::resistivity *
+      Ey_NW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX))*
              (bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX)) +
              (bgb_NW->at(fsgrids::bgbfield::BGBY)+perb_NW->at(fsgrids::bfield::PERBY))*
@@ -1068,7 +1068,7 @@ void calculateEdgeElectricFieldY(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ey_NE += Parameters::resistivity *
+      Ey_NE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX))*
              (bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX)) +
              (bgb_NE->at(fsgrids::bgbfield::BGBY)+perb_NE->at(fsgrids::bfield::PERBY))*
@@ -1259,7 +1259,7 @@ void calculateEdgeElectricFieldZ(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-     Ez_SW += Parameters::resistivity *
+     Ez_SW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
        sqrt((bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX))*
             (bgb_SW->at(fsgrids::bgbfield::BGBX)+perb_SW->at(fsgrids::bfield::PERBX)) +
             (bgb_SW->at(fsgrids::bgbfield::BGBY)+perb_SW->at(fsgrids::bfield::PERBY))*
@@ -1317,7 +1317,7 @@ void calculateEdgeElectricFieldZ(
 
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ez_SE += Parameters::resistivity *
+      Ez_SE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX))*
              (bgb_SE->at(fsgrids::bgbfield::BGBX)+perb_SE->at(fsgrids::bfield::PERBX)) +
              (bgb_SE->at(fsgrids::bgbfield::BGBY)+perb_SE->at(fsgrids::bfield::PERBY))*
@@ -1373,7 +1373,7 @@ void calculateEdgeElectricFieldZ(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ez_NW += Parameters::resistivity *
+      Ez_NW += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX))*
              (bgb_NW->at(fsgrids::bgbfield::BGBX)+perb_NW->at(fsgrids::bfield::PERBX)) +
              (bgb_NW->at(fsgrids::bgbfield::BGBY)+perb_NW->at(fsgrids::bfield::PERBY))*
@@ -1429,7 +1429,7 @@ void calculateEdgeElectricFieldZ(
    
    // Resistive term
    if (Parameters::resistivity > 0) {
-      Ez_NE += Parameters::resistivity *
+      Ez_NE += Parameters::resistivity * technicalGrid.get(i,j,k)->scaling*
         sqrt((bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX))*
              (bgb_NE->at(fsgrids::bgbfield::BGBX)+perb_NE->at(fsgrids::bfield::PERBX)) +
              (bgb_NE->at(fsgrids::bgbfield::BGBY)+perb_NE->at(fsgrids::bfield::PERBY))*

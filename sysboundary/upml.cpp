@@ -164,6 +164,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                val = fsUpml.get(i, j, k);
                val->at(e) = 0.0;
             }
+            technicalGrid.get(i,j,k)->scaling = 1.0;
          }
       }
    }
@@ -276,6 +277,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - pos[0]+offset) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
 
                // Real sigma = sigfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(x1, orderbc + 1) - pow(x2, orderbc + 1));
@@ -368,6 +370,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - pos[1] + offset) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
 
                // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
@@ -456,6 +459,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - pos[2] + offset) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
 
                // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
@@ -548,6 +552,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - (Nx-pos[0]-offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
                // if (pos[1]==15 && pos[2]==15 ) std::cout<<pos[0]<<" "<<ksi<<" "<<sigmam<<" "<<sigma<<std::endl;
 
                // Real ksi = (this->upmlWidth - pos[0] + offset) / this->upmlWidth;
@@ -642,6 +647,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - (Ny - pos[1] - offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
                // if (pos[0]==15 && pos[2]==15 ) std::cout<<pos[1]<<" "<<ksi<<" "<<sigmam<<" "<<sigma<<std::endl;
 
                // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
@@ -730,6 +736,7 @@ void PML::UPML::update(FsGrid<std::array<Real, fsgrids::upml::N_UPML>, FS_STENCI
                Real ksi = (this->upmlWidth - (Nz - pos[2] - offset)+1) / this->upmlWidth;
                Real sigma = sigmam * pow(ksi, orderbc);
                Real ki = 1 + (kmax - 1.0) * pow(ksi, orderbc);
+               technicalGrid.get(i,j,k)->scaling = 1.0- pow(ksi, orderbc);
 
                // Real sigma = sigfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
                // Real ki = 1 + kfactor * (pow(y1, orderbc + 1) - pow(y2, orderbc + 1));
