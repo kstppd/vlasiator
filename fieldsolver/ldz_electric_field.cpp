@@ -752,11 +752,6 @@ void calculateEdgeElectricFieldX(
    efield_SW->at(fsgrids::efield::EX) /= ((ay_pos+ay_neg)*(az_pos+az_neg)+EPS);
    
 
-   std::array<int32_t, 3> pos;
-   pos = technicalGrid.getGlobalIndices(i, j, k);
-   if (technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL && pos[1] ==1){
-         efield_SW->at(fsgrids::efield::EX) = 0.0;
-   }
    
 
    if (Parameters::fieldSolverDiffusiveEterms) {
@@ -1480,11 +1475,6 @@ void calculateEdgeElectricFieldZ(
    efield_SW->at(fsgrids::efield::EZ) = ax_pos*ay_pos*Ez_NE + ax_pos*ay_neg*Ez_SE + ax_neg*ay_pos*Ez_NW + ax_neg*ay_neg*Ez_SW;
    efield_SW->at(fsgrids::efield::EZ) /= ((ax_pos+ax_neg)*(ay_pos+ay_neg)+EPS);
 
-   std::array<int32_t, 3> pos;
-   pos = technicalGrid.getGlobalIndices(i, j, k);
-   if (technicalGrid.get(i,j,k)->pmlCell==UPMLCELLS::UPMLCELL && pos[2] == 1){
-         efield_SW->at(fsgrids::efield::EZ) = 0.0;
-   }
    if (Parameters::fieldSolverDiffusiveEterms) {
 #ifdef FS_1ST_ORDER_SPACE
       efield_SW->at(fsgrids::efield::EZ) -= ay_pos*ay_neg/(ay_pos+ay_neg+EPS)*(perBx_S-perBx_N);
