@@ -1,4 +1,4 @@
-/*
+   /*
  * This file is part of Vlasiator.
  * Copyright 2010-2016 Finnish Meteorological Institute
  *
@@ -598,7 +598,7 @@ bool convertMesh(vlsvinterface::Reader& vlsvReader,
                         switch (variableDataType){
                            case datatype::type::FLOAT:
                               if (variableDataSize == sizeof(float))
-                                 memcpy(&data, &buffer[counter + compToExtract], sizeof(float));
+                                 memcpy(&data, &buffer[counter + compToExtract], sizeof(double));
                               if (variableDataSize == sizeof(double))
                                  memcpy(&data, &buffer[counter + compToExtract], sizeof(double));
                               break;
