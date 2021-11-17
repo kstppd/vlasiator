@@ -420,6 +420,7 @@ namespace fsgrids {
       uint SOLVE;           /*!< Bit mask to determine whether a given cell should solve E or B components. */
       int refLevel;         /*!<AMR Refinement Level*/
       int pmlCell;
+      Real upmlSigma;
       int filtered;
    };
    
