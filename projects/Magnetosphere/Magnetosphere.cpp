@@ -463,18 +463,16 @@ namespace projects {
                for (int y = 0; y < localSize[1]; ++y) {
                   for (int z = 0; z < localSize[2]; ++z) {
                      std::array<Real, fsgrids::bgbfield::N_BGB>* cell = BgBGrid.get(x, y, z);
-                     cell->at(fsgrids::bgbfield::BGBX)=0;
-                     cell->at(fsgrids::bgbfield::BGBY)=0;
-                     cell->at(fsgrids::bgbfield::BGBYVOL)=0.0;
-                     cell->at(fsgrids::bgbfield::BGBXVOL)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBxdy)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBxdz)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBydx)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBydz)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBXVOLdy)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBXVOLdz)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBYVOLdx)=0.0;
-                     cell->at(fsgrids::bgbfield::dBGBYVOLdz)=0.0;
+                     cell->at(fsgrids::bgbfield::BGBZ) = 0.0;
+                     cell->at(fsgrids::bgbfield::BGBZVOL) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBxdz) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBydz) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBzdx) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBzdy) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBXVOLdz) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBYVOLdz) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBZVOLdx) = 0.0;
+                     cell->at(fsgrids::bgbfield::dBGBZVOLdy) = 0.0;
                   }
                }
             }
