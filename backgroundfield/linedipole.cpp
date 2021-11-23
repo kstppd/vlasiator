@@ -70,21 +70,21 @@ double LineDipole::call( double x, double y, double z) const
    if(_derivative == 0) {
       if(_fComponent == 0)
          return D*2*r[0]*r[1]/(r2*r2);
-      if(_fComponent == 2)
-         return D*(r[1]*r[1]-r[0]*r[0])/(r2*r2); 
       if(_fComponent == 1)
+         return D*(r[1]*r[1]-r[0]*r[0])/(r2*r2); 
+      if(_fComponent == 2)
          return 0;
    }
    else if(_derivative == 1) {
       //first derivatives
-      if(_dComponent== 1 || _fComponent==1) {
+      if(_dComponent== 2 || _fComponent==2) {
          return 0;
       }
       else if(_dComponent==_fComponent) {
          if(_fComponent == 0) {
             return DerivativeSameComponent;
          }
-         else if(_fComponent == 2) {
+         else if(_fComponent == 1) {
             return -DerivativeSameComponent;
          }
       }
