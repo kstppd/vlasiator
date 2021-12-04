@@ -23,6 +23,7 @@
 #define VECTORCLASS_PORTABLE_H
 #include <math.h>
 #include <iostream>
+#include <vector>
 
 /*! \file vectorclass_fallback.h
   \brief Simple class for implementing a vector with 4 real values
@@ -41,104 +42,13 @@ template <class T>
 class VecSimple {
 public:
    T val[VECL] __attribute__((aligned(32)));
-   // donot initi v
-   VecSimple() { }
-   // Replicate scalar x across v.
-   VecSimple(T x){
-      for(unsigned int i=0;i<VECL;i++)
-         val[i]=x;
-   }
-   
-   // Replicate VECL values across v.   
-   VecSimple(T a,T b,T c,T d){
-      if(VECL != 4) {
-         std::cerr << __FILE__ << ":" << __LINE__ << ": Wrong function call for VECL=" << VECL << ", this function is for VECL=4!";
-         abort();
+   //Constructor with lamda loop + init Vec
+   template <typename ... S>
+   VecSimple (S ... vargs){
+      std::vector<T> vec = {vargs...};
+      for (unsigned int i=0; i<vec.size(); i++){  
+         val[i]=vec[i];
       }
-      val[0]=a;
-      val[1]=b;
-      val[2]=c;
-      val[3]=d;
-   }
-   
-   // Replicate VECL values across v.   
-   VecSimple(T a,T b,T c,T d,T e,T f,T g,T h){
-      if(VECL != 8) {
-         std::cerr << __FILE__ << ":" << __LINE__ << ": Wrong function call for VECL=" << VECL << ", this function is for VECL=8!";
-         abort();
-      }
-      val[0]=a;
-      val[1]=b;
-      val[2]=c;
-      val[3]=d;
-      val[4]=e;
-      val[5]=f;
-      val[6]=g;
-      val[7]=h;
-   }
-   
-   // Replicate VECL values across v.   
-   VecSimple(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p){
-      if(VECL != 16) {
-         std::cerr << __FILE__ << ":" << __LINE__ << ": Wrong function call for VECL=" << VECL << ", this function is for VECL=16!";
-         abort();
-      }
-      val[0]=a;
-      val[1]=b;
-      val[2]=c;
-      val[3]=d;
-      val[4]=e;
-      val[5]=f;
-      val[6]=g;
-      val[7]=h;
-      val[8]=i;
-      val[9]=j;
-      val[10]=k;
-      val[11]=l;
-      val[12]=m;
-      val[13]=n;
-      val[14]=o;
-      val[15]=p;
-   }
-   
-   // Replicate VECL values across v.   
-   VecSimple(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p,T q,T r,T s,T t,T u,T v,T w,T x,T y,T z,T aa,T bb,T cc,T dd,T ee,T ff){
-      if(VECL != 32) {
-         std::cerr << __FILE__ << ":" << __LINE__ << ": Wrong function call for VECL=" << VECL << ", this function is for VECL=32!";
-         abort();
-      }
-      val[0]=a;
-      val[1]=b;
-      val[2]=c;
-      val[3]=d;
-      val[4]=e;
-      val[5]=f;
-      val[6]=g;
-      val[7]=h;
-      val[8]=i;
-      val[9]=j;
-      val[10]=k;
-      val[11]=l;
-      val[12]=m;
-      val[13]=n;
-      val[14]=o;
-      val[15]=p;
-      val[16]=q;
-      val[17]=r;
-      val[18]=s;
-      val[19]=t;
-      val[20]=u;
-      val[21]=v;
-      val[22]=w;
-      val[23]=x;
-      val[24]=y;
-      val[25]=z;
-      val[26]=aa;
-      val[27]=bb;
-      val[28]=cc;
-      val[29]=dd;
-      val[30]=ee;
-      val[31]=ff;
    }
 
    // Copy vector v.

@@ -14,7 +14,9 @@ LNK = mpic++
 
 ifeq ($(DISTRIBUTION_FP_PRECISION),SPF)
 #Single-precision
-	VECTORCLASS = VEC8F_AGNER
+	VECTORCLASS = VEC_FALLBACK_GENERIC_FLOAT
+   INC_VECTORCLASS = -I/home/kostis/dev/vlasiator/vlasovsolver/vectorclass_fallback.h
+
 else
 #Double-precision
 	VECTORCLASS = VEC4D_AGNER
@@ -59,7 +61,7 @@ PAPI_FLAG =
 
 LIBRARY_PREFIX = $(HOME)
 
-INC_VECTORCLASS=-I$(LIBRARY_PREFIX)/version1
+#INC_VECTORCLASS=-I$(LIBRARY_PREFIX)/version1
 
 INC_BOOST = -I/usr/include/boost/
 LIB_BOOST = -L/usr/lib/x86_64-linux-gnu/ -lboost_program_options
