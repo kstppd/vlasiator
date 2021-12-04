@@ -42,7 +42,7 @@ template <class T>
 class VecSimple {
 public:
    T val[VECL] __attribute__((aligned(32)));
-   //Constructor with lamda loop + init Vec
+   
    template <typename ... S>
    VecSimple (S ... vargs){
       std::vector<T> vec = {vargs...};
