@@ -69,6 +69,7 @@ namespace SBC {
    Real Ionosphere::backgroundIonisation; // Background ionisation due to stellar UV and cosmic rays
    int  Ionosphere::solverMaxIterations;
    bool  Ionosphere::solverPreconditioning;
+   Real Ionosphere::shieldingLatitude;
    enum Ionosphere::IonosphereConductivityModel Ionosphere::conductivityModel;
    Real  Ionosphere::eps;
 
@@ -1842,7 +1843,7 @@ namespace SBC {
        return;
      }
 
-     if(gaugeFixing == Equator && fabs(nodes[nodeIndex].x[2]) < Ionosphere::innerRadius / 10.) {
+     if(gaugeFixing == Equator && fabs(nodes[nodeIndex].x[2]) < Ionosphere::innerRadius * sin(Ionosphere::shieldingLatitude * M_PI / 180.0) ) {
        // If we are gauge fixing at the equator, those nodes don't couple.
        nodes[nodeIndex].dependingCoeffs[0] = 1;
        nodes[nodeIndex].transposedCoeffs[0] = 1;
@@ -2190,7 +2191,7 @@ namespace SBC {
          Node& N=nodes[n];
          if(gaugeFixing == Pole && n == 0) {
             N.parameters[ionosphereParameters::SOLUTION] = 0;
-         } else if(gaugeFixing == Equator && fabs(N.x[2]) < Ionosphere::innerRadius / 10.) {
+         } else if(gaugeFixing == Equator && fabs(N.x[2]) < Ionosphere::innerRadius * sin(Ionosphere::shieldingLatitude * M_PI / 180.0)) {
             N.parameters[ionosphereParameters::SOLUTION] = 0;
          } else {
             N.parameters[ionosphereParameters::SOLUTION] += ak * N.parameters[ionosphereParameters::PPARAM];
@@ -2225,7 +2226,7 @@ namespace SBC {
        #pragma omp parallel for reduction(+:residualnorm)
        for(uint n=0; n<nodes.size(); n++) {
          Node& N=nodes[n];
-         if(gaugeFixing == Equator && fabs(N.x[2]) < Ionosphere::innerRadius / 10.) {
+         if(gaugeFixing == Equator && fabs(N.x[2]) < Ionosphere::innerRadius * sin(Ionosphere::shieldingLatitude * M_PI / 180.0)) {
             // Skip nodes that are not participating in the calculation.
             N.parameters[ionosphereParameters::RRESIDUAL] = 0;
          } else {
@@ -2311,7 +2312,8 @@ namespace SBC {
       Readparameters::add("ionosphere.F10_7", "Solar 10.7 cm radio flux (sfu = 10^{-22} W/m^2)", 100);
       Readparameters::add("ionosphere.backgroundIonisation", "Background ionoisation due to cosmic rays (mho)", 0.5);
       Readparameters::add("ionosphere.solverMaxIterations", "Maximum number of iterations for the conjugate gradient solver", 2000);
-      Readparameters::add("ionosphere.solverGaugeFixing", "Gauge fixing method of the ionosphere solver. Options are: pole, integral, equatorial", std::string("equator"));
+      Readparameters::add("ionosphere.solverGaugeFixing", "Gauge fixing method of the ionosphere solver. Options are: pole, integral, equator", std::string("equator"));
+      Readparameters::add("ionosphere.shieldingLatitude", "Latitude below which the potential is set to zero in the equator gauge fixing scheme (degree)", 70);
       Readparameters::add("ionosphere.solverPreconditioning", "Use preconditioning for the solver? (0/1)", 1);
       Readparameters::add("ionosphere.earthAngularVelocity", "Angular velocity of inner boundary convection, in rad/s", 7.2921159e-5);
       Readparameters::add("ionosphere.plasmapauseL", "L-shell at which the plasmapause resides (for corotation)", 5.);
@@ -2360,6 +2362,7 @@ namespace SBC {
          cerr << "(IONOSPHERE) Unknown solver gauge fixing method \"" << gaugeFixingString << "\". Aborting." << endl;
          abort();
       }
+      Readparameters::get("ionosphere.shieldingLatitude", shieldingLatitude);
       Readparameters::get("ionosphere.solverPreconditioning", solverPreconditioning);
       Readparameters::get("ionosphere.earthAngularVelocity", earthAngularVelocity);
       Readparameters::get("ionosphere.plasmapauseL", plasmapauseL);
