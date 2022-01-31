@@ -2166,7 +2166,7 @@ namespace SBC {
          Node& N=nodes[n];
          bknum += N.parameters[ionosphereParameters::ZPARAM] * N.parameters[ionosphereParameters::RRESIDUAL];
        }
-       if(iteration == 0 || failcount > 4) {
+       if(iteration == 0) {
           // Just use the gradient vector as-is, starting from the best known solution
           for(uint n=0; n<nodes.size(); n++) {
              Node& N=nodes[n];
