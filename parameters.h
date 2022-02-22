@@ -184,6 +184,7 @@ struct Parameters {
    static bool amrTransShortPencils;        /*!< Use short or longpencils in AMR translation.*/
    static std::vector<std::string> blurPassString;
    static std::vector<int> numPasses;
+   static uint filteringMethod;
 
    /*! \brief Add the global parameters.
     *

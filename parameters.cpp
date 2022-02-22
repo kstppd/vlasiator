@@ -155,6 +155,7 @@ Realf P::amrBoxCenterY = 0.0;
 Realf P::amrBoxCenterZ = 0.0;
 vector<string> P::blurPassString;
 vector<int> P::numPasses;
+uint P::filteringMethod;
 
 bool P::addParameters() {
    typedef Readparameters RP;
@@ -383,6 +384,7 @@ bool P::addParameters() {
    RP::add("AMR.box_center_y", "y coordinate of the center of the box that is refined (for testing)", 0.0);
    RP::add("AMR.box_center_z", "z coordinate of the center of the box that is refined (for testing)", 0.0);
    RP::add("AMR.transShortPencils", "if true, use one-cell pencils", false);
+   RP::add("AMR.filteringMethod", "0,1,2,3", 0);
    RP::addComposing("AMR.filterpasses", string("AMR filter passes for each individual refinement level"));
 
    return true;
@@ -556,6 +558,7 @@ void Parameters::getParameters() {
 
    /*Read Blur Passes per Refinement Level*/
    RP::get("AMR.filterpasses", P::blurPassString);
+   RP::get("AMR.filteringMethod", P::filteringMethod);
 
    // Construct Vector of Passes used in grid.cpp
    bool isEmpty = blurPassString.size() == 0;
