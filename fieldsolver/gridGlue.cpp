@@ -192,7 +192,9 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
 
 
   if (P::amrMaxSpatialRefLevel>0) {
-
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+   MPI_Comm comm = MPI_COMM_WORLD;
     /*----------------------Filtering------------------------*/
     phiprof::start("BoxCar Filtering");
 
@@ -253,13 +255,15 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
            
             // Set Cell to zero before passing filter
             swap = swapGrid.get(ii,jj,kk);
+            phiprof::start("Moment Loop");
             for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-
               swap->at(e)=0.0;
-
             }
+            phiprof::stop("Moment Loop");
+
 
             // Perform the blur
+            phiprof::start("Stencil Loop");
             for (int a=0; a<stencilWidth; a++){
               for (int b=0; b<stencilWidth; b++){
                 for (int c=0; c<stencilWidth; c++){
@@ -278,6 +282,7 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
                   }
                 }
               }
+            phiprof::stop("Stencil Loop");
             }
           }
         }
@@ -289,6 +294,8 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
       momentsGrid=swapGrid;
 
       // Update Ghost Cells
+
+      MPI_Barrier(comm);
       phiprof::start("GhostUpdate");
       momentsGrid.updateGhostCells();
       phiprof::stop("GhostUpdate");
