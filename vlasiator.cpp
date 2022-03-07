@@ -948,6 +948,7 @@ int main(int argn,char* args[]) {
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
             if (myRank==MASTER_RANK){
+               std::cout<<"********************************";
                std::cout<<"FgRhom Prior to Filtering = "<<fgRhomTotal<<std::endl;
             }
             }
@@ -971,7 +972,8 @@ int main(int argn,char* args[]) {
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
             if (myRank==MASTER_RANK){
-               std::cout<<"FgRhom Prior to Filtering = "<<fgRhomTotal<<std::endl;
+               std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
+               std::cout<<"********************************\n\n";
             }
             }
          phiprof::stop("fsgrid-coupling-in");
