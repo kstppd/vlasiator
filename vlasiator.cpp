@@ -930,54 +930,9 @@ int main(int argn,char* args[]) {
          phiprof::start("fsgrid-coupling-in");
          // Copy moments over into the fsgrid.
          //setupTechnicalFsGrid(mpiGrid, cells, technicalGrid);
-            {
-            const int *fsGridDims = &momentsGrid.getLocalSize()[0];
-            std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
-            double fgRhomTask=0.0;
-            double fgRhomTotal=0.0;
-            for (int k=0; k<fsGridDims[2];k++){
-               for (int j=0; j<fsGridDims[1];j++){
-                  for (int i=0; i<fsGridDims[0];i++){
-                     cell=momentsGrid.get(i,j,k);
-                     fgRhomTask+=cell->at(fsgrids::moments::RHOM);
-                  }
-               }
-            }
-
-            //Reduce to master
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
-            if (myRank==MASTER_RANK){
-               std::cout<<"********************************";
-               std::cout<<"FgRhom Prior to Filtering = "<<fgRhomTotal<<std::endl;
-            }
-            }
          feedMomentsIntoFsGrid(mpiGrid, cells, momentsGrid, technicalGrid, false);
          feedMomentsIntoFsGrid(mpiGrid, cells, momentsDt2Grid, technicalGrid, true);
-                     {
-            const int *fsGridDims = &momentsGrid.getLocalSize()[0];
-            std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
-            double fgRhomTask=0.0;
-            double fgRhomTotal=0.0;
-            for (int k=0; k<fsGridDims[2];k++){
-               for (int j=0; j<fsGridDims[1];j++){
-                  for (int i=0; i<fsGridDims[0];i++){
-                     cell=momentsGrid.get(i,j,k);
-                     fgRhomTask+=cell->at(fsgrids::moments::RHOM);
-                  }
-               }
-            }
-
-            //Reduce to master
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
-            if (myRank==MASTER_RANK){
-               std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
-               std::cout<<"********************************\n\n";
-            }
-            }
          phiprof::stop("fsgrid-coupling-in");
-         
          propagateFields(
             perBGrid,
             perBDt2Grid,

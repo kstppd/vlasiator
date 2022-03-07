@@ -513,6 +513,32 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
 
   MPI_Waitall(sendRequests.size(), sendRequests.data(), MPI_STATUSES_IGNORE);
 
+   int mpiProcs,myRank;
+   MPI_Comm comm = MPI_COMM_WORLD;
+   MPI_Comm_rank(comm, &myRank);
+   MPI_Comm_size(MPI_COMM_WORLD, &mpiProcs);
+
+   {
+      MPI_Barrier(MPI_COMM_WORLD);
+      const int *fsGridDims = &momentsGrid.getLocalSize()[0];
+      std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
+      double fgRhomTask=0.0;
+      double fgRhomTotal=0.0;
+      for (int k=0; k<fsGridDims[2];k++){
+         for (int j=0; j<fsGridDims[1];j++){
+            for (int i=0; i<fsGridDims[0];i++){
+               cell=momentsGrid.get(i,j,k);
+               fgRhomTask+=cell->at(fsgrids::moments::RHOM);
+            }
+         }
+      }
+      //Reduce to master
+      MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
+      if (myRank==MASTER_RANK){
+         std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
+         std::cout<<"********************************\n\n";
+      }
+   }
 
 
   //Perform moment filtering. Used in AMR runs.
@@ -537,9 +563,33 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
           std::cout<<"Filtering method not selected. Exiting";
           abort();
     } 
-  
-  
   }   
+    
+   {
+      MPI_Barrier(MPI_COMM_WORLD);
+      const int *fsGridDims = &momentsGrid.getLocalSize()[0];
+      std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
+      double fgRhomTask=0.0;
+      double fgRhomTotal=0.0;
+      for (int k=0; k<fsGridDims[2];k++){
+         for (int j=0; j<fsGridDims[1];j++){
+            for (int i=0; i<fsGridDims[0];i++){
+               cell=momentsGrid.get(i,j,k);
+               fgRhomTask+=cell->at(fsgrids::moments::RHOM);
+            }
+         }
+      }
+      //Reduce to master
+      MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
+      if (myRank==MASTER_RANK){
+         std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
+         std::cout<<"********************************\n\n";
+      }
+   }
+
+
+
+
 }
 
 
