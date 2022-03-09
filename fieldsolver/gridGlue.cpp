@@ -297,7 +297,7 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
    int kernelOffset = 2;   // offset of 5 point stencil 3D kernel
 
    Real kernel[5]={1,4,6,4,1};
-   Real sum = 16;
+   Real sum = 16.0;
 
    // Update momentsGrid Ghost Cells
    phiprof::start("GhostUpdate");
@@ -321,12 +321,16 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
       abort();
    } 
 
+   std::vector<int64_t> filteredCells;
+
 
    for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
 
       // Blurring Pass
       phiprof::start("BlurPass");
-
+      
+      
+      // filteredCells.clear();
       #pragma omp parallel for collapse(2)
       for (int k = 0; k < mntDims[2]; k++){
          for (int j = 0; j < mntDims[1]; j++){
@@ -343,7 +347,9 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                {
                   continue;
                }
-
+               
+               // filteredCells.push_back(momentsGrid.LocalIDForCoords(i,j,k));
+               // std::cout<<momentsGrid.LocalIDForCoords(i,j,k)<<std::endl;
                // Define some Pointers
                std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
                std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
@@ -359,17 +365,16 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   swap = swapGrid.get(i,j,k);
                   cell = momentsGrid.get(i+a,j,k);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a];
+                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
                   } 
                }//inner filtering loop
             }
          }
       }//spatial Loops
-      momentsGrid=swapGrid/sum;
+      momentsGrid=swapGrid;
+      // momentsGrid.maskDivide(sum,filteredCells);
 
-
-
-
+      // filteredCells.clear();
       #pragma omp parallel for collapse(2)
       for (int k = 0; k < mntDims[2]; k++){
          for (int j = 0; j < mntDims[1]; j++){
@@ -387,6 +392,7 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   continue;
                }
 
+               // filteredCells.push_back(momentsGrid.LocalIDForCoords(i,j,k));
                // Define some Pointers
                std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
                std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
@@ -402,14 +408,16 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   swap = swapGrid.get(i,j,k);
                   cell = momentsGrid.get(i,j+a,k);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a];
+                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
                   } 
                }//inner filtering loop
             }
          }
       }//spatial Loops
-      momentsGrid=swapGrid/sum;
+      momentsGrid=swapGrid;
+      // momentsGrid.maskDivide(sum,filteredCells);
 
+      // filteredCells.clear();
       #pragma omp parallel for collapse(2)
       for (int k = 0; k < mntDims[2]; k++){
          for (int j = 0; j < mntDims[1]; j++){
@@ -427,11 +435,12 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   continue;
                }
 
+               // filteredCells.push_back(momentsGrid.LocalIDForCoords(i,j,k));
                // Define some Pointers
                std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
                std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
             
-               // Set Cell to zero before passing filter
+               // // Set Cell to zero before passing filter
                swap = swapGrid.get(i,j,k);
                for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
                   swap->at(e)=0.0;
@@ -442,18 +451,18 @@ void filterMoments_3(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   swap = swapGrid.get(i,j,k);
                   cell = momentsGrid.get(i,j,k+a);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a];
+                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
                   } 
                }//inner filtering loop
             }
          }
       }//spatial Loops
-      momentsGrid=swapGrid/sum;
+      momentsGrid=swapGrid;
+      // momentsGrid.maskDivide(sum,filteredCells);
 
 
 
       phiprof::stop("BlurPass");
-      // Copy swapGrid back to momentsGrid
       
       // Update Ghost Cells
       phiprof::start("GhostUpdate");
@@ -699,12 +708,13 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
    MPI_Comm_rank(comm, &myRank);
    MPI_Comm_size(MPI_COMM_WORLD, &mpiProcs);
 
+   double fgRhomTotal_0=0.0;
+   double fgRhomTotal_1=0.0;
    {
       MPI_Barrier(MPI_COMM_WORLD);
       const int *fsGridDims = &momentsGrid.getLocalSize()[0];
       std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
       double fgRhomTask=0.0;
-      double fgRhomTotal=0.0;
       for (int k=0; k<fsGridDims[2];k++){
          for (int j=0; j<fsGridDims[1];j++){
             for (int i=0; i<fsGridDims[0];i++){
@@ -714,9 +724,9 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
          }
       }
       //Reduce to master
-      MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
+      MPI_Reduce(&fgRhomTask, &fgRhomTotal_0, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
       if (myRank==MASTER_RANK){
-         std::cout<<"FgRhom Before Filtering = "<<fgRhomTotal<<std::endl;
+         std::cout<<"FgRhom Before Filtering = "<<std::setprecision(16) <<fgRhomTotal_0<<std::endl;
          std::cout<<"********************************\n\n";
       }
    }
@@ -751,7 +761,6 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
       const int *fsGridDims = &momentsGrid.getLocalSize()[0];
       std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
       double fgRhomTask=0.0;
-      double fgRhomTotal=0.0;
       for (int k=0; k<fsGridDims[2];k++){
          for (int j=0; j<fsGridDims[1];j++){
             for (int i=0; i<fsGridDims[0];i++){
@@ -761,9 +770,10 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
          }
       }
       //Reduce to master
-      MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
+      MPI_Reduce(&fgRhomTask, &fgRhomTotal_1, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
       if (myRank==MASTER_RANK){
-         std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
+         std::cout<<"FgRhom After Filtering = "<<std::setprecision(16) <<fgRhomTotal_1<<std::endl;
+         std::cout<<"abs diff (%) = "<<std::setprecision(16) <<100*(abs(fgRhomTotal_1-fgRhomTotal_0)/fgRhomTotal_0)<<std::endl;
          std::cout<<"********************************\n\n";
       }
    }
