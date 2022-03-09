@@ -284,6 +284,14 @@ void filterMoments(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
 
 }
 
+Real gkern(int i, int j , int k ){
+   Real sigma =1.35;
+   Real term1=pow((1.0/(sqrt(2.0*M_PI)*sigma)),3);
+   Real term2=exp(-(i*i+j*j+k*k)/(2.0*sigma*sigma));
+   return term1*term2;
+}
+
+
 void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                            FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
@@ -389,8 +397,8 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   cell = momentsGrid.get(i+a,j+b,k+c);
 
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                    swap->at(e)+=cell->at(e) *kernel[kernelOffset+a][kernelOffset+b][kernelOffset+c];
-
+                  //   swap->at(e)+=cell->at(e) *kernel[kernelOffset+a][kernelOffset+b][kernelOffset+c];
+                    swap->at(e)+=cell->at(e) *gkern(a,b,c);
                     } 
                   }
                 }
@@ -535,7 +543,7 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
       //Reduce to master
       MPI_Reduce(&fgRhomTask, &fgRhomTotal, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
       if (myRank==MASTER_RANK){
-         std::cout<<"FgRhom After Filtering = "<<fgRhomTotal<<std::endl;
+         std::cout<<"FgRhom Before Filtering = "<<fgRhomTotal<<std::endl;
          std::cout<<"********************************\n\n";
       }
    }
