@@ -466,122 +466,131 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
    MPI_Comm comm = MPI_COMM_WORLD;
    for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
 
-      // Blurring Pass
-      phiprof::start("BlurPass");
-      #pragma omp parallel for collapse(2)
-      for (int k = 0; k < mntDims[2]; k++){
-         for (int j = 0; j < mntDims[1]; j++){
-            for (int i = 0; i < mntDims[0]; i++){
+      #pragma omp parallel 
+      {
+         // Blurring Pass
+         phiprof::start("BlurPass");
+         #pragma omp for collapse(3),schedule(guided)
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
 
-               //  Get refLevel level
-               int refLevel = technicalGrid.get(i, j, k)->refLevel;
-               // Skip pass
-               if (blurPass >= P::numPasses.at(refLevel) ||
-                  technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-                  (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
-                  technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
-               )
-               {
-                  continue;
-               }
-               std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
-               std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
-               // Set Cell to zero before passing filter
-               swap = swapGrid.get(i,j,k);
-               for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                  swap->at(e)=0.0;
-               }
-
-               // Perform the blur
-               for (int a=-kernelOffset; a<=kernelOffset; a++){
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+                  // Set Cell to zero before passing filter
                   swap = swapGrid.get(i,j,k);
-                  cell = momentsGrid.get(i+a,j,k);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
-                  } 
-               }//inner filtering loop
+                     swap->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     swap = swapGrid.get(i,j,k);
+                     cell = momentsGrid.get(i+a,j,k);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
             }
+         }//spatial Loops
+         #pragma omp single
+         {
+            momentsGrid=swapGrid;
          }
-      }//spatial Loops
-      momentsGrid=swapGrid;
 
-      // filteredCells.clear();
-      #pragma omp parallel for collapse(2)
-      for (int k = 0; k < mntDims[2]; k++){
-         for (int j = 0; j < mntDims[1]; j++){
-            for (int i = 0; i < mntDims[0]; i++){
+         // filteredCells.clear();
+         #pragma omp for collapse(3),schedule(guided)
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
 
-               //  Get refLevel level
-               int refLevel = technicalGrid.get(i, j, k)->refLevel;
-               // Skip pass
-               if (blurPass >= P::numPasses.at(refLevel) ||
-                  technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-                  (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
-                  technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
-               )
-               {
-                  continue;
-               }
-               // Define some Pointers
-               std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
-               std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
-            
-               // Set Cell to zero before passing filter
-               swap = swapGrid.get(i,j,k);
-               for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                  swap->at(e)=0.0;
-               }
-
-               // Perform the blur
-               for (int a=-kernelOffset; a<=kernelOffset; a++){
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  // Define some Pointers
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+               
+                  // Set Cell to zero before passing filter
                   swap = swapGrid.get(i,j,k);
-                  cell = momentsGrid.get(i,j+a,k);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
-                  } 
-               }//inner filtering loop
+                     swap->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     swap = swapGrid.get(i,j,k);
+                     cell = momentsGrid.get(i,j+a,k);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
             }
+         }//spatial Loops
+         #pragma omp single
+         {
+            momentsGrid=swapGrid;
          }
-      }//spatial Loops
-      momentsGrid=swapGrid;
 
-      #pragma omp parallel for collapse(2)
-      for (int k = 0; k < mntDims[2]; k++){
-         for (int j = 0; j < mntDims[1]; j++){
-            for (int i = 0; i < mntDims[0]; i++){
+         #pragma omp for collapse(3),schedule(guided) 
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
 
-               //  Get refLevel level
-               int refLevel = technicalGrid.get(i, j, k)->refLevel;
-               // Skip pass
-               if (blurPass >= P::numPasses.at(refLevel) ||
-                  technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-                  (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
-                  technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
-               )
-               {
-                  continue;
-               }
-               // Define some Pointers
-               std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
-               std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
-            
-               // Set Cell to zero before passing filter
-               swap = swapGrid.get(i,j,k);
-               for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                  swap->at(e)=0.0;
-               }
-
-               // Perform the blur
-               for (int a=-kernelOffset; a<=kernelOffset; a++){
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  // Define some Pointers
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+               
+                  // Set Cell to zero before passing filter
                   swap = swapGrid.get(i,j,k);
-                  cell = momentsGrid.get(i,j,k+a);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
-                  } 
-               }//inner filtering loop
+                     swap->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     swap = swapGrid.get(i,j,k);
+                     cell = momentsGrid.get(i,j,k+a);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
             }
-         }
-      }//spatial Loops
+         }//spatial Loops
+      }
       momentsGrid=swapGrid;
       phiprof::stop("BlurPass");
       MPI_Barrier(comm);
