@@ -94,92 +94,9 @@ template <typename T, int stencil> void computeCoupling(dccrg::Dccrg<SpatialCell
   }
 }
 
-void filterMoments_Adaptive(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-                           FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
-                           FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
-{
-
-
-    std::map<uint , uint> passes{ {0,3},{1,2},{2,1},{3,0} };
-  
-    // Update momentsGrid Ghost Cells
-    phiprof::start("GhostUpdate");
-    momentsGrid.updateGhostCells(); 
-    phiprof::stop("GhostUpdate");
-
-
-    //Hardcoded ghosts to smth for now
-    #pragma message("FIX THIS: ADAPTIVE FILTERING AND GHOSTS")
-    FsGrid<std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> swapGrid=momentsGrid;
-    const int *mntDims= &momentsGrid.getLocalSize()[0];  
-    const int maxRefLevel = mpiGrid.mapping.get_maximum_refinement_level();
-
-    //Filtering Loop
-    #pragma omp parallel for collapse(2)
-    for (int k=0; k<mntDims[2];k++){
-       for (int j=0;j<mntDims[1]; j++){
-          for (int i =0;i<mntDims[0];i++){
-
-
-            //  Get refLevel level
-            int refLevel = technicalGrid.get(i, j,k)->refLevel;
-
-            // Skip pass
-            if (technicalGrid.get(i, j,k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
-               (technicalGrid.get(i, j,k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
-               technicalGrid.get(i, j,k)->sysBoundaryLayer == 2) || refLevel==Parameters::amrMaxSpatialRefLevel)
-            {
-               continue;
-            }
-            
-            std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
-            std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
-           
-            // Set Cell to zero before passing filter
-            swap = swapGrid.get(i,j,k);
-            for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-              swap->at(e)=0.0;
-            }
-
-
-            //Calculate kernel half width and weight for this cell
-            int kernelOffset=passes[refLevel];
-            Real kernelWeight=1./pow(2*kernelOffset+1,3);
-
-
-            // Perform the blur
-            for (int a=-kernelOffset; a<=kernelOffset; a++){
-              for (int b=-kernelOffset; b<=kernelOffset; b++){
-                for (int c=-kernelOffset; c<=kernelOffset; c++){
-
-                  swap = swapGrid.get(i,j,k);
-                  cell = momentsGrid.get(i+a,j+b,k+c);
-
-                  for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                    swap->at(e)+=cell->at(e) * kernelWeight;
-
-                    } 
-                  }
-                }
-              }//inner filtering loop
-            
-       /*---------------------*/
-          }
-       }
-    }//spatial loops
-
-
-
-   // Copy swapGrid back to momentsGrid
-   momentsGrid=swapGrid;
-
-   // Update Ghost Cells
-   momentsGrid.updateGhostCells();
-}
-
 
 // Boxar 3D Kernel
-void filterMoments_0(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+void filterMoments_Boxcar3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                            FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
 {
@@ -291,8 +208,8 @@ void filterMoments_0(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
 }
 
 
-// Gaussian Kernel
-void filterMoments_1(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+// Triangle 3D Kernel
+void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                            FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
 {
@@ -303,32 +220,38 @@ void filterMoments_1(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
 
 
     //this looks great
-    constexpr Real kernel[5][5][5] = {{ {0.00016178, 0.00072504, 0.00119539, 0.00072504, 0.00016178},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00119539, 0.00535735, 0.00883277, 0.00535735, 0.00119539},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00016178, 0.00072504, 0.00119539, 0.00072504, 0.00016178}},
-                                      {{0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00324939, 0.01456277, 0.02400996, 0.01456277, 0.00324939},
-                                        {0.00535735, 0.02400996, 0.03958573, 0.02400996, 0.00535735},
-                                        {0.00324939, 0.01456277, 0.02400996, 0.01456277, 0.00324939},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504}},
-                                      {{0.00119539, 0.00535735, 0.00883277, 0.00535735, 0.00119539},
-                                        {0.00535735, 0.02400996, 0.03958573, 0.02400996, 0.00535735},
-                                        {0.00883277, 0.03958573, 0.06526583, 0.03958573, 0.00883277},
-                                        {0.00535735, 0.02400996, 0.03958573, 0.02400996, 0.00535735},
-                                        {0.00119539, 0.00535735, 0.00883277, 0.00535735, 0.00119539}},
-                                      {{0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00324939, 0.01456277, 0.02400996, 0.01456277, 0.00324939},
-                                        {0.00535735, 0.02400996, 0.03958573, 0.02400996, 0.00535735},
-                                        {0.00324939, 0.01456277, 0.02400996, 0.01456277, 0.00324939},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504}},
-                                      {{0.00016178, 0.00072504, 0.00119539, 0.00072504, 0.00016178},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00119539, 0.00535735, 0.00883277, 0.00535735, 0.00119539},
-                                        {0.00072504, 0.00324939, 0.00535735, 0.00324939, 0.00072504},
-                                        {0.00016178, 0.00072504, 0.00119539, 0.00072504, 0.00016178}
-                                    }};
+    Real kernelSum=729.0;
+    constexpr Real kernel[5][5][5] ={
+                                      {{ 1,  2,  3,  2,  1},
+                                       { 2,  4,  6,  4,  2},
+                                       { 3,  6,  9,  6,  3},
+                                       { 2,  4,  6,  4,  2},
+                                       { 1,  2,  3,  2,  1}},
+
+                                      {{ 2,  4,  6,  4,  2},
+                                       { 4,  8, 12,  8,  4},
+                                       { 6, 12, 18, 12,  6},
+                                       { 4,  8, 12,  8,  4},
+                                       { 2,  4,  6,  4,  2}},
+
+                                      {{ 3,  6,  9,  6,  3},
+                                       { 6, 12, 18, 12,  6},
+                                       { 9, 18, 27, 18,  9},
+                                       { 6, 12, 18, 12,  6},
+                                       { 3,  6,  9,  6,  3}},
+
+                                      {{ 2,  4,  6,  4,  2},
+                                       { 4,  8, 12,  8,  4},
+                                       { 6, 12, 18, 12,  6},
+                                       { 4,  8, 12,  8,  4},
+                                       { 2,  4,  6,  4,  2}},
+
+                                      {{ 1,  2,  3,  2,  1},
+                                       { 2,  4,  6,  4,  2},
+                                       { 3,  6,  9,  6,  3},
+                                       { 2,  4,  6,  4,  2},
+                                       { 1,  2,  3,  2,  1}}
+                                    };
 
 
     // Update momentsGrid Ghost Cells
@@ -400,7 +323,7 @@ void filterMoments_1(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   cell = momentsGrid.get(i+a,j+b,k+c);
 
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                    swap->at(e)+=cell->at(e) *kernel[kernelOffset+a][kernelOffset+b][kernelOffset+c];
+                    swap->at(e)+=cell->at(e) *kernel[kernelOffset+a][kernelOffset+b][kernelOffset+c]/kernelSum;
                     } 
                   }
                 }
@@ -425,8 +348,8 @@ void filterMoments_1(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
 }
 
 
-//Separable Gaussian kernel 
-void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+//Separable Triangle 1D kernel 
+void filterMoments_Triangle1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                            FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
 {
@@ -495,8 +418,8 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   }
 
                   // Perform the blur
+                  swap = swapGrid.get(i,j,k);
                   for (int a=-kernelOffset; a<=kernelOffset; a++){
-                     swap = swapGrid.get(i,j,k);
                      cell = momentsGrid.get(i+a,j,k);
                      for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
                         swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
@@ -507,7 +430,7 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
          }//spatial Loops
          #pragma omp single
          {
-            momentsGrid=swapGrid;
+            swapGrid.updateGhostCells();
          }
 
          // filteredCells.clear();
@@ -532,17 +455,17 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
                
                   // Set Cell to zero before passing filter
-                  swap = swapGrid.get(i,j,k);
+                  cell = momentsGrid.get(i,j,k);
                   for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                     swap->at(e)=0.0;
+                     cell->at(e)=0.0;
                   }
 
                   // Perform the blur
+                  cell = momentsGrid.get(i,j,k);
                   for (int a=-kernelOffset; a<=kernelOffset; a++){
-                     swap = swapGrid.get(i,j,k);
-                     cell = momentsGrid.get(i,j+a,k);
+                     swap = swapGrid.get(i,j+a,k);
                      for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
-                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                        cell->at(e)+=swap->at(e) *kernel[kernelOffset+a]/sum;
                      } 
                   }//inner filtering loop
                }
@@ -550,7 +473,7 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
          }//spatial Loops
          #pragma omp single
          {
-            momentsGrid=swapGrid;
+            momentsGrid.updateGhostCells();
          }
 
          #pragma omp for collapse(3),schedule(guided) 
@@ -580,8 +503,8 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
                   }
 
                   // Perform the blur
+                  swap = swapGrid.get(i,j,k);
                   for (int a=-kernelOffset; a<=kernelOffset; a++){
-                     swap = swapGrid.get(i,j,k);
                      cell = momentsGrid.get(i,j,k+a);
                      for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
                         swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
@@ -594,6 +517,8 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
       momentsGrid=swapGrid;
       phiprof::stop("BlurPass");
       MPI_Barrier(comm);
+
+      
       // Update Ghost Cells
       phiprof::start("GhostUpdate");
       momentsGrid.updateGhostCells();
@@ -603,6 +528,189 @@ void filterMoments_2(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGri
 
 
 }
+
+//Separable Triangle 1D kernel 
+void filterMoments_Boxcar1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                           FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+                           FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
+{
+
+    
+   int stencilWidth = 3;   // dimension size of a 3D kernel
+   int kernelOffset = 1;   // offset of 5 point stencil 3D kernel
+
+   Real kernel[3]={1,1,1};
+   Real sum = 3.0;
+
+   // Update momentsGrid Ghost Cells
+   phiprof::start("GhostUpdate");
+   momentsGrid.updateGhostCells(); 
+   phiprof::stop("GhostUpdate");
+
+   // Get size of local domain and create swapGrid for filtering
+   const int *mntDims= &momentsGrid.getLocalSize()[0];  
+   const int maxRefLevel = mpiGrid.mapping.get_maximum_refinement_level();
+   FsGrid<std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> swapGrid = momentsGrid;  //swap array 
+
+
+    // Filtering Loop
+   std::vector<int>::iterator  maxNumPassesPtr;
+   int maxNumPasses;
+   maxNumPassesPtr=std::max_element(P::numPasses.begin(), P::numPasses.end());
+   if(maxNumPassesPtr != P::numPasses.end()){ 
+      maxNumPasses = *maxNumPassesPtr;
+   }else{
+      std::cerr << "Trying to dereference null pointer \t" << " in " << __FILE__ << ":" << __LINE__ << std::endl;
+      abort();
+   } 
+
+
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+   MPI_Comm comm = MPI_COMM_WORLD;
+   for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
+
+      #pragma omp parallel 
+      {
+         // Blurring Pass
+         phiprof::start("BlurPass");
+         #pragma omp for collapse(3),schedule(guided)
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
+
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+                  // Set Cell to zero before passing filter
+                  swap = swapGrid.get(i,j,k);
+                  for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                     swap->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  swap = swapGrid.get(i,j,k);
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     cell = momentsGrid.get(i+a,j,k);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
+            }
+         }//spatial Loops
+         #pragma omp single
+         {
+            swapGrid.updateGhostCells();
+         }
+
+         // filteredCells.clear();
+         #pragma omp for collapse(3),schedule(guided)
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
+
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  // Define some Pointers
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+               
+                  // Set Cell to zero before passing filter
+                  cell = momentsGrid.get(i,j,k);
+                  for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                     cell->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  cell = momentsGrid.get(i,j,k);
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     swap = swapGrid.get(i,j+a,k);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        cell->at(e)+=swap->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
+            }
+         }//spatial Loops
+         #pragma omp single
+         {
+            momentsGrid.updateGhostCells();
+         }
+
+         #pragma omp for collapse(3),schedule(guided) 
+         for (int k = 0; k < mntDims[2]; k++){
+            for (int j = 0; j < mntDims[1]; j++){
+               for (int i = 0; i < mntDims[0]; i++){
+
+                  //  Get refLevel level
+                  int refLevel = technicalGrid.get(i, j, k)->refLevel;
+                  // Skip pass
+                  if (blurPass >= P::numPasses.at(refLevel) ||
+                     technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
+                     (technicalGrid.get(i, j, k)->sysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY &&
+                     technicalGrid.get(i, j, k)->sysBoundaryLayer == 2)
+                  )
+                  {
+                     continue;
+                  }
+                  // Define some Pointers
+                  std::array<Real, fsgrids::moments::N_MOMENTS> *cell;  
+                  std::array<Real,fsgrids::moments::N_MOMENTS> *swap;
+               
+                  // Set Cell to zero before passing filter
+                  swap = swapGrid.get(i,j,k);
+                  for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                     swap->at(e)=0.0;
+                  }
+
+                  // Perform the blur
+                  swap = swapGrid.get(i,j,k);
+                  for (int a=-kernelOffset; a<=kernelOffset; a++){
+                     cell = momentsGrid.get(i,j,k+a);
+                     for (int e = 0; e < fsgrids::moments::N_MOMENTS; ++e) {
+                        swap->at(e)+=cell->at(e) *kernel[kernelOffset+a]/sum;
+                     } 
+                  }//inner filtering loop
+               }
+            }
+         }//spatial Loops
+      }
+      momentsGrid=swapGrid;
+      phiprof::stop("BlurPass");
+      MPI_Barrier(comm);
+
+      
+      // Update Ghost Cells
+      phiprof::start("GhostUpdate");
+      momentsGrid.updateGhostCells();
+      phiprof::stop("GhostUpdate");
+
+    }
+
+
+}
+
+
 
 
 
@@ -737,21 +845,29 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
   if (P::amrMaxSpatialRefLevel>0) {
     
     switch (P::filteringMethod){
-      case(0)://regular dev boxcar 3D
+      case(0)://Boxcar 3D
          phiprof::start("AMR Filtering-Boxcar-3D");
-         filterMoments_0(mpiGrid,momentsGrid,technicalGrid);
+         filterMoments_Boxcar3D(mpiGrid,momentsGrid,technicalGrid);
          phiprof::stop("AMR Filtering-Boxcar-3D");
          break;
-      case(1): //gaussian 3d stencil
-         phiprof::start("AMR Filtering-Gaussian-3D");
-         filterMoments_1(mpiGrid,momentsGrid,technicalGrid);
-         phiprof::stop("AMR Filtering-Gaussian-3D");
+      case(1): //Triangle 3D 
+         phiprof::start("AMR Filtering-Triangle-3D");
+         filterMoments_Trianle3D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("AMR Filtering-Triangle-3D");
          break;
-      case(2): //gaussian 1D separable
-         phiprof::start("AMR Filtering-Gaussian-1D");
-         filterMoments_2(mpiGrid,momentsGrid,technicalGrid);
-         phiprof::stop("AMR Filtering-Gaussian-1D");
+      case(2): //Boxcar 1D 
+         phiprof::start("AMR Filtering-Boxcar-1D");
+         filterMoments_Boxcar1D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("AMR Filtering-Boxcar-1D");
          break;
+      case(3): //Boxcar 1D 
+         phiprof::start("AMR Filtering-Triangle-1D");
+         filterMoments_Triangle1D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("AMR Filtering-Triangle-1D");
+         break;
+
+
+
       default:
           std::cout<<"Filtering method not selected. Exiting";
           abort();
