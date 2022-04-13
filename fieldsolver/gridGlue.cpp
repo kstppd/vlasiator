@@ -136,7 +136,6 @@ void filterMoments_Boxcar3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
 
 
       // Blurring Pass
-      phiprof::start("BlurPass");
       #pragma omp parallel for collapse(2)
       for (int kk = 0; kk < mntDims[2]; kk++){
         for (int jj = 0; jj < mntDims[1]; jj++){
@@ -194,10 +193,10 @@ void filterMoments_Boxcar3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
   
       // Copy swapGrid back to momentsGrid
       momentsGrid=swapGrid;
-      phiprof::stop("BlurPass");
-
       // Update Ghost Cells
+    phiprof::start("Barrier");
       MPI_Barrier(comm);
+    phiprof::stop("Barrier");
       phiprof::start("GhostUpdate");
       momentsGrid.updateGhostCells();
       phiprof::stop("GhostUpdate");
@@ -213,6 +212,8 @@ void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>
                            FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) 
 {
+
+
 
     // Kernel Characteristics
     int stencilWidth = 5;   // dimension size of a 3D kernel
@@ -253,11 +254,11 @@ void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>
                                        { 1,  2,  3,  2,  1}}
                                     };
 
-
     // Update momentsGrid Ghost Cells
     phiprof::start("GhostUpdate");
     momentsGrid.updateGhostCells(); 
     phiprof::stop("GhostUpdate");
+
 
     // Get size of local domain and create swapGrid for filtering
     const int *mntDims= &momentsGrid.getLocalSize()[0];  
@@ -282,7 +283,6 @@ void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>
    for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
 
       // Blurring Pass
-      phiprof::start("BlurPass");
       #pragma omp parallel for collapse(2)
       for (int k = 0; k < mntDims[2]; k++){
         for (int j = 0; j < mntDims[1]; j++){
@@ -291,6 +291,7 @@ void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>
             //  Get refLevel level
             int refLevel = technicalGrid.get(i, j, k)->refLevel;
 
+            //  Get refLevel level
             // Skip pass
             if (blurPass >= P::numPasses.at(refLevel) ||
                 technicalGrid.get(i, j, k)->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE ||
@@ -335,8 +336,9 @@ void filterMoments_Trianle3D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>
 
       // Copy swapGrid back to momentsGrid
       momentsGrid=swapGrid;
-      phiprof::stop("BlurPass");
+    phiprof::start("Barrier");
       MPI_Barrier(comm);
+    phiprof::stop("Barrier");
       // Update Ghost Cells
       phiprof::start("GhostUpdate");
       momentsGrid.updateGhostCells();
@@ -389,11 +391,8 @@ void filterMoments_Triangle1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry
    MPI_Comm comm = MPI_COMM_WORLD;
    for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
 
-      #pragma omp parallel 
-      {
          // Blurring Pass
-         phiprof::start("BlurPass");
-         #pragma omp for collapse(3),schedule(guided)
+         #pragma omp parallel  for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -428,13 +427,16 @@ void filterMoments_Triangle1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry
                }
             }
          }//spatial Loops
-         #pragma omp single
-         {
-            swapGrid.updateGhostCells();
-         }
+
+    phiprof::start("Barrier");
+      MPI_Barrier(comm);
+    phiprof::stop("Barrier");
+         phiprof::start("GhostUpdate");
+         swapGrid.updateGhostCells();
+         phiprof::stop("GhostUpdate");
 
          // filteredCells.clear();
-         #pragma omp for collapse(3),schedule(guided)
+         #pragma omp parallel  for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -471,12 +473,15 @@ void filterMoments_Triangle1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry
                }
             }
          }//spatial Loops
-         #pragma omp single
-         {
-            momentsGrid.updateGhostCells();
-         }
 
-         #pragma omp for collapse(3),schedule(guided) 
+    phiprof::start("Barrier");
+      MPI_Barrier(comm);
+    phiprof::stop("Barrier");
+         phiprof::start("GhostUpdate");
+         momentsGrid.updateGhostCells();
+         phiprof::stop("GhostUpdate");
+
+         #pragma omp parallel for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -513,10 +518,10 @@ void filterMoments_Triangle1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry
                }
             }
          }//spatial Loops
-      }
       momentsGrid=swapGrid;
-      phiprof::stop("BlurPass");
+    phiprof::start("Barrier");
       MPI_Barrier(comm);
+    phiprof::stop("Barrier");
 
       
       // Update Ghost Cells
@@ -570,11 +575,8 @@ void filterMoments_Boxcar1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
    MPI_Comm comm = MPI_COMM_WORLD;
    for (int blurPass = 0; blurPass < maxNumPasses; blurPass++){
 
-      #pragma omp parallel 
-      {
          // Blurring Pass
-         phiprof::start("BlurPass");
-         #pragma omp for collapse(3),schedule(guided)
+         #pragma omp parallel for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -609,13 +611,15 @@ void filterMoments_Boxcar1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
                }
             }
          }//spatial Loops
-         #pragma omp single
-         {
-            swapGrid.updateGhostCells();
-         }
+    phiprof::start("Barrier");
+      MPI_Barrier(comm);
+    phiprof::stop("Barrier");
+         phiprof::start("GhostUpdate");
+         swapGrid.updateGhostCells();
+         phiprof::stop("GhostUpdate");
 
          // filteredCells.clear();
-         #pragma omp for collapse(3),schedule(guided)
+         #pragma omp parallel  for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -652,12 +656,14 @@ void filterMoments_Boxcar1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
                }
             }
          }//spatial Loops
-         #pragma omp single
-         {
-            momentsGrid.updateGhostCells();
-         }
+    phiprof::start("Barrier");
+      MPI_Barrier(comm);
+    phiprof::stop("Barrier");
+         phiprof::start("GhostUpdate");
+         momentsGrid.updateGhostCells();
+         phiprof::stop("GhostUpdate");
 
-         #pragma omp for collapse(3),schedule(guided) 
+         #pragma omp parallel for collapse(2)
          for (int k = 0; k < mntDims[2]; k++){
             for (int j = 0; j < mntDims[1]; j++){
                for (int i = 0; i < mntDims[0]; i++){
@@ -694,10 +700,10 @@ void filterMoments_Boxcar1D(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>&
                }
             }
          }//spatial Loops
-      }
       momentsGrid=swapGrid;
-      phiprof::stop("BlurPass");
+    phiprof::start("Barrier");
       MPI_Barrier(comm);
+    phiprof::stop("Barrier");
 
       
       // Update Ghost Cells
@@ -819,26 +825,6 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
    double fgRhomTotal_0=0.0;
    double fgRhomTotal_1=0.0;
 
-   {
-      MPI_Barrier(MPI_COMM_WORLD);
-      const int *fsGridDims = &momentsGrid.getLocalSize()[0];
-      std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
-      double fgRhomTask=0.0;
-      for (int k=0; k<fsGridDims[2];k++){
-         for (int j=0; j<fsGridDims[1];j++){
-            for (int i=0; i<fsGridDims[0];i++){
-               cell=momentsGrid.get(i,j,k);
-               fgRhomTask+=cell->at(fsgrids::moments::RHOM);
-            }
-         }
-      }
-      //Reduce to master
-      MPI_Reduce(&fgRhomTask, &fgRhomTotal_0, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
-      if (myRank==MASTER_RANK){
-         std::cout<<"FgRhom Before Filtering = "<<std::setprecision(16) <<fgRhomTotal_0<<std::endl;
-         std::cout<<"********************************\n\n";
-      }
-   }
 
    
   //Perform moment filtering. Used in AMR runs.
@@ -847,22 +833,30 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
     switch (P::filteringMethod){
       case(0)://Boxcar 3D
          phiprof::start("AMR Filtering-Boxcar-3D");
+         phiprof::start("BlurPass");
          filterMoments_Boxcar3D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("BlurPass");
          phiprof::stop("AMR Filtering-Boxcar-3D");
          break;
       case(1): //Triangle 3D 
          phiprof::start("AMR Filtering-Triangle-3D");
+         phiprof::start("BlurPass");
          filterMoments_Trianle3D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("BlurPass");
          phiprof::stop("AMR Filtering-Triangle-3D");
          break;
       case(2): //Boxcar 1D 
          phiprof::start("AMR Filtering-Boxcar-1D");
+         phiprof::start("BlurPass");
          filterMoments_Boxcar1D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("BlurPass");
          phiprof::stop("AMR Filtering-Boxcar-1D");
          break;
       case(3): //Boxcar 1D 
          phiprof::start("AMR Filtering-Triangle-1D");
+         phiprof::start("BlurPass");
          filterMoments_Triangle1D(mpiGrid,momentsGrid,technicalGrid);
+         phiprof::stop("BlurPass");
          phiprof::stop("AMR Filtering-Triangle-1D");
          break;
 
@@ -874,27 +868,6 @@ void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& 
     } 
   }   
     
-   {
-      MPI_Barrier(MPI_COMM_WORLD);
-      const int *fsGridDims = &momentsGrid.getLocalSize()[0];
-      std::array<Real, fsgrids::moments::N_MOMENTS> *cell;
-      double fgRhomTask=0.0;
-      for (int k=0; k<fsGridDims[2];k++){
-         for (int j=0; j<fsGridDims[1];j++){
-            for (int i=0; i<fsGridDims[0];i++){
-               cell=momentsGrid.get(i,j,k);
-               fgRhomTask+=cell->at(fsgrids::moments::RHOM);
-            }
-         }
-      }
-      //Reduce to master
-      MPI_Reduce(&fgRhomTask, &fgRhomTotal_1, 1, MPI_DOUBLE, MPI_SUM, MASTER_RANK, MPI_COMM_WORLD);
-      if (myRank==MASTER_RANK){
-         std::cout<<"FgRhom After Filtering = "<<std::setprecision(16) <<fgRhomTotal_1<<std::endl;
-         std::cout<<"abs diff (%) = "<<std::setprecision(16) <<100*(abs(fgRhomTotal_1-fgRhomTotal_0)/fgRhomTotal_0)<<std::endl;
-         std::cout<<"********************************\n\n";
-      }
-   }
 
 
 
