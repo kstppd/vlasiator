@@ -78,11 +78,11 @@ void velocitySpaceDiffusion(
 
         std::vector<Realf> dfdt(cell.get_number_of_velocity_blocks(popID)*WID3);        // Array of vspace size to store dfdt
         std::vector<Realf> checkCFL(cell.get_number_of_velocity_blocks(popID)*WID3);    // Array of vspace size to store checkCFl
-        int fcount[nbins_v][nbins_mu]    = {0};                                         // Array to count number of f stored
-        Realf fmu[nbins_v][nbins_mu]     = {0.0};                                       // Array to store f(v,mu)
-        Realf dfdmu[nbins_v][nbins_mu]   = {0.0};                                       // Array to store dfdmu
-        Realf dfdmu2[nbins_v][nbins_mu]  = {0.0};                                       // Array to store dfdmumu
-        Realf dfdt_mu[nbins_v][nbins_mu] = {0.0};                                       // Array to store dfdt_mu
+        std::vector<std::vector<int>>   fcount (nbins_v, std::vector<int>(nbins_mu,0));
+        std::vector<std::vector<Realf>> fmu    (nbins_v, std::vector<Realf>(nbins_mu,0.0));  
+        std::vector<std::vector<Realf>> dfdmu  (nbins_v, std::vector<Realf>(nbins_mu,0.0));  
+        std::vector<std::vector<Realf>> dfdmu2 (nbins_v, std::vector<Realf>(nbins_mu,0.0));  
+        std::vector<std::vector<Realf>> dfdt_mu(nbins_v, std::vector<Realf>(nbins_mu,0.0));  
         std::vector<Realf> ratio(cell.get_number_of_velocity_blocks(popID)*WID3);       // Array to store CellValue / fmu
         std::vector<int> Vcount_array(cell.get_number_of_velocity_blocks(popID)*WID3);  // Array to store vcount per cell
         std::vector<int> mucount_array(cell.get_number_of_velocity_blocks(popID)*WID3); // Array to store mucount per cell
@@ -100,15 +100,6 @@ void velocitySpaceDiffusion(
 
             std::array<Realf,3> bulkV = {cell.parameters[CellParams::VX], cell.parameters[CellParams::VY], cell.parameters[CellParams::VZ]};
 
-            for (int i=0; i<nbins_v; i++) {
-                for (int j=0; j<nbins_mu; j++) {
-                    fcount[i][j]  = 0;
-                    fmu[i][j]     = 0.0;
-                    dfdmu[i][j]   = 0.0;
-                    dfdmu2[i][j]  = 0.0;
-                    dfdt_mu[i][j] = 0.0;
-                }
-            }
 
             phiprof::start("fmu building");
             // Build 2d array of f(v,mu)
@@ -168,8 +159,8 @@ void velocitySpaceDiffusion(
                    mucount.store(&mucount_array[WID3*n+WID*j+WID*WID*k]);
 
                    for (uint i = 0; i < WID; ++i) {
-                       fmu[Vcount[i]][mucount[i]] += 2.0 * M_PI * Vmu[i]*Vmu[i] * CellValue[i];
-                       fcount[Vcount[i]][mucount[i]] += 1;
+                       fmu.at(Vcount[i]).at(mucount[i]) += 2.0 * M_PI * Vmu[i]*Vmu[i] * CellValue[i];
+                       fcount.at(Vcount[i]).at(mucount[i]) += 1;
                    }
                    //}
                 }
@@ -178,8 +169,11 @@ void velocitySpaceDiffusion(
 
             for (int indv = 0; indv < nbins_v; indv++) { // Divide f by count 
                 for(int indmu = 0; indmu < nbins_mu; indmu++) {
-                    if (fcount[indv][indmu] == 0) { fmu[indv][indmu] = 0.0;}
-                    else {fmu[indv][indmu] = fmu[indv][indmu] / fcount[indv][indmu];} 
+                    if (fcount[indv][indmu] == 0) {
+                     fmu[indv][indmu] = 0.0;
+                    }else{
+                       fmu[indv][indmu] = fmu[indv][indmu] / fcount[indv][indmu];
+                    } 
                 }
             }
             
@@ -208,33 +202,33 @@ void velocitySpaceDiffusion(
                     if (indmu == 0) {
                         cLeft  = 0;
                         cRight = 1;
-                        while( (fcount[indv][indmu + cRight] == 0) && (indmu + cRight < nbins_mu-1) ) { cRight += 1; }
-                        if( (fcount[indv][indmu + cRight] == 0) && (indmu + cRight == nbins_mu-1) ) { cRight = 0;}
+                        while( (fcount.at(indv).at(indmu + cRight) == 0) && (indmu + cRight < nbins_mu-1) ) { cRight += 1; }
+                        if( (fcount.at(indv).at(indmu + cRight) == 0) && (indmu + cRight == nbins_mu-1) ) { cRight = 0;}
                     } else if (indmu == nbins_mu-1) {
                         cLeft  = 1;
                         cRight = 0;
-                        while( (fcount[indv][indmu - cLeft] == 0) && (indmu - cLeft > 0) ) { cLeft += 1; }
-                        if( (fcount[indv][indmu - cLeft] == 0) && (indmu - cLeft == 0) ) { cLeft = 0;}
+                        while( (fcount.at(indv).at(indmu - cLeft) == 0) && (indmu - cLeft > 0) ) { cLeft += 1; }
+                        if( (fcount.at(indv).at(indmu - cLeft) == 0) && (indmu - cLeft == 0) ) { cLeft = 0;}
                     } else {
                         cLeft  = 1;
                         cRight = 1;
-                        while( (fcount[indv][indmu + cRight] == 0) && (indmu + cRight < nbins_mu-1) ) { cRight += 1; }
-                        if( (fcount[indv][indmu + cRight] == 0) && (indmu + cRight == nbins_mu-1) ) { cRight = 0;}
-                        while( (fcount[indv][indmu - cLeft] == 0) && (indmu - cLeft > 0) ) { cLeft += 1; }
-                        if( (fcount[indv][indmu - cLeft] == 0) && (indmu - cLeft == 0) ) { cLeft = 0;} 
+                        while( (fcount.at(indv).at(indmu + cRight) == 0) && (indmu + cRight < nbins_mu-1) ) { cRight += 1; }
+                        if( (fcount.at(indv).at(indmu + cRight) == 0) && (indmu + cRight == nbins_mu-1) ) { cRight = 0;}
+                        while( (fcount.at(indv).at(indmu - cLeft) == 0) && (indmu - cLeft > 0) ) { cLeft += 1; }
+                        if( (fcount.at(indv).at(indmu - cLeft) == 0) && (indmu - cLeft == 0) ) { cLeft = 0;} 
                     } 
                     if( (cRight == 0) && (cLeft != 0) ) { 
-                        dfdmu[indv][indmu]  = (fmu[indv][indmu + cRight] - fmu[indv][indmu-cLeft])/((cRight + cLeft)*dmubins) ;
-                        dfdmu2[indv][indmu] = 0.0;
+                        dfdmu.at(indv).at(indmu)  = (fmu.at(indv).at(indmu + cRight) - fmu.at(indv).at(indmu-cLeft))/((cRight + cLeft)*dmubins) ;
+                        dfdmu2.at(indv).at(indmu) = 0.0;
                     } else if( (cLeft == 0) && (cRight != 0) ) { 
-                        dfdmu[indv][indmu]  = (fmu[indv][indmu + cRight] - fmu[indv][indmu-cLeft])/((cRight + cLeft)*dmubins) ;
-                        dfdmu2[indv][indmu] = 0.0;
+                        dfdmu.at(indv).at(indmu)  = (fmu.at(indv).at(indmu + cRight) - fmu.at(indv).at(indmu-cLeft))/((cRight + cLeft)*dmubins) ;
+                        dfdmu2.at(indv).at(indmu) = 0.0;
                     } else if( (cLeft == 0) && (cRight == 0) ) {
-                        dfdmu[indv][indmu]  = 0.0;
-                        dfdmu2[indv][indmu] = 0.0;
+                        dfdmu.at(indv).at(indmu)  = 0.0;
+                        dfdmu2.at(indv).at(indmu) = 0.0;
                     } else {
-                        dfdmu[indv][indmu]  = (fmu[indv][indmu + cRight] - fmu[indv][indmu-cLeft])/((cRight + cLeft)*dmubins) ;
-                        dfdmu2[indv][indmu] = ( (fmu[indv][indmu + cRight] - fmu[indv][indmu])/(cRight*dmubins) - (fmu[indv][indmu] - fmu[indv][indmu-cLeft])/(cLeft*dmubins) ) / (0.5 * dmubins * (cRight + cLeft)); 
+                        dfdmu2.at(indv).at(indmu) = ( (fmu.at(indv).at(indmu + cRight) - fmu.at(indv)[indmu])/(cRight*dmubins) - (fmu.at(indv).at(indmu) - fmu.at(indv).at(indmu-cLeft))/(cLeft*dmubins) ) / (0.5 * dmubins * (cRight + cLeft)); 
+                        dfdmu.at(indv).at(indmu)  = (fmu.at(indv).at(indmu + cRight) - fmu.at(indv).at(indmu-cLeft))/((cRight + cLeft)*dmubins) ;
                     }
                 }
             }
@@ -278,7 +272,7 @@ void velocitySpaceDiffusion(
 
                     Realf Vmu = dVbins * (Vcount+0.5);
 
-                    dfdt[WID3*n+i+WID*j+WID*WID*k] = dfdt_mu[Vcount][mucount] / (2.0 * M_PI * Vmu*Vmu); // *ratio[WID3*n+i+WID*j+WID*WID*k]
+                    dfdt[WID3*n+i+WID*j+WID*WID*k] = dfdt_mu.at(Vcount).at(mucount) / (2.0 * M_PI * Vmu*Vmu); // *ratio[WID3*n+i+WID*j+WID*WID*k]
                     
                     if (CellValue < Sparsity) {CellValue = Sparsity;} //Set CellValue to sparsity Threshold for empty cells otherwise div by 0
                     if (abs(dfdt[WID3*n+i+WID*j+WID*WID*k]) > 0.0) {
@@ -319,7 +313,7 @@ void velocitySpaceDiffusion(
             //Calculate Diffusion time step based on min of CFL condition
             std::vector<Realf>::iterator mincheckCFL;
             mincheckCFL = std::min_element(checkCFL.begin(),checkCFL.end());
-            if (mincheckCFL == checkCFL.end()) {break;}
+            {assert(mincheckCFL && std::string{"NULL pointer in diffusion "+__FILE__ + " : "+__LINE__);}
             Realf Ddt = *mincheckCFL; // Diffusion time step
             if (Ddt > RemainT) { Ddt = RemainT; }
             //std::cout << "Diffusion dt = " << Ddt << std::endl;
