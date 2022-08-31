@@ -313,7 +313,7 @@ void velocitySpaceDiffusion(
             //Calculate Diffusion time step based on min of CFL condition
             std::vector<Realf>::iterator mincheckCFL;
             mincheckCFL = std::min_element(checkCFL.begin(),checkCFL.end());
-            {assert(mincheckCFL && std::string{"NULL pointer in diffusion "+__FILE__ + " : "+__LINE__);}
+            assert(mincheckCFL && std::string{"NULL pointer in diffusion "+__FILE__ + " : "+__LINE__);
             Realf Ddt = *mincheckCFL; // Diffusion time step
             if (Ddt > RemainT) { Ddt = RemainT; }
             //std::cout << "Diffusion dt = " << Ddt << std::endl;
