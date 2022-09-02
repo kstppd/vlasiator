@@ -32,7 +32,8 @@
 #include <set>
 #include <cmath>
 
-#include "open_bucket_hashtable.h"
+//#include "open_bucket_hashtable.h"
+#include "hashinator.h"
 #include "velocity_mesh_parameters.h"
 
 namespace vmesh {
@@ -108,7 +109,7 @@ namespace vmesh {
       size_t meshID;
 
       std::vector<GID> localToGlobalMap;
-      OpenBucketHashtable<GID,LID> globalToLocalMap; //
+      Hashinator<GID,LID> globalToLocalMap; //
       //std::unordered_map<GID,LID> globalToLocalMap;
    };
 
