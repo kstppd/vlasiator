@@ -57,13 +57,13 @@ PAPI_FLAG =
 
 #======== Libraries ===========
 
-LIBRARY_PREFIX = $(HOME)
+LIBRARY_PREFIX = $(HOME)/libs
 
 INC_BOOST = -I/usr/include/boost/
 LIB_BOOST = -L/usr/lib/x86_64-linux-gnu/ -lboost_program_options
 
-INC_ZOLTAN = -I$(LIBRARY_PREFIX)/include
-LIB_ZOLTAN = -L$(LIBRARY_PREFIX)/lib -lzoltan
+INC_ZOLTAN = -I$(LIBRARY_PREFIX)/zoltan/include
+LIB_ZOLTAN = -L$(LIBRARY_PREFIX)/zoltan/lib -lzoltan
 
 INC_VLSV = -I$(LIBRARY_PREFIX)/vlsv
 LIB_VLSV = -L$(LIBRARY_PREFIX)/vlsv -lvlsv
@@ -75,8 +75,8 @@ INC_DCCRG = -I./submodules/dccrg
 
 INC_FSGRID = -I./submodules/fsgrid
 
-INC_PAPI = -I$(LIBRARY_PREFIX)/papi-5.4.3/src
-LIB_PAPI = -L$(LIBRARY_PREFIX)/papi-5.4.3/src -lpapi
+INC_PAPI = -I$(LIBRARY_PREFIX)/papi/src
+LIB_PAPI = -L$(LIBRARY_PREFIX)/papi/src -lpapi
 
 INC_JEMALLOC = -I$(LIBRARY_PREFIX)/libraries/jemalloc
 LIB_JEMALLOC = -L$(LIBRARY_PREFIX)/libraries/jemalloc/lib -ljemalloc
