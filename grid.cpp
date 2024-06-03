@@ -225,6 +225,18 @@ void initializeGrids(
       }
       restartReadTimer.stop();
 
+      //Adjust freshly read blocks -- Used by the ASTERIX Project
+      phiprof::Time  tmpTimer {"Adjust Blocks-Asterix"};
+      for (uint pop=0; pop<getObjectWrapper().particleSpecies.size(); ++pop) {
+         const auto& cells = getLocalCells();
+         if (!adjustVelocityBlocks(mpiGrid,cells,true,pop)){
+            fprintf(stderr,"ERROR: Could not adjust blocks of freshly read restart file");
+            logFile << "(MAIN) ERROR: restarting failed in block adjust" << endl;
+            exit(1);
+         }
+      }
+      tmp.stop();
+
       if (P::forceRefinement) {
          // Adapt refinement to match new static refinement parameters
          phiprof::Timer timer {"Restart refinement"};
