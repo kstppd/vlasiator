@@ -226,7 +226,7 @@ void initializeGrids(
       restartReadTimer.stop();
 
       //Adjust freshly read blocks -- Used by the ASTERIX Project
-      phiprof::Time  tmpTimer {"Adjust Blocks-Asterix"};
+      phiprof::Timer tmpTimer {"Adjust Blocks-Asterix"};
       for (uint pop=0; pop<getObjectWrapper().particleSpecies.size(); ++pop) {
          const auto& cells = getLocalCells();
          if (!adjustVelocityBlocks(mpiGrid,cells,true,pop)){
@@ -235,7 +235,7 @@ void initializeGrids(
             exit(1);
          }
       }
-      tmp.stop();
+      tmpTimer.stop();
 
       if (P::forceRefinement) {
          // Adapt refinement to match new static refinement parameters
