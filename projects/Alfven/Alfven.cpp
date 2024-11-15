@@ -65,8 +65,6 @@ namespace projects {
          RP::add(pop + "_Alfven.rho", "Number density (m^-3)", 1.0e8);
          RP::add(pop + "_Alfven.Temperature", "Temperature (K)", 0.86456498092);
          RP::add(pop + "_Alfven.A_vel", "Amplitude of the velocity perturbation", 0.1);
-         RP::add(pop + "_Alfven.nSpaceSamples", "Number of sampling points per spatial dimension", 2);
-         RP::add(pop + "_Alfven.nVelocitySamples", "Number of sampling points per velocity dimension", 5);
 
       }
    }
@@ -81,7 +79,6 @@ namespace projects {
       RP::get("Alfven.Bz_guiding", this->Bz_guiding);
       RP::get("Alfven.Wavelength", this->WAVELENGTH);
       RP::get("Alfven.A_mag", this->A_MAG);
-      RP::get("Alfven.nSpaceSamples", this->nSpaceSamples);
 
       // Per-population parameters
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
@@ -92,7 +89,6 @@ namespace projects {
          RP::get(pop + "_Alfven.rho", sP.rho);
          RP::get(pop + "_Alfven.Temperature",sP.T);
          RP::get(pop + "_Alfven.A_vel", sP.A_VEL);
-         RP::get(pop + "_Alfven.nVelocitySamples", sP.nVelocitySamples);
 
          speciesParams.push_back(sP);
       }
@@ -118,54 +114,54 @@ namespace projects {
    }
    
    Real Alfven::calcPhaseSpaceDensity(creal& x, creal& y, creal& z, creal& dx, creal& dy, creal& dz, creal& vx, creal& vy, creal& vz, creal& dvx, creal& dvy, creal& dvz,const uint popID) const {
-      const AlfvenSpeciesParameters& sP = speciesParams[popID];
-      creal d_x = dx / (this->nSpaceSamples-1);
-      creal d_y = dy / (this->nSpaceSamples-1);
-      creal d_z = dz / (this->nSpaceSamples-1);
-      creal d_vx = dvx / (sP.nVelocitySamples-1);
-      creal d_vy = dvy / (sP.nVelocitySamples-1);
-      creal d_vz = dvz / (sP.nVelocitySamples-1);
-      Real avg = 0.0;
-      for (uint i=0; i<this->nSpaceSamples; ++i)
-         for (uint j=0; j<this->nSpaceSamples; ++j)
-            for (uint k=0; k<this->nSpaceSamples; ++k)
-               for (uint vi=0; vi<sP.nVelocitySamples; ++vi)
-                  for (uint vj=0; vj<sP.nVelocitySamples; ++vj)
-                     for (uint vk=0; vk<sP.nVelocitySamples; ++vk)
-                     {
-                        avg += getDistribValue(x+i*d_x, y+j*d_y, z+k*d_z, vx+vi*d_vx, vy+vj*d_vy, vz+vk*d_vz, dvx, dvy, dvz,popID);
-                     }
-      return avg / pow(this->nSpaceSamples, 3.0) / pow(sP.nVelocitySamples, 3.0);
+      return getDistribValue(x+0.5*dx, y+0.5*dy, z+0.5*dz, vx+0.5*dvx, vy+0.5*dvy, vz+0.5*dvz, dvx, dvy, dvz,popID);
    }
    
    void Alfven::calcCellParameters(spatial_cell::SpatialCell* cell,creal& t) {
-      Real* cellParams = cell->get_cell_parameters();
-      creal x = cellParams[CellParams::XCRD];
-      creal dx = cellParams[CellParams::DX];
-      creal y = cellParams[CellParams::YCRD];
-      creal dy = cellParams[CellParams::DY];
-      
-      Real dBxavg, dByavg, dBzavg;
-      dBxavg = dByavg = dBzavg = 0.0;
-      Real d_x = dx / (this->nSpaceSamples - 1);
-      Real d_y = dy / (this->nSpaceSamples - 1);
-
-      for (uint i=0; i<this->nSpaceSamples; ++i)
-         for (uint j=0; j<this->nSpaceSamples; ++j)
-      for (uint k=0; k<this->nSpaceSamples; ++k) {
-         Real ksi = ((x + i * d_x)  * cos(this->ALPHA) + (y + j * d_y) * sin(this->ALPHA)) / this->WAVELENGTH;
-         dBxavg += sin(2.0 * M_PI * ksi);
-         dByavg += sin(2.0 * M_PI * ksi);
-         dBzavg += cos(2.0 * M_PI * ksi);
-      }
-      cuint nPts = pow(this->nSpaceSamples, 3.0);
-      
-      cellParams[CellParams::EX   ] = 0.0;
-      cellParams[CellParams::EY   ] = 0.0;
-      cellParams[CellParams::EZ   ] = 0.0;
-      //Field below could laso be set as background field
-      cellParams[CellParams::PERBX   ] = this->B0 * cos(this->ALPHA) - this->A_MAG * this->B0 * sin(this->ALPHA) * dBxavg / nPts;
-      cellParams[CellParams::PERBY   ] = this->B0 * sin(this->ALPHA) + this->A_MAG * this->B0 * cos(this->ALPHA) * dByavg / nPts;
-      cellParams[CellParams::PERBZ   ] = this->B0 * this->A_MAG * dBzavg / nPts;
+      //Real* cellParams = cell->get_cell_parameters();
+      //creal x = cellParams[CellParams::XCRD];
+      //creal dx = cellParams[CellParams::DX];
+      //creal y = cellParams[CellParams::YCRD];
+      //creal dy = cellParams[CellParams::DY];
+      //
+      //Real ksi = ((x + 0.5 * dx)  * cos(this->ALPHA) + (y + 0.5 * dy) * sin(this->ALPHA)) / this->WAVELENGTH;
+      //Real dBxavg = sin(2.0 * M_PI * ksi);
+      //Real dByavg = sin(2.0 * M_PI * ksi);
+      //Real dBzavg = cos(2.0 * M_PI * ksi);
    }
+   
+   void Alfven::setProjectBField(
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+   ) {
+      setBackgroundFieldToZero(BgBGrid);
+      
+      if (!P::isRestart) {
+         auto localSize = perBGrid.getLocalSize().data();
+         
+#pragma omp parallel for collapse(3)
+         for (FsGridTools::FsIndex_t x = 0; x < localSize[0]; ++x) {
+            for (FsGridTools::FsIndex_t y = 0; y < localSize[1]; ++y) {
+               for (FsGridTools::FsIndex_t z = 0; z < localSize[2]; ++z) {
+                  const std::array<Real, 3> xyz = perBGrid.getPhysicalCoords(x, y, z);
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* cell = perBGrid.get(x, y, z);
+                  
+                  Real dx = perBGrid.DX;
+                  Real dy = perBGrid.DY;
+                  Real ksi = ((xyz[0] + 0.5 * dx)  * cos(this->ALPHA) + (xyz[1] + 0.5 * dy) * sin(this->ALPHA)) / this->WAVELENGTH;
+                  Real dBxavg = sin(2.0 * M_PI * ksi);
+                  Real dByavg = sin(2.0 * M_PI * ksi);
+                  Real dBzavg = cos(2.0 * M_PI * ksi);
+
+                  cell->at(fsgrids::bfield::PERBX) = this->B0 * cos(this->ALPHA) - this->A_MAG * this->B0 * sin(this->ALPHA) * dBxavg;
+                  cell->at(fsgrids::bfield::PERBY) = this->B0 * sin(this->ALPHA) + this->A_MAG * this->B0 * cos(this->ALPHA) * dByavg;
+                  cell->at(fsgrids::bfield::PERBZ) = this->B0 * this->A_MAG * dBzavg;
+                  
+               }
+            }
+         }
+      }
+   }
+   
 } // namespace projects

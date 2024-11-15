@@ -101,6 +101,17 @@ void checkExternalCommands() {
       rename("DOLB", newName);
       return;
    }
+   if(stat("DOMR", &tempStat) == 0) {
+      cerr << "Received an external DOMR command. Refining grid." << endl;
+      globalflags::doRefine = true;
+      char newName[80];
+      // Get the current time.
+      const time_t rawTime = time(NULL);
+      const struct tm * timeInfo = localtime(&rawTime);
+      strftime(newName, 80, "DOMR_%F_%H-%M-%S", timeInfo);
+      rename("DOMR", newName);
+      return;
+   }
 }
 
 /*!
@@ -113,20 +124,19 @@ void checkExternalCommands() {
   \param comm MPI comm
   \return Returns true if the operation was successful
 */
-bool exitOnError(bool success,string message,MPI_Comm comm) {
+bool exitOnError(bool success, const string& message, MPI_Comm comm) {
    int successInt;
    int globalSuccessInt;
    if(success)
       successInt=1;
    else
       successInt=0;
-   
+
    MPI_Allreduce(&successInt,&globalSuccessInt,1,MPI_INT,MPI_MIN,comm);
-   
+
    if(globalSuccessInt==1) {
       return true;
-   }
-   else{
+   } else {
       logFile << message << endl<<write ;
       exit(1);
    }
@@ -140,8 +150,8 @@ bool exitOnError(bool success,string message,MPI_Comm comm) {
  \param masterRank The simulation's master rank id (Vlasiator uses 0, which should be the default)
  \param comm MPI comm (MPI_COMM_WORLD should be the default)
 */
-bool readCellIds(vlsv::ParallelReader & file,
-                 vector<CellID>& fileCells, const int masterRank,MPI_Comm comm){
+bool readCellIds(vlsv::ParallelReader & file, vector<CellID>& fileCells, const int masterRank,MPI_Comm comm)
+{
    // Get info on array containing cell Ids:
    uint64_t arraySize = 0;
    uint64_t vectorSize;
@@ -166,14 +176,14 @@ bool readCellIds(vlsv::ParallelReader & file,
          logFile << "(RESTART) ERROR: Bad vectorsize at " << __FILE__ << " " << __LINE__ << endl << write;
          return false;
       }
-      
+
       //   Read cell Ids:
       char* IDbuffer = new char[arraySize*vectorSize*byteSize];
       if (file.readArrayMaster("VARIABLE",attribs,readFromFirstIndex,arraySize,IDbuffer) == false) {
          logFile << "(RESTART) ERROR: Failed to read cell Ids!" << endl << write;
          success = false;
       }
-   
+
    // Convert global Ids into our local DCCRG 64 bit uints
       const uint64_t& numberOfCells = arraySize;
       fileCells.resize(numberOfCells);
@@ -228,15 +238,35 @@ bool readNBlocks(vlsv::ParallelReader& file,const std::string& meshName,
    // Read mesh bounding box to all processes, the info in bbox contains 
    // the number of spatial cells in the mesh.
    // (This is *not* the physical coordinate bounding box.)
-   uint64_t bbox[6];
-   uint64_t* bbox_ptr = bbox;
-   list<pair<string,string> > attribs;
-   attribs.push_back(make_pair("mesh",meshName));
-   if (file.read("MESH_BBOX",attribs,0,6,bbox_ptr,false) == false) return false;
+   list<pair<string,string> > attribsIn;
+   map<string,string> attribsOut;
+   attribsIn.push_back(make_pair("mesh",meshName));
 
-   // Resize the output vector and init to zero values
-   const uint64_t N_spatialCells = bbox[0]*bbox[1]*bbox[2];
+   // Read number of domains and domain sizes
+   uint64_t N_domains;
+   file.getArrayAttributes("MESH_DOMAIN_SIZES",attribsIn,attribsOut);
+   auto it = attribsOut.find("arraysize");
+   if (it == attribsOut.end()) {
+      cerr << "VLSV\t\t ERROR: Array 'MESH_DOMAIN_SIZES' XML tag does not have attribute 'arraysize'" << endl;
+      return false;
+   } else {
+      N_domains = atoi(it->second.c_str());
+   }
+
+   uint64_t N_spatialCells = 0;
+
+	int64_t* domainInfo = NULL;
+	if (file.read("MESH_DOMAIN_SIZES",attribsIn,0,N_domains,domainInfo) == false) return false;
+
+	for (uint i_domain = 0; i_domain < N_domains; ++i_domain) {
+		
+		N_spatialCells += domainInfo[2*i_domain];
+
+	}
+
    nBlocks.resize(N_spatialCells);
+
+
    #pragma omp parallel for
    for (size_t i=0; i<nBlocks.size(); ++i) nBlocks[i] = 0;
 
@@ -250,12 +280,12 @@ bool readNBlocks(vlsv::ParallelReader& file,const std::string& meshName,
    // to all processes, and add the values to nBlocks
    uint64_t* buffer = new uint64_t[N_spatialCells];
    for (set<string>::const_iterator s=speciesNames.begin(); s!=speciesNames.end(); ++s) {      
-      attribs.clear();
-      attribs.push_back(make_pair("mesh",meshName));
-      attribs.push_back(make_pair("name",*s));
-      if (file.getArrayInfo("BLOCKSPERCELL",attribs,arraySize,vectorSize,dataType,byteSize) == false) return false;
+      attribsIn.clear();
+      attribsIn.push_back(make_pair("mesh",meshName));
+      attribsIn.push_back(make_pair("name",*s));
+      if (file.getArrayInfo("BLOCKSPERCELL",attribsIn,arraySize,vectorSize,dataType,byteSize) == false) return false;
 
-      if (file.read("BLOCKSPERCELL",attribs,0,arraySize,buffer) == false) {
+      if (file.read("BLOCKSPERCELL",attribsIn,0,arraySize,buffer) == false) {
          delete [] buffer; buffer = NULL;
          return false;
       }
@@ -267,6 +297,53 @@ bool readNBlocks(vlsv::ParallelReader& file,const std::string& meshName,
    }
    delete [] buffer; buffer = NULL;
    return success;
+}
+
+/*! A function for reading parameters, e.g., 'timestep'.
+ \param file VLSV parallel reader with a file open.
+ \param name Name of the parameter.
+ \param value Variable in which to store the scalar variable (double, float, int .. ).
+ \param masterRank The master process' id (Vlasiator uses 0 so this should equal 0 by default).
+ \param comm MPI comm (MPI_COMM_WORLD should be the default).
+ \return Returns true if the operation is successful. */
+template <typename T>
+bool readScalarParameter(vlsv::ParallelReader& file,string name,T& value,int masterRank,MPI_Comm comm) {
+   if (file.readParameter(name,value) == false) {
+      logFile << "(RESTART) ERROR: Failed to read parameter '" << name << "' value in ";
+      logFile << __FILE__ << ":" << __LINE__ << endl << write;
+      return false;
+   }
+   return true;
+}
+
+/*! A function for checking the scalar parameter
+ \param file Some parallel vlsv reader with a file open
+ \param name Name of the parameter
+ \param correctValue The correct value of the parameter to compare to
+ \param masterRank The master process' id (Vlasiator uses 0 so this should be 0 by default)
+ \param comm MPI comm (Default should be MPI_COMM_WORLD)
+ \return Returns true if the operation is successful
+ */
+
+template <typename T>
+bool checkScalarParameter(vlsv::ParallelReader& file,const string& name,T correctValue,int masterRank,MPI_Comm comm) {
+   T value;
+   if (readScalarParameter(file,name,value,masterRank,comm) == false) {
+      ostringstream s;
+      s << "(RESTART) ERROR: Failed to read parameter '" << name << "' value in " << __FILE__ << ":" << __LINE__ << endl;
+      exitOnError(false, s.str(), MPI_COMM_WORLD);
+      return false;
+   }
+   if (value != correctValue){
+      ostringstream s;
+      s << "(RESTART) Parameter " << name << " has mismatching value.";
+      s << " CFG value = " << correctValue;
+      s << " Restart file value = " << value;
+      exitOnError(false,s.str(),MPI_COMM_WORLD);
+      return false;
+   } else {
+      return true;
+   }
 }
 
 /** Read velocity block mesh data and distribution function data belonging to this process 
@@ -298,7 +375,6 @@ bool _readBlockData(
 ) {   
    uint64_t arraySize;
    uint64_t avgVectorSize;
-   uint64_t cellParamsVectorSize;
    vlsv::datatype::type dataType;
    uint64_t byteSize;
    list<pair<string,string> > avgAttribs;
@@ -657,7 +733,7 @@ static bool _readCellParamsVariable(
    }
    
    buffer=new fileReal[vectorSize*localCells];
-   if(file.readArray("VARIABLE",attribs,localCellStartOffset,localCells,(char *)buffer) == false ) {
+   if(file.readArray("VARIABLE", attribs, localCellStartOffset, localCells, (char*) buffer) == false ) {
       logFile << "(RESTART)  ERROR: Failed to read " << variableName << endl << write;
       return false;
    }
@@ -744,47 +820,268 @@ bool readCellParamsVariable(
    return false;
 }
 
-/*! A function for reading parameters, e.g., 'timestep'.
- \param file VLSV parallel reader with a file open.
- \param name Name of the parameter.
- \param value Variable in which to store the scalar variable (double, float, int .. ).
- \param masterRank The master process' id (Vlasiator uses 0 so this should equal 0 by default).
- \param comm MPI comm (MPI_COMM_WORLD should be the default).
- \return Returns true if the operation is successful. */
-template <typename T>
-bool readScalarParameter(vlsv::ParallelReader& file,string name,T& value,int masterRank,MPI_Comm comm) {
-   if (file.readParameter(name,value) == false) {
-      logFile << "(RESTART) ERROR: Failed to read parameter '" << name << "' value in ";
-      logFile << __FILE__ << ":" << __LINE__ << endl << write;
+/*! Read a fsgrid variable (consinting of N real values) from the given vlsv file.
+ * \param file VLSV parallel reader with a file open.
+ * \param variableName Name of the variable in the file
+ * \param numWritingRanks Number of mpi ranks that were used to write this file (used for reconstruction of the spatial order)
+ * \param targetGrid target location where the data will be stored.
+ */
+template<unsigned long int N> bool readFsGridVariable(
+   vlsv::ParallelReader& file, const string& variableName, int numWritingRanks, FsGrid<std::array<Real, N>,FS_STENCIL_WIDTH> & targetGrid) {
+
+   phiprof::Timer preparations {"preparations"};
+
+   uint64_t arraySize;
+   uint64_t vectorSize;
+   vlsv::datatype::type dataType;
+   uint64_t byteSize;
+   list<pair<string,string> > attribs;
+   bool convertFloatType = false;
+   
+   attribs.push_back(make_pair("name",variableName));
+   attribs.push_back(make_pair("mesh","fsgrid"));
+
+   phiprof::Timer getArrayInfo {"getArrayInfo"};
+   if (file.getArrayInfo("VARIABLE",attribs,arraySize,vectorSize,dataType,byteSize) == false) {
+      logFile << "(RESTART)  ERROR: Failed to read " << endl << write;
       return false;
    }
+   if(! (dataType == vlsv::datatype::type::FLOAT && byteSize == sizeof(Real))) {
+      logFile << "(RESTART) Converting floating point format of fsgrid variable " << variableName << " from " << byteSize * 8 << " bits to " << sizeof(Real) * 8 << " bits." << endl << write;
+      convertFloatType = true;
+      // Note: this implicitly assumes that Real is of type double, and we either read a double in directly, or read a float and convert it to double.
+   }
+   getArrayInfo.stop();
+
+   // Are we restarting from the same number of tasks, or a different number?
+   int size, myRank;
+   MPI_Comm_size(MPI_COMM_WORLD, &size);
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   std::array<FsGridTools::FsIndex_t,3>& localSize = targetGrid.getLocalSize();
+   std::array<FsGridTools::FsIndex_t,3>& localStart = targetGrid.getLocalStart();
+   std::array<FsGridTools::FsSize_t,3>& globalSize = targetGrid.getGlobalSize();
+
+   // Determine our tasks storage size
+   size_t storageSize = localSize[0]*localSize[1]*localSize[2];
+
+   preparations.stop();
+   std::array<FsGridTools::Task_t,3> fileDecomposition={0,0,0};
+   // No override given (zero array)
+   if(P::overrideReadFsGridDecomposition == fileDecomposition){
+      // Try and read the decomposition from file
+      if (readFsgridDecomposition(file, fileDecomposition) == false) {
+         exitOnError(false, "(RESTART) Failed to read Fsgrid decomposition", MPI_COMM_WORLD);
+      }
+   } else { 
+      // Override
+      logFile << "(RESTART) Using manual override for FsGrid MESH_DECOMPOSITION." << endl << write;
+      fileDecomposition = P::overrideReadFsGridDecomposition;
+      int fsgridInputRanks=0;
+      // Read numWritingRanks from file, that should exist and be sane
+      if(readScalarParameter(file,"numWritingRanks",fsgridInputRanks, MASTER_RANK, MPI_COMM_WORLD) == false) {
+         exitOnError(false, "(RESTART) FSGrid writing rank number not found in restart file", MPI_COMM_WORLD);
+      }
+      // Check that the override is sane wrt. numWritingRanks
+      if(fileDecomposition[0]*fileDecomposition[1]*fileDecomposition[2] != fsgridInputRanks){
+         exitOnError(false, "(RESTART) Trying to use a manual FsGrid decomposition for a file with a differing number of input ranks.", MPI_COMM_WORLD);
+      }
+   }
+
+   std::array<FsGridTools::Task_t,3> decomposition = targetGrid.getDecomposition();
+   // targetGrid.computeDomainDecomposition(globalSize, size, decomposition);
+
+   if(decomposition == fileDecomposition) {
+      // Easy case: same decomposition => slurp it in.
+      //
+
+      // Determine offset in file by summing up all the previous tasks' sizes.
+      size_t localStartOffset = 0;
+      for(FsGridTools::Task_t task = 0; task < myRank; task++) {
+         std::array<FsGridTools::FsIndex_t, 3> thatTasksSize;
+         thatTasksSize[0] = targetGrid.calcLocalSize(globalSize[0], decomposition[0], task/decomposition[2]/decomposition[1]);
+         thatTasksSize[1] = targetGrid.calcLocalSize(globalSize[1], decomposition[1], (task/decomposition[2])%decomposition[1]);
+         thatTasksSize[2] = targetGrid.calcLocalSize(globalSize[2], decomposition[2], task%decomposition[2]);
+         localStartOffset += thatTasksSize[0] * thatTasksSize[1] * thatTasksSize[2];
+      }
+      
+      // Read into buffer
+      std::vector<Real> buffer(storageSize*N);
+
+      if(file.readArray("VARIABLE",attribs, localStartOffset, storageSize, buffer.data()) == false) {
+         logFile << "(RESTART)  ERROR: Failed to read fsgrid variable " << variableName << endl << write;
+         return false;
+      }
+      
+      // Assign buffer into fsgrid
+      int index=0;
+      for(FsGridTools::FsIndex_t z=0; z<localSize[2]; z++) {
+         for(FsGridTools::FsIndex_t y=0; y<localSize[1]; y++) {
+            for(FsGridTools::FsIndex_t x=0; x<localSize[0]; x++) {
+               memcpy(targetGrid.get(x,y,z), &buffer[index], N*sizeof(Real));
+               index += N;
+            }
+         }
+      }
+      
+   } else {
+
+      // More difficult case: different number of tasks.
+      // In this case, our own fsgrid domain overlaps (potentially many) domains in the file.
+      // We read the whole source rank into a temporary buffer, and transfer the overlapping
+      // part.
+      //
+      // +------------+----------------+
+      // |            |                |
+      // |    . . . . . . . . . . . .  |
+      // |    .<----->|<----------->.  |
+      // |    .<----->|<----------->.  |
+      // |    .<----->|<----------->.  |
+      // +----+-------+-------------+--|
+      // |    .<----->|<----------->.  |
+      // |    .<----->|<----------->.  |
+      // |    .<----->|<----------->.  |
+      // |    . . . . . . . . . . . .  |
+      // |            |                |
+      // +------------+----------------+
+
+      // Iterate through tasks and find their overlap with our domain.
+      size_t fileOffset = 0;
+      for(int task = 0; task < numWritingRanks; task++) {
+
+         phiprof::Timer taskArithmetics1 {"task overlap arithmetics 1"};
+
+         std::array<FsGridTools::FsIndex_t,3> thatTasksSize;
+         std::array<FsGridTools::FsIndex_t,3> thatTasksStart;
+         thatTasksSize[0] = targetGrid.calcLocalSize(globalSize[0], fileDecomposition[0], task/fileDecomposition[2]/fileDecomposition[1]);
+         thatTasksSize[1] = targetGrid.calcLocalSize(globalSize[1], fileDecomposition[1], (task/fileDecomposition[2])%fileDecomposition[1]);
+         thatTasksSize[2] = targetGrid.calcLocalSize(globalSize[2], fileDecomposition[2], task%fileDecomposition[2]);
+
+         thatTasksStart[0] = targetGrid.calcLocalStart(globalSize[0], fileDecomposition[0], task/fileDecomposition[2]/fileDecomposition[1]);
+         thatTasksStart[1] = targetGrid.calcLocalStart(globalSize[1], fileDecomposition[1], (task/fileDecomposition[2])%fileDecomposition[1]);
+         thatTasksStart[2] = targetGrid.calcLocalStart(globalSize[2], fileDecomposition[2], task%fileDecomposition[2]);
+
+         // Iterate through overlap area
+         std::array<FsGridTools::FsIndex_t,3> overlapStart,overlapEnd,overlapSize;
+         overlapStart[0] = max(localStart[0],thatTasksStart[0]);
+         overlapStart[1] = max(localStart[1],thatTasksStart[1]);
+         overlapStart[2] = max(localStart[2],thatTasksStart[2]);
+
+         overlapEnd[0] = min(localStart[0]+localSize[0], thatTasksStart[0]+thatTasksSize[0]);
+         overlapEnd[1] = min(localStart[1]+localSize[1], thatTasksStart[1]+thatTasksSize[1]);
+         overlapEnd[2] = min(localStart[2]+localSize[2], thatTasksStart[2]+thatTasksSize[2]);
+
+         overlapSize[0] = max(overlapEnd[0]-overlapStart[0],(FsGridTools::FsIndex_t)0);
+         overlapSize[1] = max(overlapEnd[1]-overlapStart[1],(FsGridTools::FsIndex_t)0);
+         overlapSize[2] = max(overlapEnd[2]-overlapStart[2],(FsGridTools::FsIndex_t)0);
+
+         taskArithmetics1.stop();
+
+         // Read into buffer
+         std::vector<Real> buffer(thatTasksSize[0]*thatTasksSize[1]*thatTasksSize[2]*N);
+
+         phiprof::Timer multiRead {"multiRead"};
+         file.startMultiread("VARIABLE", attribs);
+         // Read every source rank that we have an overlap with.
+         if(overlapSize[0]*overlapSize[1]*overlapSize[2] > 0) {
+
+
+            if(!convertFloatType) {
+               if(file.addMultireadUnit((char*)buffer.data(), thatTasksSize[0]*thatTasksSize[1]*thatTasksSize[2])==false) {
+                  logFile << "(RESTART)  ERROR: Failed to read fsgrid variable " << variableName << endl << write;
+                  return false;
+               }
+               file.endMultiread(fileOffset);
+            } else {
+               std::vector<float> readBuffer(thatTasksSize[0]*thatTasksSize[1]*thatTasksSize[2]*N);
+               if(file.addMultireadUnit((char*)readBuffer.data(), thatTasksSize[0]*thatTasksSize[1]*thatTasksSize[2])==false) {
+                  logFile << "(RESTART)  ERROR: Failed to read fsgrid variable " << variableName << endl << write;
+                  return false;
+               }
+               file.endMultiread(fileOffset);
+
+               for(uint64_t i=0; i< thatTasksSize[0]*thatTasksSize[1]*thatTasksSize[2]*N; i++) {
+                  buffer[i]=readBuffer[i];
+               }
+            }
+
+            // Copy continuous stripes in x direction.
+            for(FsGridTools::FsIndex_t z=overlapStart[2]; z<overlapEnd[2]; z++) {
+               for(FsGridTools::FsIndex_t y=overlapStart[1]; y<overlapEnd[1]; y++) {
+                  for(FsGridTools::FsIndex_t x=overlapStart[0]; x<overlapEnd[0]; x++) {
+                     FsGridTools::FsIndex_t index = (z - thatTasksStart[2]) * thatTasksSize[0]*thatTasksSize[1]
+                        + (y - thatTasksStart[1]) * thatTasksSize[0]
+                        + (x - thatTasksStart[0]);
+
+                     memcpy(targetGrid.get(x - localStart[0], y - localStart[1], z - localStart[2]), &buffer[index*N], N*sizeof(Real));
+                  }
+               }
+            }
+         } else {
+            // If we don't overlap, just perform a dummy read.
+            file.endMultiread(fileOffset);
+         }
+         fileOffset += thatTasksSize[0] * thatTasksSize[1] * thatTasksSize[2];
+         multiRead.stop();
+      }
+   }
+   phiprof::Timer updateGhostsTimer {"updateGhostCells"};
+   targetGrid.updateGhostCells();
+   updateGhostsTimer.stop();
    return true;
 }
 
-/*! A function for checking the scalar parameter
- \param file Some parallel vlsv reader with a file open
- \param name Name of the parameter
- \param correctValue The correct value of the parameter to compare to
- \param masterRank The master process' id (Vlasiator uses 0 so this should be 0 by default)
- \param comm MPI comm (Default should be MPI_COMM_WORLD)
- \return Returns true if the operation is successful
+/*! Read an ionosphere variable from the given vlsv file.
+ * Note that only singular floating point values (no vectors) can be read at this time.
+ * \param file VLSV parallel reader with a file open.
+ * \param variableName Name of the variable in the file
+ * \param grid the ionosphere grid that data will be deposited into
+ * \param index index into the nodes' parameters array, where the data will end up.
  */
-template <typename T>
-bool checkScalarParameter(vlsv::ParallelReader& file,const string& name,T correctValue,int masterRank,MPI_Comm comm) {
-   T value;
-   readScalarParameter(file,name,value,masterRank,comm);
-   if (value != correctValue){
-      ostringstream s;
-      s << "(RESTART) Parameter " << name << " has mismatching value.";
-      s << " CFG value = " << correctValue;
-      s << " Restart file value = " << value;
-      exitOnError(false,s.str(),MPI_COMM_WORLD);
-      return false;
-   }
-   else{
-      exitOnError(true,"",MPI_COMM_WORLD);
+bool readIonosphereNodeVariable(
+   vlsv::ParallelReader& file, const string& variableName, SBC::SphericalTriGrid& grid, ionosphereParameters index) {
+
+   uint64_t arraySize;
+   uint64_t vectorSize;
+   vlsv::datatype::type dataType;
+   uint64_t byteSize;
+   list<pair<string,string> > attribs;
+   
+   attribs.push_back(make_pair("name",variableName));
+   attribs.push_back(make_pair("mesh","ionosphere"));
+
+   // If we don't have an ionosphere (zero nodes), we simply skip trying to read any restart data for this.
+   if(grid.nodes.size() == 0) {
       return true;
    }
+
+   if (file.getArrayInfo("VARIABLE",attribs,arraySize,vectorSize,dataType,byteSize) == false) {
+      logFile << "(RESTART)  ERROR: Failed to read array info for " << variableName << endl << write;
+      return false;
+   }
+
+   // Verify that this is a scalar variable
+   if(vectorSize != 1) {
+      logFile << "(RESTART) ERROR: Trying to read vector valued (" << vectorSize << " components) ionosphere parameter from restart file. Only scalars are supported." << endl << write;
+      return false;
+   }
+
+   // Verify that the size matches our constructed ionosphere object
+   if(grid.nodes.size() != arraySize) {
+      logFile << "(RESTART) ERROR: Ionosphere restart size mismatch: trying to read variable " << variableName << " with " << arraySize << " values into a ionosphere grid with " << grid.nodes.size() << " nodes!" << endl << write;
+      return false;
+   }
+
+   std::vector<Real> buffer(arraySize);
+   if(file.readArray("VARIABLE", attribs, 0, arraySize, buffer.data()) == false) {
+      logFile << "(RESTART) ERROR: Failed to read ionosphere variable " << variableName << endl << write;
+   }
+
+   for(uint i=0; i<grid.nodes.size(); i++) {
+      grid.nodes[i].parameters[index] = buffer[i];
+   }
+
+   return true;
 }
 
 /*!
@@ -795,25 +1092,44 @@ bool checkScalarParameter(vlsv::ParallelReader& file,const string& name,T correc
  \sa readGrid
  */
 bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
                    const std::string& name) {
    vector<CellID> fileCells; /*< CellIds for all cells in file*/
    vector<size_t> nBlocks;/*< Number of blocks for all cells in file*/
    bool success=true;
    int myRank,processes;
 
-#warning Spatial grid name hard-coded here
+   // Note: Spatial grid name hard-coded here.
+   // But so are the other mesh names below.
    const string meshName = "SpatialGrid";
    
    // Attempt to open VLSV file for reading:
    MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
    MPI_Comm_size(MPI_COMM_WORLD,&processes);
 
-   phiprof::start("readGrid");
+   phiprof::Timer readGridTimer {"readGrid"};
+
+   phiprof::Timer readScalarsTimer {"readScalars"};
 
    vlsv::ParallelReader file;
-   MPI_Info mpiInfo = MPI_INFO_NULL;
 
-   if (file.open(name,MPI_COMM_WORLD,MASTER_RANK,mpiInfo) == false) {
+   MPI_Info MPIinfo;
+   if (P::restartReadHints.size() == 0) {
+      MPIinfo = MPI_INFO_NULL;
+   } else {
+      MPI_Info_create(&MPIinfo);
+      
+      for (std::vector<std::pair<std::string,std::string>>::const_iterator it = P::restartReadHints.begin();
+           it != P::restartReadHints.end();
+           it++)
+      {
+         MPI_Info_set(MPIinfo, it->first.c_str(), it->second.c_str());
+      }
+   }
+
+   if (file.open(name,MPI_COMM_WORLD,MASTER_RANK,MPIinfo) == false) {
       success=false;
    }
    exitOnError(success,"(RESTART) Could not open file",MPI_COMM_WORLD);
@@ -839,7 +1155,7 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
       P::fieldSolverSubcycles = 1.0;
       cout << " No P::fieldSolverSubcycles found in restart, setting 1." << endl;
    }
-   MPI_Bcast(&(P::fieldSolverSubcycles),1,MPI_Type<Real>(),MASTER_RANK,MPI_COMM_WORLD);
+   MPI_Bcast(&(P::fieldSolverSubcycles),1,MPI_Type<uint>(),MASTER_RANK,MPI_COMM_WORLD);
    
 
 
@@ -854,13 +1170,18 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
    checkScalarParameter(file,"ycells_ini",P::ycells_ini,MASTER_RANK,MPI_COMM_WORLD);
    checkScalarParameter(file,"zcells_ini",P::zcells_ini,MASTER_RANK,MPI_COMM_WORLD);
 
-   phiprof::start("readDatalayout");
-   if (success == true) success = readCellIds(file,fileCells,MASTER_RANK,MPI_COMM_WORLD);
+   readScalarsTimer.stop();
+
+   phiprof::Timer readLayoutimer {"readDatalayout"};
+   if (success) {
+		success = readCellIds(file,fileCells,MASTER_RANK,MPI_COMM_WORLD);
+	}
 
    // Check that the cellID lists are identical in file and grid
-   if (myRank==0){
-      vector<CellID> allGridCells=mpiGrid.get_all_cells();
-      if (fileCells.size() != allGridCells.size()){
+   if (myRank==0) {
+      vector<CellID> allGridCells = mpiGrid.get_all_cells();
+      if (fileCells.size() != allGridCells.size()) {
+         std::cout << "File has " << fileCells.size() << " cells, got " << allGridCells.size() << " cells!" << std::endl;
          success=false;
       }
    }
@@ -908,14 +1229,14 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
          mpiGrid.pin(fileCells[i],newCellProcess);
       }
    }
-   
-   //Do initial load balance based on pins. Need to transfer at least sysboundaryflags
+
    SpatialCell::set_mpi_transfer_type(Transfer::ALL_SPATIAL_DATA);
+
+   //Do initial load balance based on pins. Need to transfer at least sysboundaryflags
    mpiGrid.balance_load(false);
 
    //update list of local gridcells
    recalculateLocalCellsCache();
-   //getObjectWrapper().meshData.reallocate();
 
    //get new list of local gridcells
    const vector<CellID>& gridCells = getLocalCells();
@@ -928,10 +1249,13 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
    // Check for errors, has migration succeeded
    if (localCells != gridCells.size() ) {
       success=false;
-   }
+   } 
+
    if (success == true) {
       for (uint64_t i=localCellStartOffset; i<localCellStartOffset+localCells; ++i) {
-         if(mpiGrid.is_local(fileCells[i]) == false) success = false;
+         if(mpiGrid.is_local(fileCells[i]) == false) {
+            success = false;
+         }
       }
    }
 
@@ -955,12 +1279,10 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
    //for(uint64_t i=localCellStartOffset; i<localCellStartOffset+localCells; ++i) {
    //  localBlocks += nBlocks[i];
    //}
-   phiprof::stop("readDatalayout");
+   readLayoutimer.stop();
 
    //todo, check file datatype, and do not just use double
-   phiprof::start("readCellParameters");
-   if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"perturbed_B",CellParams::PERBX,3,mpiGrid); }
-// Backround B has to be set, there are also the derivatives that should be written/read if we wanted to only read in background field
+   phiprof::Timer readParametersTimer {"readCellParameters"};
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"moments",CellParams::RHOM,5,mpiGrid); }
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"moments_dt2",CellParams::RHOM_DT2,5,mpiGrid); }
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"moments_r",CellParams::RHOM_R,5,mpiGrid); }
@@ -973,17 +1295,75 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"max_v_dt",CellParams::MAXVDT,1,mpiGrid); }
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"max_r_dt",CellParams::MAXRDT,1,mpiGrid); }
    if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"max_fields_dt",CellParams::MAXFDT,1,mpiGrid); }
-// Backround B has to be set, there are also the derivatives that should be written/read if we wanted to only read in background field
-   phiprof::stop("readCellParameters");
+   if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"vg_drift",CellParams::BULKV_FORCING_X,3,mpiGrid); }
+   if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"vg_bulk_forcing_flag",CellParams::FORCING_CELL_NUM,1,mpiGrid); }
+   if (P::refineOnRestart) {
+      // Refinement indices alpha_1 and alpha_2
+      if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"vg_amr_alpha1",CellParams::AMR_ALPHA1,1,mpiGrid); }
+      if(success) { success=readCellParamsVariable(file,fileCells,localCellStartOffset,localCells,"vg_amr_alpha2",CellParams::AMR_ALPHA2,1,mpiGrid); }
+   }
 
-   phiprof::start("readBlockData");
+   // Backround B has to be set, there are also the derivatives that should be written/read if we wanted to only read in background field
+   readParametersTimer.stop();
+
+   phiprof::Timer readBlocksTimer {"readBlockData"};
    if (success == true) {
       success = readBlockData(file,meshName,fileCells,localCellStartOffset,localCells,mpiGrid); 
    }
-   phiprof::stop("readBlockData");
+   readBlocksTimer.stop();
+
+   phiprof::Timer updateNeighborsTimer {"updateMpiGridNeighbors"};
+   mpiGrid.update_copies_of_remote_neighbors(FULL_NEIGHBORHOOD_ID);
+   updateNeighborsTimer.stop();
+   
+   phiprof::Timer readfsTimer {"readFsGrid"};
+   // Read fsgrid data back in
+   int fsgridInputRanks=0;
+   phiprof::Timer tReadScalarParameter {"readScalarParameter"};
+   if(readScalarParameter(file,"numWritingRanks",fsgridInputRanks, MASTER_RANK, MPI_COMM_WORLD) == false) {
+      exitOnError(false, "(RESTART) FSGrid writing rank number not found in restart file", MPI_COMM_WORLD);
+   }
+   tReadScalarParameter.stop();
+
+   if (success) { success = readFsGridVariable(file, "fg_PERB", fsgridInputRanks, perBGrid); }
+   if (success) { success = readFsGridVariable(file, "fg_E", fsgridInputRanks, EGrid); }
+   exitOnError(success,"(RESTART) Failure reading fsgrid restart variables",MPI_COMM_WORLD);
+   readfsTimer.stop();
+   
+   phiprof::Timer readIonosphereTimer {"readIonosphere"};
+   bool ionosphereSuccess=true;
+   ionosphereSuccess = readIonosphereNodeVariable(file, "ig_fac", SBC::ionosphereGrid, ionosphereParameters::SOURCE);
+   // Reconstruct source term by multiplying the fac density with the element area
+   for(uint i = 0; i<SBC::ionosphereGrid.nodes.size(); i++) {
+      Real area = 0;
+      for(uint e=0; e< SBC::ionosphereGrid.nodes[i].numTouchingElements; e++) {
+         area += SBC::ionosphereGrid.elementArea(SBC::ionosphereGrid.nodes[i].touchingElements[e]);
+      }
+      area /= 3.; // As every element has 3 corners, don't double-count areas
+      SBC::ionosphereGrid.nodes[i].parameters[ionosphereParameters::SOURCE] *= area;
+   }
+   ionosphereSuccess &= readIonosphereNodeVariable(file, "ig_rhon", SBC::ionosphereGrid, ionosphereParameters::RHON);
+   ionosphereSuccess &= readIonosphereNodeVariable(file, "ig_electrontemp", SBC::ionosphereGrid, ionosphereParameters::TEMPERATURE);
+   ionosphereSuccess &= readIonosphereNodeVariable(file, "ig_potential", SBC::ionosphereGrid, ionosphereParameters::SOLUTION);
+   if(!ionosphereSuccess) {
+      logFile << "(RESTART) Reading ionosphere variables failed. Continuing anyway. Variables will be zero, assuming this is an ionosphere cold start?" << std::endl;
+   }
+
+   // Read additional variables that are not formally required for solving the
+   // ionosphere, but help making the first output consistent if ionosphere
+   // timestep is very large.
+   // If these are missing from the restart file, we are fine continuing with
+   // zeros.
+   bool ionosphereOptionalSuccess = readIonosphereNodeVariable(file, "ig_sigmah", SBC::ionosphereGrid, ionosphereParameters::SIGMAH);
+   ionosphereOptionalSuccess &= readIonosphereNodeVariable(file, "ig_sigmap", SBC::ionosphereGrid, ionosphereParameters::SIGMAP);
+   ionosphereOptionalSuccess &= readIonosphereNodeVariable(file, "ig_sigmaparallel", SBC::ionosphereGrid, ionosphereParameters::SIGMAPARALLEL);
+   ionosphereOptionalSuccess &= readIonosphereNodeVariable(file, "ig_precipitation", SBC::ionosphereGrid, ionosphereParameters::PRECIP);
+   if(ionosphereSuccess && !ionosphereOptionalSuccess) {
+      logFile << "(RESTART) Restart file contains no ionosphere conductivity data. Ionosphere will run fine, but first output bulk file might have bogus conductivities." << std::endl;
+   }
+   readIonosphereTimer.stop();
 
    success = file.close();
-   phiprof::stop("readGrid");
 
    exitOnError(success,"(RESTART) Other failure",MPI_COMM_WORLD);
    return success;
@@ -996,7 +1376,134 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
 \param name Name of the restart file e.g. "restart.00052.vlsv"
 */
 bool readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
               const std::string& name){
    //Check the vlsv version from the file:
-   return exec_readGrid(mpiGrid,name);
+   return exec_readGrid(mpiGrid,perBGrid,EGrid,technicalGrid,name);
+}
+
+/*!
+\brief Refine the grid to be identical to the file's
+\param mpiGrid Vlasiator's grid
+\param name Name of the restart file e.g. "restart.00052.vlsv"
+*/
+bool readFileCells(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid, const std::string& name)
+{
+   vector<CellID> fileCells; /*< CellIds for all cells in file*/
+   bool success = true;
+   vlsv::ParallelReader file;
+   MPI_Info mpiInfo = MPI_INFO_NULL;
+
+   // Not sure if this success business is useful at all...
+   success = file.open(name,MPI_COMM_WORLD,MASTER_RANK,mpiInfo);
+   exitOnError(success,"(READ_FILE_CELLS) Could not open file",MPI_COMM_WORLD);
+
+   readCellIds(file,fileCells,MASTER_RANK,MPI_COMM_WORLD);
+   success = mpiGrid.load_cells(fileCells);
+   exitOnError(success,"(READ_FILE_CELLS) Failed to refine grid",MPI_COMM_WORLD);
+
+   success = file.close();
+   exitOnError(success,"(READ_FILE_CELLS) Other error",MPI_COMM_WORLD);
+   return success;
+}
+
+
+bool readFsgridDecomposition(vlsv::ParallelReader& file, std::array<FsGridTools::Task_t,3>& decomposition){
+   list<pair<string,string> > attribs;
+
+   int myRank;   
+   MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+
+   phiprof::Timer readFsGridDecomposition {"readFsGridDecomposition"};
+
+   attribs.push_back(make_pair("mesh","fsgrid"));
+
+   std::array<FsGridTools::FsSize_t,3> gridSize;
+   FsGridTools::FsSize_t* gridSizePtr = &gridSize[0];
+   bool success = file.read("MESH_BBOX",attribs, 0, 3, gridSizePtr, false);
+   if(success == false){
+      exitOnError(false, "(RESTART) FSGrid gridsize not found in file.", MPI_COMM_WORLD);
+      return false;
+   }
+
+   std::array<FsGridTools::Task_t,3> fsGridDecomposition={0,0,0}; 
+   FsGridTools::Task_t* ptr = &fsGridDecomposition[0];
+
+   success = file.read("MESH_DECOMPOSITION",attribs, 0, 3, ptr, false);
+   if (success == false) {
+      if (myRank == MASTER_RANK){
+         std::cout << "Could not read MESH_DECOMPOSITION, attempting to calculate it from MESH." << endl;
+      }
+      int fsgridInputRanks=0;
+      if(file.readParameter("numWritingRanks",fsgridInputRanks) == false) {
+         exitOnError(false, "(RESTART) FSGrid writing rank number not found in restart file.", MPI_COMM_WORLD);
+         return false;
+      }
+
+      int64_t* domainInfo = NULL;
+      success = file.read("MESH_DOMAIN_SIZES",attribs, 0, fsgridInputRanks, domainInfo);
+      if(success == false){
+         if (myRank == MASTER_RANK){
+            std::cerr << "Could not read MESH_DOMAIN_SIZES from file" << endl;
+         }
+         return false;
+      }
+      std::vector<uint64_t> mesh_domain_sizes;
+      for (int i = 0; i < 2*fsgridInputRanks; i+=2){
+         mesh_domain_sizes.push_back(domainInfo[i]);
+      }
+      list<pair<string,string> > mesh_attribs;
+      mesh_attribs.push_back(make_pair("name","fsgrid"));
+      std::vector<FsGridTools::FsSize_t> rank_first_ids(fsgridInputRanks);
+      FsGridTools::FsSize_t* ids_ptr = &rank_first_ids[0];
+
+      std::set<FsGridTools::FsIndex_t> x_corners, y_corners, z_corners;
+      
+      int64_t begin_rank = 0;
+      for(auto rank_size : mesh_domain_sizes){
+         if(myRank == MASTER_RANK){
+            if(file.read("MESH", mesh_attribs, begin_rank, 1, ids_ptr, false) == false){
+               if (myRank == 0){
+                  std::cerr << "Reading MESH failed.\n";
+               }
+               return false;
+            }
+            std::array<FsGridTools::FsIndex_t,3> inds = FsGridTools::globalIDtoCellCoord(*ids_ptr, gridSize);
+            x_corners.insert(inds[0]);
+            y_corners.insert(inds[1]);
+            z_corners.insert(inds[2]);
+            ++ids_ptr;
+            begin_rank += rank_size;
+         } else {
+            file.read("MESH", mesh_attribs, begin_rank, 0, ids_ptr, false);
+         }
+      }
+
+      decomposition[0] = x_corners.size();
+      decomposition[1] = y_corners.size();
+      decomposition[2] = z_corners.size();
+      MPI_Bcast(&decomposition, 3, MPI_INT, MASTER_RANK, MPI_COMM_WORLD);
+
+      if(decomposition[0]*decomposition[1]*decomposition[2] == fsgridInputRanks){
+         if (myRank == MASTER_RANK){
+            std::cout << "Fsgrid decomposition computed from MESH to be " << decomposition[0] << " " << decomposition[1] << " " <<decomposition[2] << endl;
+         }
+         return true;
+      } else {
+         if (myRank == MASTER_RANK){
+            std::cout << "Fsgrid decomposition computed from MESH to be " << decomposition[0] << " " << decomposition[1] << " " <<decomposition[2] << ", which is not compatible with numWritingRanks ("<<fsgridInputRanks << ")" << endl;
+         }
+         return false;
+      }
+
+   } else {
+      decomposition[0] = fsGridDecomposition[0];
+      decomposition[1] = fsGridDecomposition[1];
+      decomposition[2] = fsGridDecomposition[2];
+      // logFile << "(RESTART) Fsgrid decomposition read as " << decomposition[0] << " " << decomposition[1] << " " <<decomposition[2] << "\n";
+      return true;
+   }
+   return false;
 }

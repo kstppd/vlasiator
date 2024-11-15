@@ -68,7 +68,7 @@ namespace geometry {
 }
 
 namespace vmesh {
-   #ifndef AMR
+   #ifndef VAMR
    typedef uint32_t GlobalID;              /**< Datatype used for velocity block global IDs.*/
    typedef uint32_t LocalID;               /**< Datatype used for velocity block local IDs.*/
    #else
@@ -89,11 +89,11 @@ namespace vmesh {
 /** Definition of a function that takes in a velocity block with neighbor data, 
  * and returns a number that is used to decide whether or not the block should 
  * be refined or coarsened.*/
-typedef Realf (*AmrVelRefinement)(const Realf* velBlock);
+typedef Realf (*VAmrVelRefinement)(const Realf* velBlock);
 
 // neighborhoods, these are initialized in grid.cpp:initializeGrid
 
-#define FIELD_SOLVER_NEIGHBORHOOD_ID 1
+//#define FIELD_SOLVER_NEIGHBORHOOD_ID 1 // Now fields on FSgrid
 #define VLASOV_SOLVER_NEIGHBORHOOD_ID 2   //up to third(PPM) neighbor in each face direction
 #define VLASOV_SOLVER_X_NEIGHBORHOOD_ID 3 //up to third(PPM) neighbor in x face directions
 #define VLASOV_SOLVER_Y_NEIGHBORHOOD_ID 4 //up to third(PPM) neighbor in y face directions
@@ -112,7 +112,6 @@ typedef Realf (*AmrVelRefinement)(const Realf* velBlock);
 #define SHIFT_M_X_NEIGHBORHOOD_ID 17 //Shift in -x direction
 #define SHIFT_M_Y_NEIGHBORHOOD_ID 18 //Shift in -y direction
 #define SHIFT_M_Z_NEIGHBORHOOD_ID 19 //Shift in -z direction
-#define POISSON_NEIGHBORHOOD_ID 20   // Nearest face neighbors 
 
 //fieldsolver stencil.
 #define FS_STENCIL_WIDTH 2
@@ -128,5 +127,9 @@ typedef Realf (*AmrVelRefinement)(const Realf* velBlock);
 #ifdef TRANS_SEMILAG_PQM
    #define  VLASOV_STENCIL_WIDTH 3
 #endif
+
+// Max number of face neighbors per dimension with AMR
+#define MAX_NEIGHBORS_PER_DIM 8
+#define MAX_FACE_NEIGHBORS_PER_DIM 4
 
 #endif

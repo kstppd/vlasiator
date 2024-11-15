@@ -1,4 +1,4 @@
-/*
+/* 
  * This file is part of Vlasiator.
  * Copyright 2010-2016 Finnish Meteorological Institute
  *
@@ -40,7 +40,7 @@
 
 void bailout(
    const bool condition,
-   const std::string message
+   const std::string& message
 );
 void bailout(
    const bool condition,
@@ -49,10 +49,12 @@ void bailout(
 );
 void bailout(
    const bool condition,
-   const std::string message,
+   const std::string& message,
    const char * const file,
    const int line
 );
+
+[[ noreturn ]] void abort_mpi(const std::string str, const int err_type = 0);
 
 #define sqr(x) ((x)*(x))
 #define pow2(x) sqr(x)
@@ -67,8 +69,8 @@ void bailout(
 #define MAX_BLOCKS_PER_DIM 256
 
 
-/*! A namespace for storing indices into an array which contains 
- * neighbour list for each spatial cell. These indices refer to 
+/*! A namespace for storing indices into an array which contains
+ * neighbour list for each spatial cell. These indices refer to
  * the CPU memory, i.e. the device does not use these.
  */
 namespace NbrsSpa {
@@ -79,7 +81,7 @@ namespace NbrsSpa {
    const uint Y_POS_BND = (1 << 3);  /*!< The cell is a boundary cell in +y direction.*/
    const uint Z_NEG_BND = (1 << 4); /*!< The cell is a boundary cell in -z direction.*/
    const uint Z_POS_BND = (1 << 5); /*!< The cell is a boundary cell in +z direction.*/
-   
+
    enum {
       STATE, /*!< Contains the neighbour information of this cell, i.e. whether it is an inner cell or a boundary cell in one or more coordinate directions.*/
       MYIND, /*!< The index of this cell.*/
@@ -99,7 +101,7 @@ namespace NbrsSpa {
 }
 
 
-/*! A namespace for storing indices into an array which contains 
+/*! A namespace for storing indices into an array which contains
  * the physical parameters of each velocity block.*/
 namespace BlockParams {
    enum {
@@ -113,9 +115,9 @@ namespace BlockParams {
    };
 }
 
-/*! A namespace for storing indices into an array which contains the 
- * physical parameters of each spatial cell. Do not change the order 
- * of variables unless you know what you are doing - MPI transfers in 
+/*! A namespace for storing indices into an array which contains the
+ * physical parameters of each spatial cell. Do not change the order
+ * of variables unless you know what you are doing - MPI transfers in
  * field solver are relying on this particular ordering, even though the actual
  * fsgrid data layouts might be slightly different (see below).
  *
@@ -127,29 +129,15 @@ namespace CellParams {
       XCRD,   /*!< x-coordinate of the bottom left corner.*/
       YCRD,   /*!< y-coordinate of the bottom left corner.*/
       ZCRD,   /*!< z-coordinate of the bottom left corner.*/
+      // DX,DY,DZ have to be consecutive.
       DX,     /*!< Grid separation in x-coordinate.*/
       DY,     /*!< Grid separation in y-coordinate.*/
       DZ,     /*!< Grid separation in z-coordinate.*/
-      EX,     /*!< Total electric field x-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
-      EY,     /*!< Total wlectric field y-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
-      EZ,     /*!< Total electric field z-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
-      BGBX,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      BGBY,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      BGBZ,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      PERBX,  /*!< Perturbed Magnetic field x-component, averaged over cell x-face. Propagated by field solver.*/
-      PERBY,  /*!< Perturbed Magnetic field y-component, averaged over cell y-face. Propagated by field solver.*/
-      PERBZ,  /*!< Perturbed Magnetic field z-component, averaged over cell z-face. Propagated by field solver.*/
       RHOM,    /*!< Total mass density. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       VX,  /*!< Vx. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       VY,  /*!< Vy. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       VZ,  /*!< Vz. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       RHOQ,    /*!< Total charge density. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
-      EX_DT2,    /*!< Intermediate step value for RK2 time stepping in field solver.*/
-      EY_DT2,    /*!< Intermediate step value for RK2 time stepping in field solver.*/
-      EZ_DT2,    /*!< Intermediate step value for RK2 time stepping in field solver.*/
-      PERBX_DT2, /*!< Intermediate step value for PERBX for RK2 time stepping in field solver.*/
-      PERBY_DT2, /*!< Intermediate step value for PERBY for RK2 time stepping in field solver.*/
-      PERBZ_DT2, /*!< Intermediate step value for PERBZ for RK2 time stepping in field solver.*/
       RHOM_DT2,    /*!< Total mass density. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       VX_DT2,  /*!< Vx. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
       VY_DT2,  /*!< Vy. Calculated by Vlasov propagator, used to propagate BX,BY,BZ.*/
@@ -161,21 +149,6 @@ namespace CellParams {
       PERBXVOL,  /*!< perturbed magnetic field  PERBX averaged over spatial cell.*/
       PERBYVOL,  /*!< perturbed magnetic field  PERBY averaged over spatial cell.*/
       PERBZVOL,  /*!< perturbed magnetic field  PERBZ averaged over spatial cell.*/
-      EXVOL,     /*!< Ex averaged over spatial cell.*/
-      EYVOL,     /*!< Ey averaged over spatial cell.*/
-      EZVOL,     /*!< Ez averaged over spatial cell.*/
-      EXHALL_000_100,   /*!< Hall term x averaged along x on -y/-z edge of spatial cell.*/
-      EYHALL_000_010,   /*!< Hall term y averaged along y on -x/-z edge of spatial cell.*/
-      EZHALL_000_001,   /*!< Hall term z averaged along z on -x/-y edge of spatial cell.*/
-      EYHALL_100_110,   /*!< Hall term y averaged along y on +x/-z edge of spatial cell.*/
-      EZHALL_100_101,   /*!< Hall term z averaged along z on +x/-y edge of spatial cell.*/
-      EXHALL_010_110,   /*!< Hall term x averaged along x on +y/-z edge of spatial cell.*/
-      EZHALL_010_011,   /*!< Hall term z averaged along z on +y/-x edge of spatial cell.*/
-      EZHALL_110_111,   /*!< Hall term z averaged along z on +x/+y edge of spatial cell.*/
-      EXHALL_001_101,   /*!< Hall term x averaged along x on -y/+z edge of spatial cell.*/
-      EYHALL_001_011,   /*!< Hall term y averaged along y on -x/+z edge of spatial cell.*/
-      EYHALL_101_111,   /*!< Hall term y averaged along y on +x/+z edge of spatial cell.*/
-      EXHALL_011_111,   /*!< Hall term x averaged along x on +y/+z edge of spatial cell.*/
       EXGRADPE,         /*!< Electron pressure gradient term x.*/
       EYGRADPE,         /*!< Electron pressure gradient term y.*/
       EZGRADPE,         /*!< Electron pressure gradient term z.*/
@@ -201,154 +174,103 @@ namespace CellParams {
       P_11_V,   /*!< P_xx component after propagation in velocity space */
       P_22_V,   /*!< P_yy component after propagation in velocity space */
       P_33_V,   /*!< P_zz component after propagation in velocity space */
-      MAXVDT,             /*!< maximum timestep allowed in velocity space for this cell, 
+      EXVOL,    /*!< Volume electric field averaged over spatial cell, x-component.*/
+      EYVOL,    /*!< Volume electric field averaged over spatial cell, y-component.*/
+      EZVOL,    /*!< Volume electric field averaged over spatial cell, z-component.*/
+      MAXVDT,             /*!< maximum timestep allowed in velocity space for this cell,
                            * this is the max allowed timestep over all particle species.*/
       MAXRDT,             /*!< maximum timestep allowed in ordinary space for this cell,
                            * this is the max allowed timestep over all particle species.*/
       MAXFDT,             /*!< maximum timestep allowed in ordinary space by fieldsolver for this cell**/
       LBWEIGHTCOUNTER,    /*!< Counter for storing compute time weights needed by the load balancing**/
       ISCELLSAVINGF,      /*!< Value telling whether a cell is saving its distribution function when partial f data is written out. */
-      PHI,        /*!< Electrostatic potential.*/
-      PHI_TMP,    /*!< Temporary electrostatic potential.*/
-      RHOQ_TOT,   /*!< Total charge density, summed over all particle populations.*/
-      RHOQ_EXT,   /*<! External charge density.*/
-      BGEXVOL,    /*!< Background electric field averaged over spatial cell, x-component.*/
-      BGEYVOL,    /*!< Background electric field averaged over spatial cell, y-component.*/
-      BGEZVOL,    /*!< Background electric field averaged over spatial cell, z-component.*/
       FSGRID_RANK, /*!< Rank of this cell in the FsGrid cartesian communicator */
       FSGRID_BOUNDARYTYPE, /*!< Boundary type of this cell, as stored in the fsGrid */
+      CELLID, /*! < DCCRG cell index */
+      REFINEMENT_LEVEL, /*! < Refinement level */
+      AMR_TRANSLATE_COMM_X, /*! < Flag to include this cell in AMR pre-translate communication  */
+      AMR_TRANSLATE_COMM_Y, /*! < Flag to include this cell in AMR pre-translate communication  */
+      AMR_TRANSLATE_COMM_Z, /*! < Flag to include this cell in AMR pre-translate communication  */
+      CONNECTION, /*!< Magnetic connection. See TracingPointConnectionType for assigned values. */
+      CONNECTION_FW_X, /*!< Endpoint x (forward-propagated) for the magnetic connection tracer*/
+      CONNECTION_FW_Y, /*!< Endpoint y (forward-propagated) for the magnetic connection tracer*/
+      CONNECTION_FW_Z, /*!< Endpoint z (forward-propagated) for the magnetic connection tracer*/
+      CONNECTION_BW_X, /*!< Endpoint x (backward-propagated) for the magnetic connection tracer*/
+      CONNECTION_BW_Y, /*!< Endpoint y (backward-propagated) for the magnetic connection tracer*/
+      CONNECTION_BW_Z, /*!< Endpoint z (backward-propagated) for the magnetic connection tracer*/
+      CURVATUREX, /*!< Magnetic field curvature vector x component */
+      CURVATUREY, /*!< Magnetic field curvature vector y component */
+      CURVATUREZ, /*!< Magnetic field curvature vector z component */
+      FLUXROPE,   /*!< 0 for regular cells, 1 for cells considered to be in a flux rope */
+      AMR_DRHO,
+      AMR_DU,
+      AMR_DPSQ,
+      AMR_DBSQ,
+      AMR_DB,
+      AMR_ALPHA1,
+      AMR_ALPHA2,
+      RECENTLY_REFINED,
+      BULKV_FORCING_X, /*! Externally forced drift velocity (ex. from the ionosphere) */
+      BULKV_FORCING_Y, /*! Externally forced drift velocity (ex. from the ionosphere) */
+      BULKV_FORCING_Z, /*! Externally forced drift velocity (ex. from the ionosphere) */
+      FORCING_CELL_NUM, /*! Number of boundary cells that have forced a bulkv here */
       N_SPATIAL_CELL_PARAMS
    };
 }
 
-/*! Namespace fieldsolver contains indices into arrays which store 
- * variables required by the field solver. These quantities are derivatives 
- * of variables described in namespace CellParams.
- * Do not change the order of variables unless you know what you are doing: 
- * in several places the size of cpu_derivatives array in cell_spatial is calculated 
- * as fieldsolver::dVzdz+1.
- */
-namespace fieldsolver {
-   enum {
-      drhomdx,    /*!< Derivative of volume-averaged mass density to x-direction. */
-      drhomdy,    /*!< Derivative of volume-averaged mass density to y-direction. */
-      drhomdz,    /*!< Derivative of volume-averaged mass density to z-direction. */
-      drhoqdx,    /*!< Derivative of volume-averaged charge density to x-direction. */
-      drhoqdy,    /*!< Derivative of volume-averaged charge density to y-direction. */
-      drhoqdz,    /*!< Derivative of volume-averaged charge density to z-direction. */
-      dBGBxdy,     /*!< Derivative of face-averaged Bx to y-direction. */
-      dBGBxdz,     /*!< Derivative of face-averaged Bx to z-direction. */
-      dBGBydx,     /*!< Derivative of face-averaged By to x-direction. */
-      dBGBydz,     /*!< Derivative of face-averaged By to z-direction. */
-      dBGBzdx,     /*!< Derivative of face-averaged Bz to x-direction. */
-      dBGBzdy,     /*!< Derivative of face-averaged Bz to y-direction. */
-      dPERBxdy,     /*!< Derivative of face-averaged Bx to y-direction. */
-      dPERBxdz,     /*!< Derivative of face-averaged Bx to z-direction. */
-      dPERBydx,     /*!< Derivative of face-averaged By to x-direction. */
-      dPERBydz,     /*!< Derivative of face-averaged By to z-direction. */
-      dPERBzdx,     /*!< Derivative of face-averaged Bz to x-direction. */
-      dPERBzdy,     /*!< Derivative of face-averaged Bz to y-direction. */
-      // Insert for Hall term
-      // NOTE 2nd derivatives of BGBn are not needed as curl(dipole) = 0.0
-      // will change if BGB is not curl-free
-//       dBGBxdyy,     /*!< Second derivative of face-averaged Bx to yy-direction. */
-//       dBGBxdzz,     /*!< Second derivative of face-averaged Bx to zz-direction. */
-//       dBGBxdyz,     /*!< Second derivative of face-averaged Bx to yz-direction. */
-//       dBGBydxx,     /*!< Second derivative of face-averaged By to xx-direction. */
-//       dBGBydzz,     /*!< Second derivative of face-averaged By to zz-direction. */
-//       dBGBydxz,     /*!< Second derivative of face-averaged By to xz-direction. */
-//       dBGBzdxx,     /*!< Second derivative of face-averaged Bz to xx-direction. */
-//       dBGBzdyy,     /*!< Second derivative of face-averaged Bz to yy-direction. */
-//       dBGBzdxy,     /*!< Second derivative of face-averaged Bz to xy-direction. */
-      dPERBxdyy,     /*!< Second derivative of face-averaged Bx to yy-direction. */
-      dPERBxdzz,     /*!< Second derivative of face-averaged Bx to zz-direction. */
-      dPERBxdyz,     /*!< Second derivative of face-averaged Bx to yz-direction. */
-      dPERBydxx,     /*!< Second derivative of face-averaged By to xx-direction. */
-      dPERBydzz,     /*!< Second derivative of face-averaged By to zz-direction. */
-      dPERBydxz,     /*!< Second derivative of face-averaged By to xz-direction. */
-      dPERBzdxx,     /*!< Second derivative of face-averaged Bz to xx-direction. */
-      dPERBzdyy,     /*!< Second derivative of face-averaged Bz to yy-direction. */
-      dPERBzdxy,     /*!< Second derivative of face-averaged Bz to xy-direction. */
-      dp11dx,        /*!< Derivative of P_11 to x direction. */
-      dp11dy,        /*!< Derivative of P_11 to x direction. */
-      dp11dz,        /*!< Derivative of P_11 to x direction. */
-      dp22dx,        /*!< Derivative of P_22 to y direction. */
-      dp22dy,        /*!< Derivative of P_22 to y direction. */
-      dp22dz,        /*!< Derivative of P_22 to y direction. */
-      dp33dx,        /*!< Derivative of P_33 to z direction. */
-      dp33dy,        /*!< Derivative of P_33 to z direction. */
-      dp33dz,        /*!< Derivative of P_33 to z direction. */
-      // End of insert for Hall term
-      dVxdx,     /*!< Derivative of volume-averaged Vx to x-direction. */
-      dVxdy,     /*!< Derivative of volume-averaged Vx to y-direction. */
-      dVxdz,     /*!< Derivative of volume-averaged Vx to z-direction. */
-      dVydx,     /*!< Derivative of volume-averaged Vy to x-direction. */
-      dVydy,     /*!< Derivative of volume-averaged Vy to y-direction. */
-      dVydz,     /*!< Derivative of volume-averaged Vy to z-direction. */
-      dVzdx,     /*!< Derivative of volume-averaged Vz to x-direction. */
-      dVzdy,     /*!< Derivative of volume-averaged Vz to y-direction. */
-      dVzdz,     /*!< Derivative of volume-averaged Vz to z-direction. */
-      N_SPATIAL_CELL_DERIVATIVES
-   };
-}
-
 /*! The namespace bvolderivatives contains the indices to an array which stores the spatial
- * derivatives of the volume-averaged magnetic field, needed for Lorentz force. 
- * TODO: Vol values may be removed if background field is curlfree
+ * derivatives of the volume-averaged magnetic field, needed for Lorentz force.
  */
 namespace bvolderivatives {
    enum {
-      dBGBXVOLdy,
-      dBGBXVOLdz,
-      dBGBYVOLdx,
-      dBGBYVOLdz,
-      dBGBZVOLdx,
-      dBGBZVOLdy,
-      dPERBXVOLdy,
-      dPERBXVOLdz,
-      dPERBYVOLdx,
-      dPERBYVOLdz,
-      dPERBZVOLdx,
-      dPERBZVOLdy,
+      dPERBXVOLdx, /*!< Derivative of perturbed volume-averaged Bx in x-direction. */
+      dPERBXVOLdy, /*!< Derivative of perturbed volume-averaged Bx in y-direction. */
+      dPERBXVOLdz, /*!< Derivative of perturbed volume-averaged Bx in z-direction. */
+      dPERBYVOLdx, /*!< Derivative of perturbed volume-averaged By in x-direction. */
+      dPERBYVOLdy, /*!< Derivative of perturbed volume-averaged By in y-direction. */
+      dPERBYVOLdz, /*!< Derivative of perturbed volume-averaged By in z-direction. */
+      dPERBZVOLdx, /*!< Derivative of perturbed volume-averaged Bz in x-direction. */
+      dPERBZVOLdy, /*!< Derivative of perturbed volume-averaged Bz in y-direction. */
+      dPERBZVOLdz, /*!< Derivative of perturbed volume-averaged Bz in z-direction. */
       N_BVOL_DERIVATIVES
    };
 }
 
-// FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-// FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
-// FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-// FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
-// FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-// FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-// FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-// FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsDt2Grid,
-// FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-// FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-// FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-// FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2> & volGrid,
-// FsGrid< fsgrids::technical, 2> & technicalGrid,
+// FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+// FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBDt2Grid,
+// FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+// FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EDt2Grid,
+// FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+// FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+// FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+// FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsDt2Grid,
+// FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+// FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+// FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+// FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, FS_STENCIL_WIDTH> & volGrid,
+// FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
 
 /*! Namespace containing enums and structs for the various field solver grid instances
- * 
+ *
  * Note that in some of these, the order of members differs from the cell
  * parameter fields (see above). So double-check before blindly copying data
  * back and forth.
  */
 namespace fsgrids {
-   enum bfield {
+   enum bfield : int {
       PERBX,  /*!< Perturbed Magnetic field x-component, averaged over cell x-face. Propagated by field solver.*/
       PERBY,  /*!< Perturbed Magnetic field y-component, averaged over cell y-face. Propagated by field solver.*/
       PERBZ,  /*!< Perturbed Magnetic field z-component, averaged over cell z-face. Propagated by field solver.*/
       N_BFIELD
    };
-   
+
    enum efield {
       EX,     /*!< Total electric field x-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       EY,     /*!< Total electric field y-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       EZ,     /*!< Total electric field z-component, averaged over cell edge. Used to propagate BX,BY,BZ.*/
       N_EFIELD
    };
-   
+
    enum ehall {
       EXHALL_000_100,   /*!< Hall term x averaged along x on -y/-z edge of spatial cell.*/
       EYHALL_000_010,   /*!< Hall term y averaged along y on -x/-z edge of spatial cell.*/
@@ -364,14 +286,14 @@ namespace fsgrids {
       EXHALL_011_111,   /*!< Hall term x averaged along x on +y/+z edge of spatial cell.*/
       N_EHALL
    };
-   
+
    enum egradpe {
       EXGRADPE,         /*!< Electron pressure gradient term x.*/
       EYGRADPE,         /*!< Electron pressure gradient term y.*/
       EZGRADPE,         /*!< Electron pressure gradient term z.*/
       N_EGRADPE
    };
-   
+
    enum moments {
       RHOM, /*!< Overall mass density. Calculated by Vlasov propagator, used to propagate fields.*/
       RHOQ, /*!< Overall charge density. Calculated by Vlasov propagator, used to propagate fields.*/
@@ -383,7 +305,7 @@ namespace fsgrids {
       P_33, /*!< Pressure P_zz component, computed by Vlasov propagator. */
       N_MOMENTS
    };
-   
+
    enum dperb {
       dPERBxdy,     /*!< Derivative of face-averaged Bx to y-direction. */
       dPERBxdz,     /*!< Derivative of face-averaged Bx to z-direction. */
@@ -402,7 +324,7 @@ namespace fsgrids {
       dPERBzdxy,     /*!< Second derivative of face-averaged Bz to xy-direction. */
       N_DPERB
    };
-   
+
    enum dmoments {
       drhomdx,    /*!< Derivative of mass density to x-direction. */
       drhomdy,    /*!< Derivative of mass density to y-direction. */
@@ -428,57 +350,98 @@ namespace fsgrids {
       dVzdx,     /*!< Derivative of volume-averaged Vz to x-direction. */
       dVzdy,     /*!< Derivative of volume-averaged Vz to y-direction. */
       dVzdz,     /*!< Derivative of volume-averaged Vz to z-direction. */
+      dPedx,    /*!< Derivative of electron pressure to x-direction. */
+      dPedy,    /*!< Derivative of electron pressure to y-direction. */
+      dPedz,    /*!< Derivative of electron pressure to z-direction. */
       N_DMOMENTS
    };
-   
+
    // NOTE This contains the BGB derivatives as they do not change either
-   enum bgbfield {
+   enum bgbfield : int  {
       BGBX,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      BGBY,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      BGBZ,   /*!< Background magnetic field x-component, averaged over cell x-face.*/
-      BGBXVOL,   /*!< background magnetic field averaged over spatial cell.*/
-      BGBYVOL,   /*!< background magnetic field averaged over spatial cell.*/
-      BGBZVOL,   /*!< background magnetic field averaged over spatial cell.*/
-      dBGBxdy,     /*!< Derivative of face-averaged Bx to y-direction. */
-      dBGBxdz,     /*!< Derivative of face-averaged Bx to z-direction. */
-      dBGBydx,     /*!< Derivative of face-averaged By to x-direction. */
-      dBGBydz,     /*!< Derivative of face-averaged By to z-direction. */
-      dBGBzdx,     /*!< Derivative of face-averaged Bz to x-direction. */
-      dBGBzdy,     /*!< Derivative of face-averaged Bz to y-direction. */
-      dBGBXVOLdy,
-      dBGBXVOLdz,
-      dBGBYVOLdx,
-      dBGBYVOLdz,
-      dBGBZVOLdx,
-      dBGBZVOLdy,
+      BGBY,   /*!< Background magnetic field y-component, averaged over cell y-face.*/
+      BGBZ,   /*!< Background magnetic field z-component, averaged over cell z-face.*/
+      BGBXVOL,   /*!< background magnetic field x-component averaged over spatial cell.*/
+      BGBYVOL,   /*!< background magnetic field y-component averaged over spatial cell.*/
+      BGBZVOL,   /*!< background magnetic field z-component averaged over spatial cell.*/
+      BGBXVDCORR, /*!< correction term for background magnetic field, used by vector dipole.*/
+      BGBYVDCORR, /*!< correction term for background magnetic field, used by vector dipole.*/
+      BGBZVDCORR, /*!< correction term for background magnetic field, used by vector dipole.*/
+      dBGBxdy,     /*!< Derivative of background face-averaged Bx in y-direction. */
+      dBGBxdz,     /*!< Derivative of background face-averaged Bx in z-direction. */
+      dBGBydx,     /*!< Derivative of background face-averaged By in x-direction. */
+      dBGBydz,     /*!< Derivative of background face-averaged By in z-direction. */
+      dBGBzdx,     /*!< Derivative of background face-averaged Bz in x-direction. */
+      dBGBzdy,     /*!< Derivative of background face-averaged Bz in y-direction. */
+      dBGBXVOLdx,  /*!< Derivative of background volume-averaged Bx in x-direction. */
+      dBGBXVOLdy,  /*!< Derivative of background volume-averaged Bx in y-direction. */
+      dBGBXVOLdz,  /*!< Derivative of background volume-averaged Bx in z-direction. */
+      dBGBYVOLdx,  /*!< Derivative of background volume-averaged By in x-direction. */
+      dBGBYVOLdy,  /*!< Derivative of background volume-averaged By in y-direction. */
+      dBGBYVOLdz,  /*!< Derivative of background volume-averaged By in z-direction. */
+      dBGBZVOLdx,  /*!< Derivative of background volume-averaged Bz in x-direction. */
+      dBGBZVOLdy,  /*!< Derivative of background volume-averaged Bz in y-direction. */
+      dBGBZVOLdz,  /*!< Derivative of background volume-averaged Bz in z-direction. */
       N_BGB
    };
-   
+
    // NOTE This contains the PERBVOL derivatives
    enum volfields {
       PERBXVOL,  /*!< perturbed magnetic field  PERBX averaged over spatial cell.*/
       PERBYVOL,  /*!< perturbed magnetic field  PERBY averaged over spatial cell.*/
       PERBZVOL,  /*!< perturbed magnetic field  PERBZ averaged over spatial cell.*/
-      EXVOL,     /*!< Ex averaged over spatial cell.*/
-      EYVOL,     /*!< Ey averaged over spatial cell.*/
-      EZVOL,     /*!< Ez averaged over spatial cell.*/
-      dPERBXVOLdy,
-      dPERBXVOLdz,
-      dPERBYVOLdx,
-      dPERBYVOLdz,
-      dPERBZVOLdx,
-      dPERBZVOLdy,
+      dPERBXVOLdx, /*!< Derivative of perturbed volume-averaged Bx in x-direction. */
+      dPERBXVOLdy, /*!< Derivative of perturbed volume-averaged Bx in y-direction. */
+      dPERBXVOLdz, /*!< Derivative of perturbed volume-averaged Bx in z-direction. */
+      dPERBYVOLdx, /*!< Derivative of perturbed volume-averaged By in x-direction. */
+      dPERBYVOLdy, /*!< Derivative of perturbed volume-averaged By in y-direction. */
+      dPERBYVOLdz, /*!< Derivative of perturbed volume-averaged By in z-direction. */
+      dPERBZVOLdx, /*!< Derivative of perturbed volume-averaged Bz in x-direction. */
+      dPERBZVOLdy, /*!< Derivative of perturbed volume-averaged Bz in y-direction. */
+      dPERBZVOLdz, /*!< Derivative of perturbed volume-averaged Bz in z-direction. */
+      EXVOL,   /*!< volume-averaged electric field x component */
+      EYVOL,   /*!< volume-averaged electric field y component */
+      EZVOL,   /*!< volume-averaged electric field z component */
+      CURVATUREX, /*!< Magnetic field curvature vector x component, grid-glued to DCCRG */
+      CURVATUREY, /*!< Magnetic field curvature vector y component, grid-glued to DCCRG */
+      CURVATUREZ, /*!< Magnetic field curvature vector z component, grid-glued to DCCRG */
       N_VOL
    };
-   
+
    struct technical {
-      int sysBoundaryFlag;  /*!< System boundary flags. */
+      uint sysBoundaryFlag;  /*!< System boundary flags. */
       int sysBoundaryLayer; /*!< System boundary layer index. */
       Real maxFsDt;         /*!< maximum timestep allowed in ordinary space by fieldsolver for this cell**/
       int fsGridRank;       /*!< Rank in the fsGrids cartesian coordinator */
+      uint SOLVE;           /*!< Bit mask to determine whether a given cell should solve E or B components. */
+      int refLevel;         /*!<AMR Refinement Level*/
    };
-   
+
 }
+
+// Ionosphere node parameters
+enum ionosphereParameters {
+  SOURCE,    /*!< Field aligned current source term (Ampere). Note: this is current, *not* density. */
+  SIGMA,   SIGMA12, SIGMA13,
+  SIGMA21, SIGMA22, SIGMA23, /*!< Overall conductivity tensor */
+  SIGMA31, SIGMA32, SIGMA33,
+
+  SIGMAP,   /*!< Scalar Pedersen conductivity */
+  SIGMAH,   /*!< Scalar Hall conductivity */
+  SIGMAPARALLEL, /*!< Scalar parallel conductivity */
+  PRECIP,   /*!< Precipitation */
+  RHON,     /*!< Downmapped magnetospheric plasma number density */
+  TEMPERATURE, /*!< Downmapped electron temperature */
+  NODE_BX,NODE_BY,NODE_BZ, /*!< Magnetic field at the node */
+  UPMAPPED_BX,UPMAPPED_BY,UPMAPPED_BZ, /*!< Magnetic field at the upper and of the mapping fieldline */
+  SOLUTION, /*!< Currently considered solution potential */
+  BEST_SOLUTION, /*!< Best solution found so far */
+  RESIDUAL, /*!< Residual of the current solution */
+  RRESIDUAL,
+  ZPARAM, ZZPARAM,
+  PPPARAM, PPARAM,
+  N_IONOSPHERE_PARAMETERS
+};
 
 /*! The namespace sysboundarytype contains the identification index of the boundary condition types applied to a cell,
  * it is stored in SpatialCell::sysBoundaryFlag and used by the BoundaryCondition class' functions to determine what type of BC to apply to a cell.
@@ -488,14 +451,22 @@ namespace sysboundarytype {
    enum {
       DO_NOT_COMPUTE,   /*!< E.g. cells within the ionospheric outer radius should not be computed at all. */
       NOT_SYSBOUNDARY,  /*!< Cells within the simulation domain are not boundary cells. */
-      IONOSPHERE,       /*!< Initially a perfectly conducting sphere. */
+      IONOSPHERE,       /*!< Ionospheric current model. */
       OUTFLOW,          /*!< No fixed conditions on the fields and distribution function. */
-      SET_MAXWELLIAN,   /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
-      ANTISYMMETRIC,    /*!< System is antisymmetric wrt. to the boundary.*/
-      PROJECT,         /*!< Simulated project's setCell and setCellBackgroundField functions are used 
-                        * to set the boundary conditions.*/
+      MAXWELLIAN,       /*!< Set Maxwellian boundary condition, i.e. set fields and distribution function. */
+      COPYSPHERE,       /*!< A sphere with copy-condition for perturbed B as the simple inner boundary */
+      OUTER_BOUNDARY_PADDING, /*!< These cells only occur on FSGrid, where boundaries are not at the highest refinement level */
       N_SYSBOUNDARY_CONDITIONS
    };
+}
+
+namespace compute {
+   const uint BX = (1 << 0); // 1
+   const uint BY = (1 << 1); // 2
+   const uint BZ = (1 << 2); // 4
+   const uint EX = (1 << 3); // 8
+   const uint EY = (1 << 4); // 16
+   const uint EZ = (1 << 5); // 32
 }
 
 /*! Steps in Runge-Kutta methods */
@@ -517,6 +488,12 @@ template<typename INT> inline INT cellIndex(const INT& i,const INT& j,const INT&
 
 const int SIZE_VELBLOCK    = WID3; /*!< Number of cells in a velocity block. */
 
+template<typename T> inline int sign(const T& value) {
+   const T ZERO = 0.0;
+   if (value < ZERO) return -1;
+   return 1;
+}
+
 /*!
  * Name space for flags needed globally, such as the bailout flag.
  */
@@ -524,6 +501,9 @@ struct globalflags {
    static int bailingOut; /*!< Global flag raised to true if a run bailout (write restart if requested/set and stop the simulation peacefully) is needed. */
    static bool writeRestart; /*!< Global flag raised to true if a restart writing is needed (without bailout). NOTE: used only by MASTER_RANK in vlasiator.cpp. */
    static bool balanceLoad; /*!< Global flag raised to true if a load balancing is needed. NOTE: used only by MASTER_RANK in vlasiator.cpp. */
+   static bool doRefine; /*!< Global flag raised to true if a re-refine is needed. NOTE: used only by MASTER_RANK in vlasiator.cpp. */
+   static int AMRstencilWidth; /*!< Global variable used for the extended AMR stencil width */
+   static bool ionosphereJustSolved; /*!< Flag used to notify that the ionosphere has been freshly solved, used to check whether the Vlasov boundary/bulk forcing need updating. */
 };
 
 /*!

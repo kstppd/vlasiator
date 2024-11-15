@@ -1,7 +1,39 @@
 #pragma once
+#include "../definitions.h"
 #include <fsgrid.hpp>
 #include <vector>
 #include <array>
+
+enum FieldsToCommunicate {
+   PERBXVOL,
+   PERBYVOL,
+   PERBZVOL,
+   dPERBXVOLdx,
+   dPERBXVOLdy,
+   dPERBXVOLdz,
+   dPERBYVOLdx,
+   dPERBYVOLdy,
+   dPERBYVOLdz,
+   dPERBZVOLdx,
+   dPERBZVOLdy,
+   dPERBZVOLdz,
+   BGBXVOL,
+   BGBYVOL,
+   BGBZVOL,
+   EXGRADPE,
+   EYGRADPE,
+   EZGRADPE,
+   EXVOL,
+   EYVOL,
+   EZVOL,
+   CURVATUREX,
+   CURVATUREY,
+   CURVATUREZ,
+   N_FIELDSTOCOMMUNICATE
+};
+
+std::vector<CellID> mapDccrgIdToFsGridGlobalID(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+					       CellID dccrgID);
 
 /*! Take input moments from DCCRG grid and put them into the Fieldsolver grid
  * \param mpiGrid The DCCRG grid carrying rho, rhoV and P
@@ -13,120 +45,55 @@
  */
 void feedMomentsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                            const std::vector<CellID>& cells,
-                           FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2>& momentsGrid,
+                           FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+                           FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
                            bool dt2=false);
 
-/*! Copy field solver result (Volume-averaged fields) and store them back into DCCRG
+/*! Copy field solver result (VOLB, VOLE, VOLPERB derivatives, gradpe) and store them back into DCCRG
  * \param mpiGrid The DCCRG grid carrying fields.
  * \param cells List of local cells
  * \param volumeFieldsGrid Fieldsolver grid for these quantities
  *
  * This function assumes that proper grid coupling has been set up.
  */
-void getVolumeFieldsFromFsGrid(FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, 2>& volumeFieldsGrid,
-                           dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-                           const std::vector<CellID>& cells);
+void getFieldsFromFsGrid(FsGrid< std::array<Real, fsgrids::volfields::N_VOL>, FS_STENCIL_WIDTH> & volumeFieldsGrid,
+			 FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+			 FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+			 FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+			 dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+			 const std::vector<CellID>& cells
+			 );
+
+/*! Copy background B fields and store them into DCCRG
+ * \param mpiGrid The DCCRG grid carrying fields.
+ * \param cells List of local cells
+ * \param BgBGrid Background field fsgrid
+ *
+ * This function assumes that proper grid coupling has been set up.
+ */
+void getBgFieldsAndDerivativesFromFsGrid(
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+   dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+   const std::vector<CellID>& cells
+);
 
 /*! Copy field derivatives from the appropriate FsGrids and store them back into DCCRG
  *
  * This should only be neccessary for debugging.
  */
-void getDerivativesFromFsGrid(FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2>& dperbGrid,
-                          FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2>& dmomentsGrid,
-                          FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2>& bgbfieldGrid,
-                          dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-                          const std::vector<CellID>& cells);
+void getDerivativesFromFsGrid(
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dperbGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dmomentsGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+   dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+   const std::vector<CellID>& cells
+);
 
-/*! Transfer data into technical grid (boundary info etc.)
- * \param mpiGrid The DCCRG grid carrying rho, rhoV and P
- * \param cells List of local cells
- * \param technicalGrid the target Fieldsolver grid for this information
- *
- * This function assumes that proper grid coupling has been set up.
- */
-void setupTechnicalFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-      const std::vector<CellID>& cells, FsGrid< fsgrids::technical, 2>& technicalGrid);
 
-/*! Transfer max timestep data from technical grid back into DCCRG.
- * \param technicalGrid the target Fieldsolver grid for this information
- * \param mpiGrid The DCCRG grid carrying rho, rhoV and P
- * \param cells List of local cells
- *
- * This function assumes that proper grid coupling has been set up.
- */
-void getFsGridMaxDt(FsGrid< fsgrids::technical, 2>& technicalGrid,
-      dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-      const std::vector<CellID>& cells);
+int getNumberOfCellsOnMaxRefLvl(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                                const std::vector<CellID>& cells);
 
-/*! Transfer background fields into the appropriate FsGrid structure
- *  This requires separate handling, since the source data is not lying
- *  continuous in memory on the DCCRG side.
- *
- * \param mpiGrid The DCCRG grid carrying fieldparam data
- * \param cells List of local cells
- * \param targetGrid Fieldsolver grid for these quantities
- *
- * This function assumes that proper grid coupling has been set up.
- */
-void feedBgFieldsIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-    const std::vector<CellID>& cells,
-    FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2>& BgBGrid);
-
-/*! Transfer field data from DCCRG cellparams into the appropriate FsGrid structure
- * \param mpiGrid The DCCRG grid carrying fieldparam data
- * \param cells List of local cells
- * \param index Index into the cellparams array from which to copy
- * \param targetGrid Fieldsolver grid for these quantities
- *
- * The cellparams with indices from index to index+numFields are copied over, and
- * have to be continuous in memory.
- *
- * This function assumes that proper grid coupling has been set up.
- */
-template< unsigned int numFields > void feedFieldDataIntoFsGrid(
-      dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-      const std::vector<CellID>& cells, int index,
-      FsGrid< std::array<Real, numFields>, 2>& targetGrid) {
-
-   targetGrid.setupForTransferIn(cells.size());
-
-   for(CellID i : cells) {
-      // TODO: This assumes that the field data are lying continuous in memory.
-      // Check definition of CellParams in common.h if unsure.
-      std::array<Real, numFields>* cellDataPointer = reinterpret_cast<std::array<Real, numFields>*>(
-            &(mpiGrid[i]->get_cell_parameters()[index]));
-      targetGrid.transferDataIn(i - 1, cellDataPointer);
-   }
-
-   targetGrid.finishTransfersIn();
-}
-
-/*! Transfer field data from an FsGrid back into the appropriate CellParams slot in DCCRG 
- * \param sourceGrid Fieldsolver grid for these quantities
- * \param mpiGrid The DCCRG grid carrying fieldparam data
- * \param cells List of local cells
- * \param index Index into the cellparams array into which to copy
- *
- * The cellparams with indices from index to index+numFields are copied over, and
- * have to be continuous in memory.
- *
- * This function assumes that proper grid coupling has been set up.
- */
-template< unsigned int numFields > void getFieldDataFromFsGrid(
-      FsGrid< std::array<Real, numFields>, 2>& sourceGrid,
-      dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
-      const std::vector<CellID>& cells, int index) {
-
-   sourceGrid.setupForTransferOut(cells.size());
-
-   for(CellID i : cells) {
-      // TODO: This assumes that the field data are lying continuous in memory.
-      // Check definition of CellParams in common.h if unsure.
-      std::array<Real, numFields>* cellDataPointer = reinterpret_cast<std::array<Real, numFields>*>(
-            &(mpiGrid[i]->get_cell_parameters()[index]));
-      sourceGrid.transferDataOut(i - 1, cellDataPointer);
-   }
-
-   sourceGrid.finishTransfersOut();
-}
-
+void feedBoundaryIntoFsGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+			const std::vector<CellID>& cells,
+			FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid);

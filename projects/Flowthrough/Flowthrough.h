@@ -33,10 +33,9 @@ namespace projects {
 
    struct FlowthroughSpeciesParameters {
       Real rho;
+      Real rhoBase;
       Real T;
       Real V0[3];
-      uint nSpaceSamples;
-      uint nVelocitySamples;
    };
 
    class Flowthrough: public TriAxisSearch {
@@ -47,9 +46,18 @@ namespace projects {
       virtual bool initialize(void);
       static void addParameters(void);
       virtual void getParameters(void);
-      void setCellBackgroundField(spatial_cell::SpatialCell* cell) const;
+      virtual void setProjectBField(
+         FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+         FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+         FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      );
 
     protected:
+      bool rescalesDensity(const uint popID) const {
+         return this->rescaleDensityFlag;
+      };
+      Real getCorrectNumberDensity(spatial_cell::SpatialCell* cell,const uint popID) const;
+
       Real getDistribValue(
                            creal& x,creal& y, creal& z,
                            creal& vx, creal& vy, creal& vz,
@@ -73,6 +81,8 @@ namespace projects {
       bool emptyBox;               /**< If true, then the simulation domain is empty initially 
                                     * and matter will flow in only through the boundaries.*/
 
+      Real densityWidth;
+      bool rescaleDensityFlag;
       Real Bx;
       Real By;
       Real Bz;

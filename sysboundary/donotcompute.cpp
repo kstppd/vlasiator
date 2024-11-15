@@ -39,38 +39,33 @@ namespace SBC {
    void DoNotCompute::addParameters() { }
    void DoNotCompute::getParameters() { }
    
-   bool DoNotCompute::initSysBoundary(
+   void DoNotCompute::initSysBoundary(
       creal& t,
       Project &project
    ) {
       precedence = 0;
-      isThisDynamic = false;
-      return true;
+      dynamic = false;
    }
    
-   bool DoNotCompute::assignSysBoundary(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& ) {
-      return true;
+   void DoNotCompute::assignSysBoundary(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&,
+                                        FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid) {
+      // Does nothing.
    }
    
-   bool DoNotCompute::applyInitialState(
-      const dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+   void DoNotCompute::applyInitialState(
+      dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+      FsGrid< array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid<std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH>& BgBGrid,
       Project&
    ) {
-      vector<CellID> cells = mpiGrid.get_cells();
+     const vector<CellID>& cells = getLocalCells();
 #pragma omp parallel for
       for (size_t i=0; i<cells.size(); ++i) {
          SpatialCell* cell = mpiGrid[cells[i]];
          if(cell->sysBoundaryFlag != this->getIndex()) continue;
-         
-         cell->parameters[CellParams::PERBX] = 0.0;
-         cell->parameters[CellParams::PERBY] = 0.0;
-         cell->parameters[CellParams::PERBZ] = 0.0;
-         cell->parameters[CellParams::PERBX_DT2] = 0.0;
-         cell->parameters[CellParams::PERBY_DT2] = 0.0;
-         cell->parameters[CellParams::PERBZ_DT2] = 0.0;
-         cell->parameters[CellParams::EX] = 0.0;
-         cell->parameters[CellParams::EY] = 0.0;
-         cell->parameters[CellParams::EZ] = 0.0;
+
+         //TODO: Set fields on B grid to 0         
          cell->parameters[CellParams::RHOM] = 0.0;
          cell->parameters[CellParams::VX] = 0.0;
          cell->parameters[CellParams::VY] = 0.0;
@@ -81,17 +76,17 @@ namespace SBC {
          cell->parameters[CellParams::VY_DT2] = 0.0;
          cell->parameters[CellParams::VZ_DT2] = 0.0;
          cell->parameters[CellParams::RHOQ_DT2] = 0.0;
-         
-         //let's get rid of blocks not fulfilling the criteria here to save
-         //memory.
-         for (uint popID=0; popID<getObjectWrapper().particleSpecies.size(); ++popID)
-            cell->adjustSingleCellVelocityBlocks(popID);
       }
-      
-      return true;
    }
    
-   std::string DoNotCompute::getName() const {return "DoNotCompute";}
+   void DoNotCompute::updateState(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry> &mpiGrid,
+                                  FsGrid<std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> &perBGrid,
+                                  FsGrid<std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH>& BgBGrid,
+                                  creal t) {}
+
+   void DoNotCompute::getFaces(bool *faces) {}
+
+   string DoNotCompute::getName() const {return "DoNotCompute";}
    
    uint DoNotCompute::getIndex() const {return sysboundarytype::DO_NOT_COMPUTE;}
 }

@@ -21,7 +21,7 @@
  */
 
 /*!\file setmaxwellian.cpp
- * \brief Implementation of the class SysBoundaryCondition::SetMaxwellian to handle cells classified as sysboundarytype::MAXWELLIAN.
+ * \brief Implementation of the class SysBoundaryCondition::Maxwellian to handle cells classified as sysboundarytype::MAXWELLIAN.
  */
 
 #include <cstdlib>
@@ -32,46 +32,61 @@
 #include "../object_wrapper.h"
 
 namespace SBC {
-   SetMaxwellian::SetMaxwellian(): SetByUser() {
-   }
-   SetMaxwellian::~SetMaxwellian() { }
-   
-   void SetMaxwellian::addParameters() {
-      Readparameters::addComposing("maxwellian.face", "List of faces on which set Maxwellian boundary conditions are to be applied ([xyz][+-]).");
-      Readparameters::add("maxwellian.precedence", "Precedence value of the set Maxwellian system boundary condition (integer), the higher the stronger.", 3);
-      Readparameters::add("maxwellian.reapplyUponRestart", "If 0 (default), keep going with the state existing in the restart file. If 1, calls again applyInitialState. Can be used to change boundary condition behaviour during a run.", 0);
+   Maxwellian::Maxwellian() : Inflow() {}
+   Maxwellian::~Maxwellian() {}
 
+   void Maxwellian::addParameters() {
+      Readparameters::addComposing(
+          "maxwellian.face", "List of faces on which set Maxwellian boundary conditions are to be applied ([xyz][+-]).");
+      Readparameters::add("maxwellian.precedence",
+                          "Precedence value of the set Maxwellian boundary condition (integer), the higher the stronger.",
+                          3);
+      Readparameters::add("maxwellian.reapplyUponRestart",
+                          "If 0 (default), keep going with the state existing in the restart file. If 1, calls again "
+                          "applyInitialState. Can be used to change boundary condition behaviour during a run.",
+                          0);
+      Readparameters::add("maxwellian.t_interval", "Time interval in seconds for applying the varying inflow condition.",
+                          0.0); // 0 = re-calculate every time
       // Per-population parameters
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
-        const std::string& pop = getObjectWrapper().particleSpecies[i].name;
+         const std::string& pop = getObjectWrapper().particleSpecies[i].name;
 
-        Readparameters::add(pop + "_maxwellian.file_x+", "Input files for the set Maxwellian inflow parameters on face x+. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.file_x-", "Input files for the set Maxwellian inflow parameters on face x-. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.file_y+", "Input files for the set Maxwellian inflow parameters on face y+. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.file_y-", "Input files for the set Maxwellian inflow parameters on face y-. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.file_z+", "Input files for the set Maxwellian inflow parameters on face z+. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.file_z-", "Input files for the set Maxwellian inflow parameters on face z-. Data format per line: time (s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).", "");
-        Readparameters::add(pop + "_maxwellian.nVelocitySamples", "Number of sampling points per velocity dimension (template cells)", 5);
-        Readparameters::add(pop + "_maxwellian.dynamic", "Boolean value, is the set Maxwellian inflow dynamic in time or not.", 0);
+         Readparameters::add(pop + "_maxwellian.file_x+",
+                             "Input files for the set Maxwellian inflow parameters on face x+. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.file_x-",
+                             "Input files for the set Maxwellian inflow parameters on face x-. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.file_y+",
+                             "Input files for the set Maxwellian inflow parameters on face y+. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.file_y-",
+                             "Input files for the set Maxwellian inflow parameters on face y-. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.file_z+",
+                             "Input files for the set Maxwellian inflow parameters on face z+. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.file_z-",
+                             "Input files for the set Maxwellian inflow parameters on face z-. Data format per line: time "
+                             "(s) density (p/m^3) Temperature (K) Vx Vy Vz (m/s) Bx By Bz (T).",
+                             "");
+         Readparameters::add(pop + "_maxwellian.dynamic",
+                             "Boolean value, is the set Maxwellian inflow dynamic in time or not.", 0);
       }
    }
-   
-   void SetMaxwellian::getParameters() {
-      int myRank;
-      MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
-      if(!Readparameters::get("maxwellian.face", faceList)) {
-         if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-         exit(1);
-      }
-      if(!Readparameters::get("maxwellian.precedence", precedence)) {
-         if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-         exit(1);
-      }
+
+   void Maxwellian::getParameters() {
+      Readparameters::get("maxwellian.face", faceList);
+      Readparameters::get("maxwellian.precedence", precedence);
+      
       uint reapply;
-      if(!Readparameters::get("maxwellian.reapplyUponRestart",reapply)) {
-         if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added!" << endl;
-         exit(1);
-      };
+      Readparameters::get("maxwellian.reapplyUponRestart", reapply);
+      Readparameters::get("maxwellian.t_interval", tInterval);
       this->applyUponRestart = false;
       if(reapply == 1) {
          this->applyUponRestart = true;
@@ -81,47 +96,22 @@ namespace SBC {
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
          const std::string& pop = getObjectWrapper().particleSpecies[i].name;
 
-         UserSpeciesParameters sP;
+         InflowSpeciesParameters sP;
          sP.nParams = 9;
 
-         if(!Readparameters::get(pop + "_maxwellian.dynamic", isThisDynamic)) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_x+", sP.files[0])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_x-", sP.files[1])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_y+", sP.files[2])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_y-", sP.files[3])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_z+", sP.files[4])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.file_z-", sP.files[5])) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
-         if(!Readparameters::get(pop + "_maxwellian.nVelocitySamples", sP.nVelocitySamples)) {
-            if(myRank == MASTER_RANK) cerr << __FILE__ << ":" << __LINE__ << " ERROR: This option has not been added for population " << pop << "!" << endl;
-            exit(1);
-         }
+         Readparameters::get(pop + "_maxwellian.dynamic", dynamic);
+         Readparameters::get(pop + "_maxwellian.file_x+", sP.files[0]);
+         Readparameters::get(pop + "_maxwellian.file_x-", sP.files[1]);
+         Readparameters::get(pop + "_maxwellian.file_y+", sP.files[2]);
+         Readparameters::get(pop + "_maxwellian.file_y-", sP.files[3]);
+         Readparameters::get(pop + "_maxwellian.file_z+", sP.files[4]);
+         Readparameters::get(pop + "_maxwellian.file_z-", sP.files[5]);
 
          speciesParams.push_back(sP);
       }
    }
    
-   Real SetMaxwellian::maxwellianDistribution(
+   Real Maxwellian::maxwellianDistribution(
             const uint popID,
             creal& rho,
             creal& T,
@@ -134,7 +124,14 @@ namespace SBC {
       (2.0 * physicalconstants::K_B * T));
    }
    
-   std::vector<vmesh::GlobalID> SetMaxwellian::findBlocksToInitialize(
+   /*  Here the while loop iterates  from the centre of the maxwellian in blocksize (4*dvx) increments, 
+   *  and looks at the centre of the first velocity cell in the block (+0.5dvx), checking if the 
+   *  phase-space density there is large enough to be included due to sparsity threshold. 
+   *  That results in a "blocks radius"  vRadiusSquared from the centre of the maxwellianDistribution.
+   *  Then we iterate through the actual blocks and calculate their radius R2 based on their velocity coordinates
+   *  and the plasma bulk velocity. Blocks that fullfil R2<vRadiusSquared are included to blocksToInitialize.
+   */
+   std::vector<vmesh::GlobalID> Maxwellian::findBlocksToInitialize(
       const uint popID,
       spatial_cell::SpatialCell& cell,
       creal& rho,
@@ -149,18 +146,11 @@ namespace SBC {
       
       const vmesh::LocalID* vblocks_ini = cell.get_velocity_grid_length(popID,refLevel);
 
+      const Real dvx=cell.get_velocity_grid_cell_size(popID,refLevel)[0];
+      const Real dvy=cell.get_velocity_grid_cell_size(popID,refLevel)[1];
+      const Real dvz=cell.get_velocity_grid_cell_size(popID,refLevel)[2];
       while (search) {
-         #warning TODO: add SpatialCell::getVelocityBlockMinValue() in place of sparseMinValue?
-         if (0.1 * getObjectWrapper().particleSpecies[popID].sparseMinValue > 
-             maxwellianDistribution(
-                                    popID,
-                                    rho,
-                                    T,
-                                    counter*cell.get_velocity_grid_block_size(popID,refLevel)[0], 0.0, 0.0
-                                   )
-             ||
-             counter > vblocks_ini[0]
-            ) {
+         if (0.1 * cell.getVelocityBlockMinValue(popID) > maxwellianDistribution(popID, rho, T, counter*cell.get_velocity_grid_block_size(popID,refLevel)[0] +0.5*dvx , 0.5*dvy, 0.5*dvz) || counter > vblocks_ini[0]) {
             search = false;
          }
          counter++;
@@ -205,27 +195,17 @@ namespace SBC {
     * This function generates a spatial cell which is to be used as a template for the
     * system boundary condition.
     * \param templateCell Address of the template cell to be generated.
+    * \param B Address of the magnetic field to be used as template.
     * \param inputDataIndex Index used for the location of the input data.
     * \param t Current simulation time.
     */
-   void SetMaxwellian::generateTemplateCell(
-      spatial_cell::SpatialCell& templateCell,
-      int inputDataIndex,
-      creal& t
-   ) {
-      Real rho, T, Vx, Vy, Vz, Bx=0.0, By=0.0, Bz=0.0, buffer[8];
-      
-      
+   void Maxwellian::generateTemplateCell(spatial_cell::SpatialCell& templateCell, Real (&B)[3], int inputDataIndex,
+                                         creal t) {
+      Real rho, T, Vx, Vy, Vz, Bx = 0, By = 0, Bz = 0, buffer[8];
+
       templateCell.sysBoundaryFlag = this->getIndex();
       templateCell.sysBoundaryLayer = 1;
-      
-      templateCell.parameters[CellParams::XCRD] = 0.0;
-      templateCell.parameters[CellParams::YCRD] = 0.0;
-      templateCell.parameters[CellParams::ZCRD] = 0.0;
-      templateCell.parameters[CellParams::DX] = 1;
-      templateCell.parameters[CellParams::DY] = 1;
-      templateCell.parameters[CellParams::DZ] = 1;
-      
+
       // Init all particle species
       for (uint popID=0; popID<getObjectWrapper().particleSpecies.size(); ++popID) {
          interpolate(inputDataIndex, popID, t, &buffer[0]);
@@ -252,12 +232,12 @@ namespace SBC {
             creal dvyCell = block_parameters[BlockParams::DVY];
             creal dvzCell = block_parameters[BlockParams::DVZ];
          
-            creal x = templateCell.parameters[CellParams::XCRD];
-            creal y = templateCell.parameters[CellParams::YCRD];
-            creal z = templateCell.parameters[CellParams::ZCRD];
-            creal dx = templateCell.parameters[CellParams::DX];
-            creal dy = templateCell.parameters[CellParams::DY];
-            creal dz = templateCell.parameters[CellParams::DZ];
+            //creal x = templateCell.parameters[CellParams::XCRD];
+            //creal y = templateCell.parameters[CellParams::YCRD];
+            //creal z = templateCell.parameters[CellParams::ZCRD];
+            //creal dx = templateCell.parameters[CellParams::DX];
+            //creal dy = templateCell.parameters[CellParams::DY];
+            //creal dz = templateCell.parameters[CellParams::DZ];
          
             // Calculate volume average of distrib. function for each cell in the block.
             for (uint kc=0; kc<WID; ++kc) for (uint jc=0; jc<WID; ++jc) for (uint ic=0; ic<WID; ++ic) {
@@ -265,68 +245,48 @@ namespace SBC {
                creal vyCell = vyBlock + jc*dvyCell;
                creal vzCell = vzBlock + kc*dvzCell;
                Real average = 0.0;
-               if(speciesParams[popID].nVelocitySamples > 1) {
-                  creal d_vx = dvxCell / (speciesParams[popID].nVelocitySamples-1);
-                  creal d_vy = dvyCell / (speciesParams[popID].nVelocitySamples-1);
-                  creal d_vz = dvzCell / (speciesParams[popID].nVelocitySamples-1);
-                  for (uint vi=0; vi<speciesParams[popID].nVelocitySamples; ++vi)
-                    for (uint vj=0; vj<speciesParams[popID].nVelocitySamples; ++vj)
-                      for (uint vk=0; vk<speciesParams[popID].nVelocitySamples; ++vk) {
-                         average +=  maxwellianDistribution(
-                                                            popID,
-                                                            rho,
-                                                            T,
-                                                            vxCell + vi*d_vx - Vx,
-                                                            vyCell + vj*d_vy - Vy,
-                                                            vzCell + vk*d_vz - Vz
-                                                           );
-                      }
-                  average /= speciesParams[popID].nVelocitySamples * speciesParams[popID].nVelocitySamples * speciesParams[popID].nVelocitySamples;
-               } else {
-                  average =   maxwellianDistribution(
-                                                     popID,
-                                                     rho,
-                                                     T,
-                                                     vxCell + 0.5*dvxCell,
-                                                     vyCell + 0.5*dvyCell,
-                                                     vzCell + 0.5*dvzCell
-                                                    );
-               }
-               
-               if (average != 0.0) {
+               average =   maxwellianDistribution(
+                  popID,
+                  rho,
+                  T,
+                  vxCell + 0.5*dvxCell - Vx,
+                  vyCell + 0.5*dvyCell - Vy,
+                  vzCell + 0.5*dvzCell - Vz
+                  );
                   data[blockLID*WID3+cellIndex(ic,jc,kc)] = average;
-               } 
             } // for-loop over cells in velocity block
          } // for-loop over velocity blocks
          
          //let's get rid of blocks not fulfilling the criteria here to save
          //memory.
-         templateCell.adjustSingleCellVelocityBlocks(popID);
+         templateCell.adjustSingleCellVelocityBlocks(popID,true);
       } // for-loop over particle species
       
-      templateCell.parameters[CellParams::PERBX] = Bx;
-      templateCell.parameters[CellParams::PERBY] = By;
-      templateCell.parameters[CellParams::PERBZ] = Bz;
+      B[0] = Bx;
+      B[1] = By;
+      B[2] = Bz;
       
-      calculateCellMoments(&templateCell,true,true);
+      calculateCellMoments(&templateCell,true,false,true);
       
-      if(!this->isThisDynamic) {
-         // WARNING Time-independence assumed here.
-         templateCell.parameters[CellParams::RHOM_DT2] = templateCell.parameters[CellParams::RHOM];
-         templateCell.parameters[CellParams::VX_DT2] = templateCell.parameters[CellParams::VX];
-         templateCell.parameters[CellParams::VY_DT2] = templateCell.parameters[CellParams::VY];
-         templateCell.parameters[CellParams::VZ_DT2] = templateCell.parameters[CellParams::VZ];
-         templateCell.parameters[CellParams::RHOQ_DT2] = templateCell.parameters[CellParams::RHOQ];
-         templateCell.parameters[CellParams::PERBX_DT2] = templateCell.parameters[CellParams::PERBX];
-         templateCell.parameters[CellParams::PERBY_DT2] = templateCell.parameters[CellParams::PERBY];
-         templateCell.parameters[CellParams::PERBZ_DT2] = templateCell.parameters[CellParams::PERBZ];
-      } else {
-         cerr << "ERROR: this is not dynamic in time, please code it!" << endl;
-         abort();
-      }
+      templateCell.parameters[CellParams::RHOM_R] = templateCell.parameters[CellParams::RHOM];
+      templateCell.parameters[CellParams::VX_R] = templateCell.parameters[CellParams::VX];
+      templateCell.parameters[CellParams::VY_R] = templateCell.parameters[CellParams::VY];
+      templateCell.parameters[CellParams::VZ_R] = templateCell.parameters[CellParams::VZ];
+      templateCell.parameters[CellParams::RHOQ_R] = templateCell.parameters[CellParams::RHOQ];
+      templateCell.parameters[CellParams::P_11_R] = templateCell.parameters[CellParams::P_11];
+      templateCell.parameters[CellParams::P_22_R] = templateCell.parameters[CellParams::P_22];
+      templateCell.parameters[CellParams::P_33_R] = templateCell.parameters[CellParams::P_33];
+      templateCell.parameters[CellParams::RHOM_V] = templateCell.parameters[CellParams::RHOM];
+      templateCell.parameters[CellParams::VX_V] = templateCell.parameters[CellParams::VX];
+      templateCell.parameters[CellParams::VY_V] = templateCell.parameters[CellParams::VY];
+      templateCell.parameters[CellParams::VZ_V] = templateCell.parameters[CellParams::VZ];
+      templateCell.parameters[CellParams::RHOQ_V] = templateCell.parameters[CellParams::RHOQ];
+      templateCell.parameters[CellParams::P_11_V] = templateCell.parameters[CellParams::P_11];
+      templateCell.parameters[CellParams::P_22_V] = templateCell.parameters[CellParams::P_22];
+      templateCell.parameters[CellParams::P_33_V] = templateCell.parameters[CellParams::P_33];
    }
-   
-   string SetMaxwellian::getName() const {return "SetMaxwellian";}
-   uint SetMaxwellian::getIndex() const {return sysboundarytype::SET_MAXWELLIAN;}
-   
+
+   std::string Maxwellian::getName() const { return "Maxwellian"; }
+   uint Maxwellian::getIndex() const { return sysboundarytype::MAXWELLIAN; }
+
 } // namespace SBC

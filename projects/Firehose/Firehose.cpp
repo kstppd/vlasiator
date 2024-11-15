@@ -27,6 +27,7 @@
 #include "../../common.h"
 #include "../../readparameters.h"
 #include "../../backgroundfield/backgroundfield.h"
+#include "../../backgroundfield/constantfield.hpp"
 #include "../../object_wrapper.h"
 
 #include "Firehose.h"
@@ -65,8 +66,6 @@ namespace projects {
          RP::add(pop + "_Firehose.Vy2", "Bulk velocity y component, second peak (m/s)", 0.0);
          RP::add(pop + "_Firehose.Vz1", "Bulk velocity z component, first peak (m/s)", 0.0);
          RP::add(pop + "_Firehose.Vz2", "Bulk velocity z component, second peak (m/s)", 0.0);
-         RP::add(pop + "_Firehose.nSpaceSamples", "Number of sampling points per spatial dimension", 2);
-         RP::add(pop + "_Firehose.nVelocitySamples", "Number of sampling points per velocity dimension", 5);
       }
    }
 
@@ -83,22 +82,20 @@ namespace projects {
       for(uint i=0; i< getObjectWrapper().particleSpecies.size(); i++) {
          const std::string& pop = getObjectWrapper().particleSpecies[i].name;
          FirehoseSpeciesParameters sP;
-         RP::get(pop + "_Firehose.rho1", sP.rho[1]);
-         RP::get(pop + "_Firehose.rho2", sP.rho[2]);
-         RP::get(pop + "_Firehose.Tx1", sP.Tx[1]);
-         RP::get(pop + "_Firehose.Tx2", sP.Tx[2]);
-         RP::get(pop + "_Firehose.Ty1", sP.Ty[1]);
-         RP::get(pop + "_Firehose.Ty2", sP.Ty[2]);
-         RP::get(pop + "_Firehose.Tz1", sP.Tz[1]);
-         RP::get(pop + "_Firehose.Tz2", sP.Tz[2]);
-         RP::get(pop + "_Firehose.Vx1", sP.Vx[1]);
-         RP::get(pop + "_Firehose.Vx2", sP.Vx[2]);
-         RP::get(pop + "_Firehose.Vy1", sP.Vy[1]);
-         RP::get(pop + "_Firehose.Vy2", sP.Vy[2]);
-         RP::get(pop + "_Firehose.Vz1", sP.Vz[1]);
-         RP::get(pop + "_Firehose.Vz2", sP.Vz[2]);
-         RP::get(pop + "_Firehose.nSpaceSamples", sP.nSpaceSamples);
-         RP::get(pop + "_Firehose.nVelocitySamples", sP.nVelocitySamples);
+         RP::get(pop + "_Firehose.rho1", sP.rho[0]);
+         RP::get(pop + "_Firehose.rho2", sP.rho[1]);
+         RP::get(pop + "_Firehose.Tx1", sP.Tx[0]);
+         RP::get(pop + "_Firehose.Tx2", sP.Tx[1]);
+         RP::get(pop + "_Firehose.Ty1", sP.Ty[0]);
+         RP::get(pop + "_Firehose.Ty2", sP.Ty[1]);
+         RP::get(pop + "_Firehose.Tz1", sP.Tz[0]);
+         RP::get(pop + "_Firehose.Tz2", sP.Tz[1]);
+         RP::get(pop + "_Firehose.Vx1", sP.Vx[0]);
+         RP::get(pop + "_Firehose.Vx2", sP.Vx[1]);
+         RP::get(pop + "_Firehose.Vy1", sP.Vy[0]);
+         RP::get(pop + "_Firehose.Vy2", sP.Vy[1]);
+         RP::get(pop + "_Firehose.Vz1", sP.Vz[0]);
+         RP::get(pop + "_Firehose.Vz2", sP.Vz[1]);
 
          speciesParams.push_back(sP);
       }
@@ -117,13 +114,13 @@ namespace projects {
       creal mass = getObjectWrapper().particleSpecies[popID].mass;
       creal kb = physicalconstants::K_B;
       
-      Real Vx = profile(sP.Vx[1],sP.Vx[1], x);
+      Real Vx = profile(sP.Vx[0],sP.Vx[1], x);
       
       return
-      sP.rho[1] * pow(mass / (2.0 * M_PI * kb * sP.Tx[1]), 1.5) *
-      exp(- mass * (pow(vx - Vx, 2.0) / (2.0 * kb * sP.Tx[1]) +
-                  pow(vy - sP.Vy[1], 2.0) / (2.0 * kb * sP.Ty[1]) +
-               pow(vz - sP.Vz[1], 2.0) / (2.0 * kb * sP.Tz[1])));
+      sP.rho[0] * pow(mass / (2.0 * M_PI * kb * sP.Tx[0]), 1.5) *
+      exp(- mass * (pow(vx - Vx, 2.0) / (2.0 * kb * sP.Tx[0]) +
+                  pow(vy - sP.Vy[0], 2.0) / (2.0 * kb * sP.Ty[0]) +
+               pow(vz - sP.Vz[0], 2.0) / (2.0 * kb * sP.Tz[0])));
    //   this->rho[2] * pow(mass / (2.0 * M_PI * kb * this->Tx[2]), 1.5) *
    //   exp(- mass * (pow(vx - this->Vx[2], 2.0) / (2.0 * kb * this->Tx[2]) + 
    //                 pow(vy - this->Vy[2], 2.0) / (2.0 * kb * this->Ty[2]) + 
@@ -131,29 +128,22 @@ namespace projects {
    }
 
    Real Firehose::calcPhaseSpaceDensity(creal& x, creal& y, creal& z, creal& dx, creal& dy, creal& dz, creal& vx, creal& vy, creal& vz, creal& dvx, creal& dvy, creal& dvz,const uint popID) const {
-      const FirehoseSpeciesParameters& sP = speciesParams[popID];
-      creal d_x = dx / (sP.nSpaceSamples-1);
-      creal d_y = dy / (sP.nSpaceSamples-1);
-      creal d_vx = dvx / (sP.nVelocitySamples-1);
-      creal d_vy = dvy / (sP.nVelocitySamples-1);
-      creal d_vz = dvz / (sP.nVelocitySamples-1);
-      Real avg = 0.0;
-   //#pragma omp parallel for collapse(6) reduction(+:avg)
-      for (uint i=0; i<sP.nSpaceSamples; ++i)
-      for (uint j=0; j<sP.nSpaceSamples; ++j)
-         for (uint vi=0; vi<sP.nVelocitySamples; ++vi)
-         for (uint vj=0; vj<sP.nVelocitySamples; ++vj)
-            for (uint vk=0; vk<sP.nVelocitySamples; ++vk)
-         {
-            avg += getDistribValue(x+i*d_x, y+j*d_y, vx+vi*d_vx, vy+vj*d_vy, vz+vk*d_vz, dvx, dvy, dvz, popID);
-         }
-      return avg / pow(sP.nSpaceSamples, 2.0) /  pow(sP.nVelocitySamples, 3.0);
+      return getDistribValue(x+0.5*dx, y+0.5*dy, vx+0.5*dvx, vy+0.5*dvy, vz+0.5*dvz, dvx, dvy, dvz, popID);
    }
 
-   void Firehose::calcCellParameters(spatial_cell::SpatialCell* cell,creal& t) {
-      Real* cellParams = cell->get_cell_parameters();
-      cellParams[CellParams::PERBX   ] = this->Bx;
-      cellParams[CellParams::PERBY   ] = this->By;
-      cellParams[CellParams::PERBZ   ] = this->Bz;
+   void Firehose::calcCellParameters(spatial_cell::SpatialCell* cell,creal& t) { }
+   
+   void Firehose::setProjectBField(
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+   ) {
+      ConstantField bgField;
+      bgField.initialize(this->Bx,
+                         this->By,
+                         this->Bz);
+      
+      setBackgroundField(bgField, BgBGrid);
    }
+   
 } // namespace projects

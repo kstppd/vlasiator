@@ -25,6 +25,7 @@
 
 #include "../../definitions.h"
 #include "../projectTriAxisSearch.h"
+#include "../../sysboundary/sysboundary.h"
 
 namespace projects {
 
@@ -34,9 +35,9 @@ namespace projects {
       Real V0[3];
       Real ionosphereV0[3];
       Real ionosphereRho;
-      Real ionosphereTaperRadius;
-      uint nSpaceSamples;
-      uint nVelocitySamples;
+      Real ionosphereT;
+      Real taperInnerRadius;
+      Real taperOuterRadius;
    };
 
    class Magnetosphere: public TriAxisSearch {
@@ -47,7 +48,11 @@ namespace projects {
       virtual bool initialize(void);
       static void addParameters(void);
       virtual void getParameters(void);
-      virtual void setCellBackgroundField(spatial_cell::SpatialCell* cell) const;
+      virtual void setProjectBField(
+         FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+         FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+         FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      );
       virtual Real calcPhaseSpaceDensity(
                                          creal& x, creal& y, creal& z,
                                          creal& dx, creal& dy, creal& dz,
@@ -63,6 +68,8 @@ namespace projects {
                            creal& dvx, creal& dvy, creal& dvz,
                            const uint popID
                           ) const;
+      bool refineSpatialCells( dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid ) const;
+      bool forceRefinement( dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid, int n ) const;
       virtual void calcCellParameters(spatial_cell::SpatialCell* cell,creal& t);
       virtual std::vector<std::array<Real, 3> > getV0(
                                                       creal x,
@@ -71,7 +78,7 @@ namespace projects {
                                                       const uint popID
                                                      ) const;
       
-      Real constBgB[3];
+      std::array<Real, 3> constBgB;
       bool noDipoleInSW;
       Real ionosphereRadius;
       uint ionosphereGeometry;
@@ -79,6 +86,29 @@ namespace projects {
       Real dipoleScalingFactor;
       Real dipoleMirrorLocationX;
       uint dipoleType;
+
+      Real refine_L4radius;
+      Real refine_L4nosexmin;
+
+      Real refine_L3radius;
+      Real refine_L3nosexmin;
+      Real refine_L3tailheight;
+      Real refine_L3tailwidth;
+      Real refine_L3tailxmin;
+      Real refine_L3tailxmax;
+
+      Real refine_L2radius;
+      Real refine_L2tailthick;
+      Real refine_L1radius;
+      Real refine_L1tailthick;
+
+      Real dipoleTiltPhi;
+      Real dipoleTiltTheta;
+      Real dipoleXFull;
+      Real dipoleXZero;
+      Real dipoleInflowB[3];
+      Real zeroOutComponents[3]; //0->x,1->y,2->z
+
       std::vector<MagnetosphereSpeciesParameters> speciesParams;
    }; // class Magnetosphere
 } // namespace projects

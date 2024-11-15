@@ -49,8 +49,6 @@ namespace projects {
       int Vzdsign;
 
       Real maxwCutoff;
-      uint nSpaceSamples;
-      uint nVelocitySamples;
    };
 
    class IPShock: public TriAxisSearch {
@@ -62,7 +60,11 @@ namespace projects {
          static void addParameters(void);
          virtual void getParameters(void);
 
-         virtual void setCellBackgroundField(spatial_cell::SpatialCell* cell) const;
+         virtual void setProjectBField(
+            FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+            FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+         );
          virtual Real calcPhaseSpaceDensity(
                creal& x, creal& y, creal& z,
                creal& dx, creal& dy, creal& dz,
@@ -83,6 +85,7 @@ namespace projects {
          virtual std::vector<std::array<Real, 3>> getV0(creal x, creal y, creal z, const uint popID) const;
          //virtual void calcCellParameters(Real* cellParams,creal& t);
          virtual void calcCellParameters(spatial_cell::SpatialCell* cell, creal& t);
+	 bool refineSpatialCells( dccrg::Dccrg<spatial_cell::SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid ) const;
          // Interpolate between up- and downstream quantities
          // based on position
          Real interpolate(Real u, Real d, Real x) const;
@@ -103,6 +106,10 @@ namespace projects {
          int Bzdsign;
 
          Real Shockwidth;
+	 Real AMR_L1width;
+	 Real AMR_L2width;
+	 Real AMR_L3width;
+	 Real AMR_L4width;
 
          std::vector<IPShockSpeciesParameters> speciesParams;
 

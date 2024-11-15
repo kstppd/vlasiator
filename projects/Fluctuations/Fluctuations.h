@@ -36,8 +36,6 @@ namespace projects {
       Real densityPertRelAmp;
       Real velocityPertAbsAmp;
       Real maxwCutoff;
-      uint nSpaceSamples;
-      uint nVelocitySamples;
    };
 
    class Fluctuations: public TriAxisSearch {
@@ -48,7 +46,11 @@ namespace projects {
       virtual bool initialize(void);
       static void addParameters(void);
       virtual void getParameters(void);
-      virtual void setCellBackgroundField(spatial_cell::SpatialCell* cell) const;
+      virtual void setProjectBField(
+         FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+         FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+         FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      );
       virtual std::vector<std::array<Real, 3> > getV0(
          creal x,
          creal y,
