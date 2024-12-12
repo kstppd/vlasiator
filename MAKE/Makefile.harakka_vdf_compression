@@ -93,8 +93,8 @@ INC_VECTORCLASS = -I ./submodules/vectorclass/ -I ./submodules/vectorclass-addon
 
 # octree compression library
 
-INC_OCTREE_COMPRESSOR = -I./vdf_compression/octree
-LIB_OCTREE_COMPRESSOR=-L./vdf_compression/octree/build -loctree_compressor
+INC_OCTREE_COMPRESSOR = -I./vdf_compression/include
+LIB_OCTREE_COMPRESSOR=-L./vdf_compression/lib -loctree_compressor
 
 INC_ZFP = -I${HOME}/opt/zfp/1.0.1/include/
 LIB_ZFP = -L${HOME}/opt/zfp/1.0.1/lib

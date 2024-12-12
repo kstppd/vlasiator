@@ -28,6 +28,7 @@
 #include "../parameters.h"
 #include "../readparameters.h"
 #include "../spatial_cell_wrapper.hpp"
+#include "include/octree_compressor.h"
 #include <cstdint>
 
 // External API for Vlasiator

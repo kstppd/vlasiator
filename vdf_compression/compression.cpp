@@ -73,8 +73,13 @@ std::size_t probe_network_size_2(std::array<Real, 3>* vcoords, Realf* vspace, st
                                  std::size_t max_epochs, std::size_t fourier_order, size_t* hidden_layers,
                                  size_t n_hidden_layers, Real sparsity, Real tol);
 
-void compress_with_octree_method(Realf* buffer, const size_t Nx, const size_t Ny, const size_t Nz, float oct_tolerance,
-                                 float& compression_ratio);
+// TODO: this should be in its own header
+/* void compress_with_octree_method(Realf* buffer, const size_t Nx, const size_t Ny, const size_t Nz, float oct_tolerance, */
+/*                                  uint8_t** bytes, uint64_t* n_bytes); */
+
+/* void uncompress_with_octree_method(Realf* buffer, const size_t Nx, const size_t Ny, const size_t Nz, */
+/*                                    uint8_t* serialized_buffer, uint64_t serialized_buffer_size, bool clear_buffer); */
+
 }
 
 auto compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
@@ -360,38 +365,43 @@ void compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& 
                           size_t number_of_spatial_cells) {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   float local_compression_achieved = 0.0;
-   float global_compression_achieved = 0.0;
+   int total_bytes = 0;
+   int global_total_bytes = 0;
    for (uint popID = 0; popID < getObjectWrapper().particleSpecies.size(); ++popID) {
-      // Vlasiator boilerplate
-      const auto& local_cells = getLocalCells();
-#pragma omp parallel for reduction(+ : local_compression_achieved)
-      for (auto& cid : local_cells) { // loop over spatial cells
-         SpatialCell* sc = mpiGrid[cid];
-         assert(sc && "Invalid Pointer to Spatial Cell !");
+     // Vlasiator boilerplate
+     const auto& local_cells = getLocalCells();
+#pragma omp parallel for reduction(+ : total_bytes)
+     for (auto& cid : local_cells) { // loop over spatial cells
+       SpatialCell* sc = mpiGrid[cid];
+       assert(sc && "Invalid Pointer to Spatial Cell !");
 
-         // (1) Extract and Collect the VDF of this cell
-         OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
+       // (1) Extract and Collect the VDF of this cell
+       OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
 
-         // (2) Do the compression for this VDF
-         float ratio = 0.0;
-         compress_with_octree_method(vdf.vdf_vals.data(), vdf.shape[0], vdf.shape[1], vdf.shape[2],
-                                     P::octree_tolerance, ratio);
+       // (2) Do the compression for this VDF
+       /* float ratio = 0.0; */
+       uint8_t* bytes = NULL;
+       uint64_t n_bytes;
+       compress_with_octree_method(vdf.vdf_vals.data(), vdf.shape[0], vdf.shape[1], vdf.shape[2],
+                                   P::octree_tolerance, &bytes, &n_bytes);
 
-         local_compression_achieved += ratio;
+       uncompress_with_octree_method(vdf.vdf_vals.data(), vdf.shape[0], vdf.shape[1], vdf.shape[2], 
+                                     bytes, n_bytes, true);
 
-         // (3) Overwrite the VDF of this cell
-         overwrite_pop_spatial_cell_vdf(sc, popID, vdf);
+       if ( bytes != NULL) free(bytes);
+       total_bytes += n_bytes;
 
-      } // loop over all spatial cells
+       // (3) Overwrite the VDF of this cell
+       overwrite_pop_spatial_cell_vdf(sc, popID, vdf);
+
+     } // loop over all spatial cells
    }    // loop over all populations
    MPI_Barrier(MPI_COMM_WORLD);
-   MPI_Reduce(&local_compression_achieved, &global_compression_achieved, 1, MPI_FLOAT, MPI_SUM, MASTER_RANK,
+   MPI_Reduce(&total_bytes, &global_total_bytes, 1, MPI_INT, MPI_SUM, MASTER_RANK,
               MPI_COMM_WORLD);
    MPI_Barrier(MPI_COMM_WORLD);
-   float realized_compression = global_compression_achieved / (float)number_of_spatial_cells;
    if (myRank == MASTER_RANK) {
-      logFile << "(INFO): Compression Ratio = " << realized_compression << std::endl;
+      logFile << "(INFO): Total bytes = " << global_total_bytes << std::endl;
    }
    return;
 }
