@@ -841,10 +841,9 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
          vdf_union.vspace_union.resize(total_size*vdf_union.ncols);
          vdf_union.nrows=total_size;
          
-         Real dvx_normalized= (2.0)/(Realf)vdf_union.bbox_shape[0];
-         Real dvy_normalized= (2.0)/(Realf)vdf_union.bbox_shape[1];
-         Real dvz_normalized= (2.0)/(Realf)vdf_union.bbox_shape[2];
-         std::cout<<dvx_normalized<<" "<<dvy_normalized<<" "<<dvz_normalized<<std::endl;
+         const Real dvx_normalized= (2.0)/(Realf)vdf_union.bbox_shape[0];
+         const Real dvy_normalized= (2.0)/(Realf)vdf_union.bbox_shape[1];
+         const Real dvz_normalized= (2.0)/(Realf)vdf_union.bbox_shape[2];
          for (std::size_t i=0; i<vdf_union.bbox_shape[0];++i){
             for (std::size_t j=0; j<vdf_union.bbox_shape[1];++j){
                for (std::size_t k=0; k<vdf_union.bbox_shape[2];++k){
@@ -854,8 +853,6 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
             }
          }
          
-
-         std::cout<<"Read "<<vdf_union.nrows<<std::endl;
          ASTERIX::uncompress_union(vdf_union);
          unnormalize_vspace_coords (vdf_union);
          vdf_union.unormalize_union();
@@ -869,23 +866,25 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
                ASTERIX::OrderedVDF new_vdf;
                new_vdf.v_limits=vdf_union.v_limits;
                new_vdf.shape=vdf_union.bbox_shape;
-               const std::size_t column=std::find(vdf_union.cids.begin(),vdf_union.cids.end(),cid)-vdf_union.cids.begin();
+               const auto it=std::find(vdf_union.cids.begin(),vdf_union.cids.end(),cid);
+               if (it==vdf_union.cids.end()){
+                  throw std::runtime_error("Catastrophic failure in MLP reconstruction while trying to find cellid in union that was supposed to own it");
+               }
+               const std::size_t column=it-vdf_union.cids.begin();
                for (std::size_t i=0; i< vdf_union.nrows;++i){
-                  auto vbulk=vdf_union.vbulk_union[column];
+                  const auto vbulk=vdf_union.vbulk_union[column];
                   auto coords=vdf_union.vcoords_union[i];
                   coords[0]+=vbulk.vx; coords[1]+=vbulk.vy;coords[2]+=vbulk.vz;  
                   const auto gid=sc->get_velocity_block(popID, &coords[0]);
-                  bool ignore= std::find(vdf_union.blocks_ignore.begin(),vdf_union.blocks_ignore.end(),gid) != vdf_union.blocks_ignore.end();
+                  const bool ignore= std::find(vdf_union.blocks_ignore.begin(),vdf_union.blocks_ignore.end(),gid) != vdf_union.blocks_ignore.end();
                   if (vdf_union.vspace_union[vdf_union.index_2d(i,column)]>=sparse && !ignore){
                      sc->add_velocity_block(gid,popID);
                      new_vdf.vdf_vals.push_back(vdf_union.vspace_union.at(vdf_union.index_2d(i,column)));
                   }else{
-                     new_vdf.vdf_vals.push_back(0);
+                     new_vdf.vdf_vals.push_back(Realf(0));//something to be eaten by sparsity 
                   }
                }
-               // ASTERIX::overwrite_cellids_vdf_single_cell(vdf_union.cids, popID,sc,column,vdf_union.vcoords_union, vdf_union.vspace_union, vdf_union.map);
                ASTERIX::overwrite_pop_spatial_cell_vdf_ignore(sc, popID, new_vdf,vdf_union.blocks_ignore);
-               // sc->adjustSingleCellVelocityBlocks(popID);
             }
          }
       }else{
@@ -902,13 +901,6 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
       cids.push_back(fileCells[localCellStartOffset+i]);
    }
    adjustVelocityBlocks(mpiGrid,cids, false,popID );
-   for (std::size_t i=0;i<localCells;++i){
-      auto cid=fileCells[localCellStartOffset+i];
-      std::string fname = "vdf_" + std::to_string(cid) + "_pre.bin";
-      std::string fname2 = "vdf_" + std::to_string(cid) + "_post.bin";
-      ASTERIX::dump_vdf_to_binary_file(fname.c_str(),cid,mpiGrid);
-      ASTERIX::dump_vdf_to_binary_file(fname2.c_str(),cid,mpiGrid);
-   }
    return success;  
 }
 

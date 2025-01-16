@@ -144,7 +144,8 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf(SpatialCell* sc, uint popID, const 
    return;
 }
 
-void ASTERIX::overwrite_pop_spatial_cell_vdf_ignore(SpatialCell* sc, uint popID, const OrderedVDF& vdf,const std::vector<std::size_t>& ignore_list) {
+void ASTERIX::overwrite_pop_spatial_cell_vdf_ignore(SpatialCell* sc, uint popID, const OrderedVDF& vdf,
+                                                    const std::vector<std::size_t>& ignore_list) {
    assert(sc && "Invalid Pointer to Spatial Cell !");
    vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
    const size_t total_blocks = blockContainer.size();
@@ -155,9 +156,9 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf_ignore(SpatialCell* sc, uint popID,
    assert(data && "Invalid Pointre block container data");
 
    for (std::size_t n = 0; n < total_blocks; ++n) {
-      const auto gid=sc->get_velocity_block_global_id(n,popID );
-      bool ignore=std::find(ignore_list.begin(),ignore_list.end(),gid)!=ignore_list.end();
-      if (ignore){
+      const auto gid = sc->get_velocity_block_global_id(n, popID);
+      bool ignore = std::find(ignore_list.begin(), ignore_list.end(), gid) != ignore_list.end();
+      if (ignore) {
          continue;
       }
       auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
@@ -186,7 +187,6 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf_ignore(SpatialCell* sc, uint popID,
    return;
 }
 
-
 ASTERIX::VDFUnion
 ASTERIX::extract_union_pop_vdfs_from_cids(const std::span<const CellID> cids, uint popID,
                                           const dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
@@ -210,8 +210,9 @@ ASTERIX::extract_union_pop_vdfs_from_cids(const std::span<const CellID> cids, ui
                              std::numeric_limits<Real>::lowest(), std::numeric_limits<Real>::lowest()};
 
    VDFUnion vdf_union{};
+   std::unordered_map<vmesh::LocalID, std::size_t> map;
    std::vector<VCoords> vbulk_union;
-   Real dv;
+   Real dv = 0.0; // FIXME
    for (std::size_t cc = 0; cc < cids.size(); ++cc) {
       const auto& cid = cids[cc];
       vdf_union.cids.push_back(cid);
@@ -229,7 +230,7 @@ ASTERIX::extract_union_pop_vdfs_from_cids(const std::span<const CellID> cids, ui
          const vmesh::GlobalID gid = sc->get_velocity_block_global_id(n, popID);
          const Realf* vdf_data = &data[n * WID3];
 
-         auto [it, block_inserted] = vdf_union.map.try_emplace(gid, vdf_union.vcoords_union.size());
+         auto [it, block_inserted] = map.try_emplace(gid, vdf_union.vcoords_union.size());
          std::size_t cnt = 0;
          for (uint k = 0; k < WID; ++k) {
             for (uint j = 0; j < WID; ++j) {
@@ -266,52 +267,33 @@ ASTERIX::extract_union_pop_vdfs_from_cids(const std::span<const CellID> cids, ui
       }
    }
 
-   std::cout<<"First pass = "<<vspaces.front().size()<<std::endl;
-
+   // Continues on to extract the bounding box GID. Those are used in training but ignored in inference during restart
+   // reading
    std::vector<std::size_t> blocks_ignore;
+   const std::array<std::size_t, 3> bbox_shape{static_cast<std::size_t>(std::floor((vlims[3] - vlims[0]) / dv)) + 1,
+                                         static_cast<std::size_t>(std::floor((vlims[4] - vlims[1]) / dv)) + 1,
+                                         static_cast<std::size_t>(std::floor((vlims[5] - vlims[2]) / dv)) + 1};
 
-   //Now we have sort of a bounding box of the union given by vlims and dv;
-   std::array<std::size_t,3>bbox_shape;
-   bbox_shape[0] = static_cast<std::size_t>(std::floor((vlims[3] - vlims[0]) / dv)) + 1;
-   bbox_shape[1] = static_cast<std::size_t>(std::floor((vlims[4] - vlims[1]) / dv)) + 1;
-   bbox_shape[2] = static_cast<std::size_t>(std::floor((vlims[5] - vlims[2]) / dv)) + 1;
-   for (std::size_t i=0;i<bbox_shape[0];++i){
-      for (std::size_t j=0;j<bbox_shape[1];++j){
-         for (std::size_t k=0;k<bbox_shape[2];++k){
-            std::array<Real,3> coords={vlims[0]+i*dv,vlims[1]+j*dv,vlims[2]+k*dv};
-            const auto gid=mpiGrid[cids.front()]->get_velocity_block(popID, &coords[0]);
-            assert(gid>=0);
-            auto [it, block_inserted] = vdf_union.map.try_emplace(gid, vdf_union.vcoords_union.size());
-            if (block_inserted){
+                                      
+   for (std::size_t i = 0; i < bbox_shape[0]; ++i) {
+      for (std::size_t j = 0; j < bbox_shape[1]; ++j) {
+         for (std::size_t k = 0; k < bbox_shape[2]; ++k) {
+            const std::array<Real, 3> coords = {vlims[0] + i * dv, vlims[1] + j * dv, vlims[2] + k * dv};
+            const auto gid = mpiGrid[cids.front()]->get_velocity_block(popID, &coords[0]);
+            auto [it, block_inserted] = map.try_emplace(gid, vdf_union.vcoords_union.size());
+            if (block_inserted) {
                blocks_ignore.push_back(gid);
-            //    for (int kk =-WID; kk < WID; ++kk) {
-            //       for (int jj = -WID; jj < WID; ++jj) {
-            //          for (int ii = -WID; ii < WID; ++ii) {
-            //             coords[0]+=ii*dv;
-            //             coords[1]+=jj*dv;
-            //             coords[2]+=kk*dv;
-            //             if (coords[0]>vlims[0] && coords[1]>vlims[1] && coords[2]>vlims[2] && coords[0]<vlims[3] && coords[1]<vlims[4] && coords[2]<vlims[5] ){
-            //                vdf_union.vcoords_union.push_back({coords[0], coords[1], coords[2]});
-            //                for (std::size_t x = 0; x < cids.size(); ++x) {
-            //                   vspaces[x].push_back(Realf(0));
-            //                }
-            //             }
-            //          }
-            //       }
-            //    }
             }
          }
       }
    }
-   
-   std::cout<<"Ignore list  = "<<blocks_ignore.size()<<std::endl;
 
    const std::size_t nrows = vspaces.front().size();
    const std::size_t ncols = cids.size();
-   vdf_union.nrows=nrows;
-   vdf_union.ncols=ncols;
-   vdf_union.blocks_ignore=blocks_ignore;
-   vdf_union.bbox_shape=bbox_shape;
+   vdf_union.nrows = nrows;
+   vdf_union.ncols = ncols;
+   vdf_union.blocks_ignore = blocks_ignore;
+   vdf_union.bbox_shape = bbox_shape;
    // This will be used further down for indexing into the vspace_union
    auto index_2d = [nrows, ncols](std::size_t row, std::size_t col) -> std::size_t { return row * ncols + col; };
 
@@ -418,132 +400,10 @@ ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_
          }
       }
    } // over blocks
-   return ASTERIX::OrderedVDF{.sparse_vdf_bytes=total_blocks*WID*WID*WID*sizeof(Realf),.vdf_vals = vspace, .v_limits = vlims, .shape = {nx, ny, nz}};
-}
-
-void ASTERIX::overwrite_cellids_vdfs(const std::span<const CellID> cids, uint popID,
-                                     dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                                     const std::vector<std::array<Real, 3>>& vcoords,
-                                     const std::vector<Realf>& vspace_union,
-                                     const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id) {
-   const std::size_t nrows = vcoords.size();
-   const std::size_t ncols = cids.size();
-   // This will be used further down for indexing into the vspace_union
-   auto index_2d = [nrows, ncols](std::size_t row, std::size_t col) -> std::size_t { return row * ncols + col; };
-
-   for (std::size_t cc = 0; cc < cids.size(); ++cc) {
-      const auto& cid = cids[cc];
-      SpatialCell* sc = mpiGrid[cid];
-      vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
-      const size_t total_blocks = blockContainer.size();
-      Realf* data = blockContainer.getData();
-      const Real* blockParams = sc->get_block_parameters(popID);
-      for (std::size_t n = 0; n < total_blocks; ++n) {
-         const auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
-         const vmesh::GlobalID gid = sc->get_velocity_block_global_id(n, popID);
-         const auto it = map_exists_id.find(gid);
-         const bool exists = it != map_exists_id.end();
-         if (!exists){
-            std::cerr<<"This should not happen!"<<std::endl;
-            abort();
-         }
-         assert(exists && "Someone has a buuuug!");
-         const auto index = it->second;
-         Realf* vdf_data = &data[n * WID3];
-         size_t cnt = 0;
-         for (uint k = 0; k < WID; ++k) {
-            for (uint j = 0; j < WID; ++j) {
-               for (uint i = 0; i < WID; ++i) {
-                  const std::size_t index = it->second;
-                  vdf_data[cellIndex(i, j, k)] = vspace_union[index_2d(index + cnt, cc)];
-                  cnt++;
-               }
-            }
-         }
-      }
-   }
-   return;
-}
-
-void ASTERIX::overwrite_cellids_vdf_single_cell(const std::span<const CellID> cids, uint popID, SpatialCell* sc, size_t cc,
-                                     const std::vector<std::array<Real, 3>>& vcoords,
-                                     const std::vector<Realf>& vspace_union,
-                                     const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id) {
-   const std::size_t nrows = vcoords.size();
-   const std::size_t ncols = cids.size();
-   // This will be used further down for indexing into the vspace_union
-   auto index_2d = [nrows, ncols](std::size_t row, std::size_t col) -> std::size_t { return row * ncols + col; };
-
-   const auto& cid = cids[cc];
-   vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
-   const size_t total_blocks = blockContainer.size();
-   Realf* data = blockContainer.getData();
-   const Real* blockParams = sc->get_block_parameters(popID);
-   for (std::size_t n = 0; n < total_blocks; ++n) {
-      const auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
-      const vmesh::GlobalID gid = sc->get_velocity_block_global_id(n, popID);
-      const auto it = map_exists_id.find(gid);
-      const bool exists = it != map_exists_id.end();
-      if (!exists){
-         std::cerr<<"This should not happen!"<<std::endl;
-
-         abort();
-      }
-      assert(exists && "Someone has a buuuug!");
-      const auto index = it->second;
-      Realf* vdf_data = &data[n * WID3];
-      size_t cnt = 0;
-      for (uint k = 0; k < WID; ++k) {
-         for (uint j = 0; j < WID; ++j) {
-            for (uint i = 0; i < WID; ++i) {
-               const std::size_t index = it->second;
-               vdf_data[cellIndex(i, j, k)] = vspace_union[index_2d(index + cnt, cc)];
-               cnt++;
-            }
-         }
-      }
-   }
-   return;
-}
-
-void ASTERIX::overwrite_cellids_vdf_single_cell2(const std::span<const CellID> cids, uint popID, SpatialCell* sc, size_t cc,
-                                     const std::vector<std::array<Real, 3>>& vcoords,
-                                     const std::vector<Realf>& vspace_union,
-                                     const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id) {
-   const std::size_t nrows = vcoords.size();
-   const std::size_t ncols = cids.size();
-   // This will be used further down for indexing into the vspace_union
-   auto index_2d = [nrows, ncols](std::size_t row, std::size_t col) -> std::size_t { return row * ncols + col; };
-
-   const auto& cid = cids[cc];
-   vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
-   const size_t total_blocks = blockContainer.size();
-   Realf* data = blockContainer.getData();
-   const Real* blockParams = sc->get_block_parameters(popID);
-   for (std::size_t n = 0; n < total_blocks; ++n) {
-      const auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
-      const vmesh::GlobalID gid = sc->get_velocity_block_global_id(n, popID);
-      const auto it = map_exists_id.find(gid);
-      const bool exists = it != map_exists_id.end();
-      if (!exists){
-         std::cerr<<"This should not happen!"<<std::endl;
-         abort();
-      }
-      assert(exists && "Someone has a buuuug!");
-      const auto index = it->second;
-      Realf* vdf_data = &data[n * WID3];
-      size_t cnt = 0;
-      for (uint k = 0; k < WID; ++k) {
-         for (uint j = 0; j < WID; ++j) {
-            for (uint i = 0; i < WID; ++i) {
-               const std::size_t index = it->second;
-               vdf_data[cellIndex(i, j, k)] = vspace_union[index_2d(index + cnt, cc)];
-               cnt++;
-            }
-         }
-      }
-   }
-   return;
+   return ASTERIX::OrderedVDF{.sparse_vdf_bytes = total_blocks * WID * WID * WID * sizeof(Realf),
+                              .vdf_vals = vspace,
+                              .v_limits = vlims,
+                              .shape = {nx, ny, nz}};
 }
 
 void ASTERIX::dump_vdf_to_binary_file(const char* filename, CellID cid,

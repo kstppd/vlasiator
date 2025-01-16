@@ -208,23 +208,10 @@ float compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geome
              vdf_union.network_weights, network_size, false, downsampling_factor, error, status);
 
          assert(network_size == nn_mem_footprint_bytes && "Mismatch betweeen estimated and actual network size!!!");
-
          
          bytes.resize(vdf_union.total_serialized_size_bytes());
          vdf_union.serialize_into(reinterpret_cast<unsigned char*>(&bytes[0]));
-         // vdf_union.print();
-
-         
-         // new_union.deserialize_from(&bytes[0]);
-
-         // uncompress_vdf_union(span.size(), vdf_union.vcoords_union.data(), vdf_union.vspace_union.data(),
-         //                      vdf_union.vcoords_union.size(), P::mlp_fourier_order, P::mlp_arch.data(),
-         //                      P::mlp_arch.size(), vdf_union.network_weights, network_size, true);
-
          local_compression_achieved += vdf_union.size_in_bytes / static_cast<float>(nn_mem_footprint_bytes);
-         // vdf_union.unormalize_union();
-         // vdf_union.unscale(sparse);
-         // vdf_union.sparsify(sparse);
          free(vdf_union.network_weights);
 
          // (3) Overwrite the VDF of this cell
@@ -355,7 +342,7 @@ float compress_vdfs_fourier_mlp_clustered(dccrg::Dccrg<SpatialCell, dccrg::Carte
          vdf_union.sparsify(sparse);
 
          // (3) Overwrite the VDF of this cell
-         overwrite_cellids_vdfs(span, popID, mpiGrid, vdf_union.vcoords_union, vdf_union.vspace_union, vdf_union.map);
+         // overwrite_cellids_vdfs(span, popID, mpiGrid, vdf_union.vcoords_union, vdf_union.vspace_union, vdf_union.map);
       }
    } // loop over all populations
    return local_compression_achieved / static_cast<float>(total_samples);

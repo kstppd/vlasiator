@@ -151,7 +151,6 @@ struct VDFUnion {
    std::array<std::size_t, 3> bbox_shape;
    std::vector<VCoords> vbulk_union;
    std::vector<Realf> vspace_union;
-   std::unordered_map<vmesh::LocalID, std::size_t> map;
    std::size_t size_in_bytes;
    double* network_weights = nullptr;
    std::size_t n_weights;
@@ -161,8 +160,8 @@ struct VDFUnion {
 
    std::size_t total_serialized_size_bytes() const {
       return sizeof(SerializedVDFUnionHeader) + cids.size() * sizeof(CellID)+ blocks_ignore.size()*sizeof(std::size_t) + bbox_shape.size()*sizeof(std::size_t) + norms.size() * sizeof(MinMaxValues) +
-             vbulk_union.size() * sizeof(VCoords) + vcoords_union.size() * 3 * sizeof(Real) + 6*sizeof(Real)+
-             n_weights * sizeof(double) + map.size() * sizeof(std::pair<vmesh::LocalID, std::size_t>);
+             vbulk_union.size() * sizeof(VCoords) + 6*sizeof(Real)+
+             n_weights * sizeof(double);
       ;
    }
 
@@ -176,16 +175,6 @@ struct VDFUnion {
       printf("Network size %zu\n",n_weights);
       printf("First weight %f\n ",network_weights[0]);
       printf("Last weight %f\n ",network_weights[n_weights-1]);
-      
-   for (int i=0;i<6;++i){
-      std::cout<<v_limits[i]<<", ";
-   }
-   std::cout<<std::endl;
-   std::cout<<"=========================="<<std::endl;
-      
-      // for (std::size_t i=0; i< nrows;++i){
-      //    printf("%zu %f %f %f\n",i,vcoords_union[i][0],vcoords_union[i][1],vcoords_union[i][2]);
-      // }
    }
 
 
@@ -221,19 +210,9 @@ struct VDFUnion {
       std::memcpy(&buffer[write_index], &v_limits[0],6 * sizeof(Real));
       write_index += 6 * sizeof(Real);
 
-      std::memcpy(&buffer[write_index], &vcoords_union[0], vcoords_union.size() * 3 * sizeof(Real));
-      write_index += vcoords_union.size() * 3 * sizeof(Real);
-
       std::memcpy(&buffer[write_index], &network_weights[0], n_weights * sizeof(double));
       write_index += n_weights * sizeof(double);
 
-      for (const auto& kval : map) {
-         std::memcpy(&buffer[write_index], &kval, sizeof(std::pair<vmesh::LocalID, std::size_t>));
-         write_index += sizeof(std::pair<vmesh::LocalID, std::size_t>);
-      }
-      
-      std::cout<<"Norms of 10"<<std::endl;
-      std::cout<<norms[10].max<<" "<<norms[10].mean<<" "<<norms[10].min<<std::endl;
       assert(header.total_size == write_index);
    }
 
@@ -242,7 +221,7 @@ struct VDFUnion {
       assert(header->key = MLP_KEY && "Blame Kostis Papadakis for this!");
 
       // Inflate vspave union
-      vspace_union.resize(header->cols * header->rows);
+      // vspace_union.resize(header->cols * header->rows);
       ncols = header->cols;
       nrows = header->rows;
 
@@ -275,11 +254,6 @@ struct VDFUnion {
       std::memcpy(&v_limits[0], &buffer[read_index], 6 * sizeof(Real));
       read_index +=  6 * sizeof(Real);
 
-      std::size_t vcoords_size = header->rows;
-      vcoords_union.resize(vcoords_size);
-      std::memcpy(vcoords_union.data(), &buffer[read_index], vcoords_size * 3 * sizeof(Real));
-      read_index += vcoords_size * 3 * sizeof(Real);
-
       if (network_weights != nullptr) {
          free(network_weights);
       }
@@ -288,16 +262,6 @@ struct VDFUnion {
       n_weights = header->n_weights;
       std::memcpy(network_weights, &buffer[read_index], header->n_weights * sizeof(double));
       read_index += n_weights * sizeof(double);
-
-      while (read_index < header->total_size) {
-         const std::pair<vmesh::LocalID, std::size_t>* kval =
-             reinterpret_cast<const std::pair<vmesh::LocalID, std::size_t>*>(&buffer[read_index]);
-         map[kval->first] = kval->second;
-         read_index += sizeof(std::pair<vmesh::LocalID, std::size_t>);
-      }
-      
-      std::cout<<"Norms of 10"<<std::endl;
-      std::cout<<norms[10].max<<" "<<norms[10].mean<<" "<<norms[10].min<<std::endl;
       assert(read_index == total_size && "Size mismatch while reading in serialized VDF Union!");
    }
 
@@ -412,21 +376,6 @@ auto overwrite_pop_spatial_cell_vdf(SpatialCell* sc, uint popID, const std::vect
 auto overwrite_pop_spatial_cell_vdf(SpatialCell* sc, uint popID, const OrderedVDF& vdf) -> void;
 
 auto overwrite_pop_spatial_cell_vdf_ignore(SpatialCell* sc, uint popID, const OrderedVDF& vdf,const std::vector<std::size_t>& ignore_list)->void;
-
-auto overwrite_cellids_vdfs(const std::span<const CellID> cids, uint popID,
-                            dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                            const std::vector<std::array<Real, 3>>& vcoords, const std::vector<Realf>& vspace_union,
-                            const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id) -> void;
-
-auto overwrite_cellids_vdf_single_cell(const std::span<const CellID> cids, uint popID, SpatialCell* sc, size_t cc,
-                                     const std::vector<std::array<Real, 3>>& vcoords,
-                                     const std::vector<Realf>& vspace_union,
-                                     const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id)->void; 
-
-auto overwrite_cellids_vdf_single_cell2(const std::span<const CellID> cids, uint popID, SpatialCell* sc, size_t cc,
-                                     const std::vector<std::array<Real, 3>>& vcoords,
-                                     const std::vector<Realf>& vspace_union,
-                                     const std::unordered_map<vmesh::LocalID, std::size_t>& map_exists_id)->void; 
 
 auto dump_vdf_to_binary_file(const char* filename, CellID cid) -> void;
 
