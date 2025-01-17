@@ -425,7 +425,6 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
              throw std::runtime_error("(VDF COMPRESSION ERROR): T-Octree failed.");
              break;
          }
-
          uncompress_with_toctree_method(vdf.vdf_vals.data(), vdf.shape[0], vdf.shape[1], vdf.shape[2], bytes, n_bytes);
 
          if (bytes != NULL) {
