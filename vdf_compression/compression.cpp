@@ -418,7 +418,6 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
 
          constexpr std::size_t maxiter = 1000;
          int status = compress_with_toctree_method(vdf.vdf_vals.data(), vdf.shape[0], vdf.shape[1], vdf.shape[2],
-                                                   P::octree_tolerance, &bytes, &n_bytes, maxiter);
 
          switch(status) {
            case TOCTREE_COMPRESS_STAT_SUCCESS:
@@ -432,10 +431,10 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
              break;
          }
          //Copy compressed state to SC
-         sc->get_population(popID).compressed_state_buffer.resize(n_bytes+3*sizeof(std::size_t)+6*sizeof(Real));
+         sc->get_population(popID).compressed_state_buffer.resize(n_bytes+3*sizeof(std::size_t)+6*sizeof(Real),0);
          
          std::size_t write_index=0;
-         std::memcpy(&sc->get_population(popID).compressed_state_buffer[write_index],&vdf.shape[0],3*sizeof(std::size_t));
+         std::memcpy(sc->get_population(popID).compressed_state_buffer.data()+write_index,&vdf.shape[0],3*sizeof(std::size_t));
          write_index+=3*sizeof(std::size_t);
          std::memcpy(&sc->get_population(popID).compressed_state_buffer[write_index],&vdf.v_limits,6*sizeof(Real));
          write_index+=6*sizeof(Real);
