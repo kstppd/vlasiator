@@ -31,7 +31,6 @@
 #include "../object_wrapper.h"
 #include "../spatial_cell_wrapper.hpp"
 #include "../velocity_blocks.h"
-#include "concept_check.hpp"
 #include "stdlib.h"
 #include <algorithm>
 #include <array>
