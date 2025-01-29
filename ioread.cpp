@@ -707,11 +707,11 @@ bool _readBlockDataCompressionOCTREE(vlsv::ParallelReader & file,
       for (std::size_t i=0;i<bbox_shape[0];++i){
          for (std::size_t j=0;j<bbox_shape[1];++j){
             for (std::size_t k=0;k<bbox_shape[2];++k){
-               const std::array<Real,3>coords={bbox_lims[0]+i*dv,bbox_lims[1]+j*dv,bbox_lims[2]+k*dv};
+               const std::array<Real,3>coords={bbox_lims[0]+(i+0.5)*dv,bbox_lims[1]+(j+0.5)*dv,bbox_lims[2]+(k+0.5)*dv};
                Realf& val=vdf.at(i,j,k);
                const auto gid=sc->get_velocity_block(popID, &coords[0]);
                const bool ignore_me=std::find(blocks_to_ignore.cbegin(),blocks_to_ignore.cend(),gid)!=blocks_to_ignore.cend();
-               if (val>=sparse && !ignore_me){
+               if (val>=sparse  && !ignore_me){
                   sc->add_velocity_block(gid,popID);
                }
             }

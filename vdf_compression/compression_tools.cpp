@@ -134,7 +134,8 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf(SpatialCell* sc, uint popID, const 
                const size_t bbox_j = std::min(static_cast<size_t>(std::floor((vy - vdf.v_limits[1]) / dvy)), ny - 1);
                const size_t bbox_k = std::min(static_cast<size_t>(std::floor((vz - vdf.v_limits[2]) / dvz)), nz - 1);
 
-               vdf_data[cellIndex(i, j, k)] = vdf.at(bbox_i, bbox_j, bbox_k);
+               const size_t index = bbox_i * (ny * nz) + bbox_j * nz + bbox_k;
+               vdf_data[cellIndex(i, j, k)] = vdf.vdf_vals.at(index);
             }
          }
       }
@@ -305,6 +306,7 @@ ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_
          }
       }
    }
+
    
    Realf* data = blockContainer.getData();
    std::vector<Realf> vspace(nx * ny * nz, Realf(0));
