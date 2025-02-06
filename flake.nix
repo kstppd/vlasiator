@@ -184,7 +184,7 @@
         pname = "vlasiator";
         version = "latest";
 
-          src = fetchFromGitHub {
+          src = pkgs.fetchFromGitHub {
             owner = "kstppd";
             repo = "vlasiator";
             rev = "tesst_nix_build";
