@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs,... }@inputs:
+  outputs = { self, nixpkgs,fetchFromGitHub,... }@inputs:
     let 
       pkgs = import nixpkgs { system = "x86_64-linux"; };
       vlsvSrc = builtins.fetchGit {
