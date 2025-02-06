@@ -5,14 +5,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs = { self, nixpkgs,... }@inputs:
     let 
       pkgs = import nixpkgs { system = "x86_64-linux"; };
       vlsvSrc = builtins.fetchGit {
         url = "https://github.com/fmihpc/vlsv";
         ref = "master";
       };
-      
+            
       phiprofSrc = builtins.fetchGit {
         url = "https://github.com/fmihpc/phiprof";
         ref = "master";
@@ -180,9 +180,55 @@
       };
 
 
+      vlasiatorPkg = pkgs.stdenv.mkDerivation {
+        pname = "vlasiator";
+        version = "latest";
+
+        src = builtins.fetchGit {
+          url = "https://github.com/kstppd/vlasiator.git";
+          ref = "dev"; 
+        };
+        
+         
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        buildInputs = [
+          pkgs.gcc
+          pkgs.openmpi
+          vlsvPkg
+          phiprofPkg
+          zoltanPkg
+          jemallocPkg
+          papiPkg
+          boostPkg
+        ];
+
+        buildPhase = ''
+          export LIB_VLSV=-L${vlsvPkg}/lib
+          export INC_VLSV=-I${vlsvPkg}/include
+          export LIB_PROFILE=-L${phiprofPkg}/lib/
+          export INC_PROFILE=-I${phiprofPkg}/include/
+          export LIB_ZOLTAN=-L${zoltanPkg}/lib
+          export INC_ZOLTAN=-I${zoltanPkg}/include
+          export LIB_JEMALLOC=-L${jemallocPkg}/lib
+          export INC_JEMALLOC=-I${jemallocPkg}/include
+          export LIB_PAPI=-L${papiPkg}/lib
+          export INC_PAPI=-I${papiPkg}/include
+          export LIB_BOOST=-L${boostPkg}/lib
+          export INC_BOOST=-I${boostPkg}/include
+          export VLASIATOR_ARCH=nix
+          make -j 4
+        '';
+
+        installPhase = ''
+          mkdir -p $out/bin
+          cp vlasiator $out/bin/
+        '';
+      };
 
     in
     {
+      packages.x86_64-linux.default = vlasiatorPkg;
+    
       devShells.x86_64-linux.default = pkgs.mkShell {
         name = "dev-shell";
         buildInputs = [
