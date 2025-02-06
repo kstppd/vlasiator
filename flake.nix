@@ -184,10 +184,18 @@
         pname = "vlasiator";
         version = "latest";
 
-        src = builtins.fetchGit {
-          url = "https://github.com/kstppd/vlasiator.git";
-          ref = "dev"; 
+          src = fetchFromGitHub {
+            owner = "kstppd";
+            repo = "vlasiator";
+            rev = "tesst_nix_build";
+            sha256 = "sha256-C0GV6vOEZ0wTaKO7BgGuFvHsHeaVwH0W1U8yKUMrO9c=";
+            fetchSubmodules = true;
         };
+
+        # src = builtins.fetchGit {
+        #   url = "https://github.com/kstppd/vlasiator.git";
+        #   ref = "dev"; 
+        # };
         
          
         nativeBuildInputs = [ pkgs.makeWrapper ];
