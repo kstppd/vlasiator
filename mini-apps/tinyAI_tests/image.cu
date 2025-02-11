@@ -2,6 +2,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "moving_image.h"
 #include "train.h"
+#include <omp.h>
 
 int main(int argc, char** argv) {
 
@@ -22,8 +23,16 @@ int main(int argc, char** argv) {
    constexpr std::size_t batchSize = 256;
    constexpr type_t lr = 1e-3;
 
-   MovingImage img(image_filename, n_shifts, shift_step_x, shift_step_y);
-   learn(img, epochs, batchSize, neurons, ff_mapping, /*fourier scale read the paper-->*/ 10.0,lr);
-   img.save();
+   std::array<MovingImage ,1>imgs{
+   MovingImage(image_filename, n_shifts, shift_step_x, shift_step_y),
+   };
+   omp_set_num_threads(1);
+   #pragma omp parallel
+   {
+      auto id = omp_get_thread_num();
+      learn(imgs[id], epochs, batchSize, neurons, ff_mapping, /*fourier scale read the paper-->*/ 10.0,lr);
+   }
+   
+   imgs[0].save();
    return 0;
 }
