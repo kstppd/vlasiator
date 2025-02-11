@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
    const char* image_filename = argv[1];
    spdlog::info("Training on image: {0:s} ", image_filename);
 
-   constexpr std::size_t n_shifts = 32;
+   constexpr std::size_t n_shifts = 9;
    constexpr std::size_t shift_step_x = 32;
    constexpr std::size_t shift_step_y = 32;
    constexpr std::size_t ff_mapping = 512;

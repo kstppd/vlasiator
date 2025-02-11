@@ -41,6 +41,13 @@
 
 namespace TINYAI {
 
+   enum WORKERS {
+      COMPUTE,
+      IO_1,
+      IO_2,
+      N_WORKERS,
+   };
+
 template <typename T, BACKEND Backend = BACKEND::HOST, ACTIVATION Activation = ACTIVATION::TANH> class NeuralNetwork {
 public:
    NeuralNetwork(std::vector<int>& arch, GENERIC_TS_POOL::MemPool* pool, const NumericMatrix::Matrix<T, Backend>& input,
@@ -73,8 +80,9 @@ public:
 
       if constexpr (Backend == BACKEND::DEVICE) {
          spdlog::debug("TinyAI Initalized on GPU");
-         tinyAI_gpuStreamCreate(&s[0]);
-         tinyAI_gpuStreamCreate(&s[1]);
+         for (auto& stream:s){
+            tinyAI_gpuStreamCreate(&stream);
+         }
          auto stat = tinyAI_blasCreate(&handle);
          if (stat != BLAS_SUCCESS) {
             std::cerr << "Stat = " << stat << std::endl;
@@ -503,7 +511,7 @@ private:
    std::size_t batchSize_in_use = 0;
    std::size_t iter = 1;
    tinyAI_blasHandle_t handle;
-   std::array<tinyAI_gpuStream_t, 2> s;
+   std::array<tinyAI_gpuStream_t, WORKERS::N_WORKERS> s;
    std::mt19937 generator;
    std::uniform_int_distribution<std::size_t> dist;
 };
