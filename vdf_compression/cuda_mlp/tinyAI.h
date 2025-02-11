@@ -41,12 +41,12 @@
 
 namespace TINYAI {
 
-   enum WORKERS {
-      COMPUTE,
-      IO_1,
-      IO_2,
-      N_WORKERS,
-   };
+enum WORKERS {
+   COMPUTE,
+   IO_1,
+   IO_2,
+   N_WORKERS,
+};
 
 template <typename T, BACKEND Backend = BACKEND::HOST, ACTIVATION Activation = ACTIVATION::TANH> class NeuralNetwork {
 public:
@@ -80,7 +80,7 @@ public:
 
       if constexpr (Backend == BACKEND::DEVICE) {
          spdlog::debug("TinyAI Initalized on GPU");
-         for (auto& stream:s){
+         for (auto& stream : s) {
             tinyAI_gpuStreamCreate(&stream);
          }
          auto stat = tinyAI_blasCreate(&handle);
@@ -90,6 +90,7 @@ public:
             throw std::runtime_error("Failed to initialize CUBLAS");
          } else {
             spdlog::debug("CUBLAS initialized succesfully.");
+            cublasSetStream(handle, s[WORKERS::COMPUTE]);
          }
       } else {
          spdlog::debug("TinyAI Initalized on CPU.");
@@ -115,37 +116,37 @@ public:
       }
    }
 
-   void reset(){
-      layers[0].reset(inputData.ncols(),0);
+   void reset() {
+      layers[0].reset(inputData.ncols(), 0);
       for (size_t l = 1; l < layers.size(); ++l) {
          auto* curr_layer = &layers[l];
-         curr_layer->reset(arch[l - 1],l);
+         curr_layer->reset(arch[l - 1], l);
       }
    }
 
    void forward(const NumericMatrix::Matrix<T, Backend>& in) noexcept {
       spdlog::stopwatch timer;
-      layers[0].forward(in, &handle);
+      layers[0].forward(in, &handle, s[WORKERS::COMPUTE]);
       for (size_t l = 1; l < layers.size(); ++l) {
-         layers[l].forward(layers[l - 1].a, &handle);
+         layers[l].forward(layers[l - 1].a, &handle, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("Feed Forward {:.3}s", timer);
    }
 
    void forward(const NumericMatrix::MatrixView<T>& in) noexcept {
       spdlog::stopwatch timer;
-      layers[0].forward(in, &handle);
+      layers[0].forward(in, &handle, s[WORKERS::COMPUTE]);
       for (size_t l = 1; l < layers.size(); ++l) {
-         layers[l].forward(layers[l - 1].a, &handle);
+         layers[l].forward(layers[l - 1].a, &handle, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("Feed Forward {:.3}s", timer);
    }
 
    void forward(const NumericMatrix::ConstMatrixView<T>& in) noexcept {
       spdlog::stopwatch timer;
-      layers[0].forward(in, &handle);
+      layers[0].forward(in, &handle, s[WORKERS::COMPUTE]);
       for (size_t l = 1; l < layers.size(); ++l) {
-         layers[l].forward(layers[l - 1].a, &handle);
+         layers[l].forward(layers[l - 1].a, &handle, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("Feed Forward {:.3}s", timer);
    }
@@ -154,38 +155,42 @@ public:
                  const NumericMatrix::ConstMatrixView<T>& target) noexcept {
       spdlog::stopwatch timer;
       auto& curr_layer = layers.back();
-      NumericMatrix::matsub(curr_layer.a, target, curr_layer.delta_store, &handle);
-      NumericMatrix::mat_pointwise_activate_prime<T, Activation>(curr_layer.z, curr_layer.a_prime, curr_layer.wmega);
-      NumericMatrix::mat_pointwise_mul(curr_layer.delta_store, curr_layer.a_prime, curr_layer.delta);
-      NumericMatrix::transpose_into(sample, sample_t);
+      NumericMatrix::matsub(curr_layer.a, target, curr_layer.delta_store, &handle, s[WORKERS::COMPUTE]);
+      NumericMatrix::mat_pointwise_activate_prime<T, Activation>(curr_layer.z, curr_layer.a_prime, curr_layer.wmega,
+                                                                 s[WORKERS::COMPUTE]);
+      NumericMatrix::mat_pointwise_mul(curr_layer.delta_store, curr_layer.a_prime, curr_layer.delta,
+                                       s[WORKERS::COMPUTE]);
+      NumericMatrix::transpose_into(sample, sample_t, s[WORKERS::COMPUTE]);
       if (layers.size() == 1) {
-         NumericMatrix::matmul(sample_t, curr_layer.delta, curr_layer.dw, &handle);
+         NumericMatrix::matmul(sample_t, curr_layer.delta, curr_layer.dw, &handle, s[WORKERS::COMPUTE]);
       } else {
-         NumericMatrix::transpose_into(layers[layers.size() - 2].a, layers[layers.size() - 2].a_t);
-         NumericMatrix::matmul(layers[layers.size() - 2].a_t, curr_layer.delta, curr_layer.dw, &handle);
+         NumericMatrix::transpose_into(layers[layers.size() - 2].a, layers[layers.size() - 2].a_t, s[WORKERS::COMPUTE]);
+         NumericMatrix::matmul(layers[layers.size() - 2].a_t, curr_layer.delta, curr_layer.dw, &handle,
+                               s[WORKERS::COMPUTE]);
       }
-      NumericMatrix::matsum_rows(curr_layer.delta, curr_layer.db);
+      NumericMatrix::matsum_rows(curr_layer.delta, curr_layer.db, s[WORKERS::COMPUTE]);
 
       for (int i = layers.size() - 2; i >= 0; i--) {
 
          auto& next_layer = layers[i + 1];
          auto& curr_layer = layers[i];
-         next_layer.buffer.zero_out();
-         NumericMatrix::transpose_into(next_layer.w, next_layer.w_t);
-         NumericMatrix::matmul(next_layer.delta, next_layer.w_t, next_layer.buffer, &handle);
-         NumericMatrix::mat_pointwise_activate_prime<T, Activation>(curr_layer.z, curr_layer.a_prime, curr_layer.wmega);
-         NumericMatrix::mat_pointwise_mul(next_layer.buffer, curr_layer.a_prime, curr_layer.delta);
+         next_layer.buffer.zero_out(s[WORKERS::COMPUTE]);
+         NumericMatrix::transpose_into(next_layer.w, next_layer.w_t, s[WORKERS::COMPUTE]);
+         NumericMatrix::matmul(next_layer.delta, next_layer.w_t, next_layer.buffer, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::mat_pointwise_activate_prime<T, Activation>(curr_layer.z, curr_layer.a_prime, curr_layer.wmega,
+                                                                    s[WORKERS::COMPUTE]);
+         NumericMatrix::mat_pointwise_mul(next_layer.buffer, curr_layer.a_prime, curr_layer.delta, s[WORKERS::COMPUTE]);
          if (i == 0) {
-            NumericMatrix::matmul(sample_t, curr_layer.delta, curr_layer.dw, &handle);
+            NumericMatrix::matmul(sample_t, curr_layer.delta, curr_layer.dw, &handle, s[WORKERS::COMPUTE]);
          } else {
-            NumericMatrix::transpose_into(layers[i - 1].a, layers[i - 1].a_t);
-            NumericMatrix::matmul(layers[i - 1].a_t, curr_layer.delta, curr_layer.dw, &handle);
+            NumericMatrix::transpose_into(layers[i - 1].a, layers[i - 1].a_t, s[WORKERS::COMPUTE]);
+            NumericMatrix::matmul(layers[i - 1].a_t, curr_layer.delta, curr_layer.dw, &handle, s[WORKERS::COMPUTE]);
          }
-         NumericMatrix::matsum_rows(curr_layer.delta, curr_layer.db);
+         NumericMatrix::matsum_rows(curr_layer.delta, curr_layer.db, s[WORKERS::COMPUTE]);
       }
-      for (auto& l:layers){
-         NumericMatrix::matscale(l.dw, T(1.0)/batchSize_in_use,&handle);
-         NumericMatrix::matscale(l.db, T(1.0)/batchSize_in_use,&handle);
+      for (auto& l : layers) {
+         NumericMatrix::matscale(l.dw, T(1.0) / batchSize_in_use, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(l.db, T(1.0) / batchSize_in_use, &handle, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("Backward {:.3}s", timer);
    }
@@ -210,6 +215,7 @@ public:
              "Batchsize cannot be bigger than your dataset you fool!");
       if (batchSize_in_use != batchSize) {
          migrate_to_batchsize(batchSize);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
       }
       NumericMatrix::Matrix<T, Backend> error =
           NumericMatrix::Matrix<T, Backend>(target.nrows(), target.ncols(), _pool);
@@ -226,7 +232,11 @@ public:
          perm[k] = dist(generator);
       }
       if constexpr (Backend == BACKEND::DEVICE) {
-         tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice, s[0]);
+         tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
+                               s[WORKERS::IO_1]);
+      }
+      for (const auto& stream : s) {
+         tinyAI_gpuStreamSynchronize(stream);
       }
       PROFILE_END();
       for (size_t i = 0; i < inputData.nrows(); i += batchSize) {
@@ -238,21 +248,22 @@ public:
                throw std::runtime_error("TinyAI unable to shuffle rows on the GPU when running with batchsizes larger "
                                         "than the max blocksize of 1024");
             }
-            tinyAI_gpuStreamSynchronize(s[0]);
-            tinyAI_gpuStreamSynchronize(s[1]);
-            tinyAI_gpuDeviceSynchronize();
-            NumericMatrix::shuffle_rows<<<1,batchSize_in_use>>>(inputData.data(), dperm, batchedInput.data(), inputData.ncols());
-            NumericMatrix::shuffle_rows<<<1,batchSize_in_use>>>(outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
-            tinyAI_gpuStreamSynchronize(s[0]);
-            tinyAI_gpuStreamSynchronize(s[1]);
-            tinyAI_gpuDeviceSynchronize();
+            for (const auto& stream : s) {
+               tinyAI_gpuStreamSynchronize(stream);
+            }
+            NumericMatrix::shuffle_rows<<<1, batchSize_in_use, 0, s[WORKERS::IO_1]>>>(
+                inputData.data(), dperm, batchedInput.data(), inputData.ncols());
+            NumericMatrix::shuffle_rows<<<1, batchSize_in_use, 0, s[WORKERS::IO_2]>>>(
+                outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
+            for (const auto& stream : s) {
+               tinyAI_gpuStreamSynchronize(stream);
+            }
 
-            
-            // NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm,batchSize_in_use,batchedInput.data(), inputData.ncols(),s[0]) ;
-            // tinyAI_gpuStreamSynchronize(s[0]);
-            // NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm,batchSize_in_use,batchedOutput.data(), outputData.ncols(),s[1]) ;
-            // tinyAI_gpuStreamSynchronize(s[1]);
-            
+            // NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm,batchSize_in_use,batchedInput.data(),
+            // inputData.ncols(),s[1]) ; tinyAI_gpuStreamSynchronize(s[1]);
+            // NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm,batchSize_in_use,batchedOutput.data(),
+            // outputData.ncols(),s[2]) ; tinyAI_gpuStreamSynchronize(s[2]);
+
          } else {
             for (std::size_t k = 0; k < batchSize_in_use; ++k) {
                const std::size_t index = dist(generator);
@@ -268,7 +279,8 @@ public:
          }
          // Launch this copy here and we wait it in the next loop
          if constexpr (Backend == BACKEND::DEVICE) {
-            tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice, s[0]);
+            tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
+                                  s[WORKERS::IO_1]);
          }
          PROFILE_END();
          // Collect input-output
@@ -279,11 +291,11 @@ public:
          PROFILE_END();
          PROFILE_START("Error calculation");
          // Get loss
-         NumericMatrix::matsub_error_mse(layers.back().a, target, error, &handle);
+         NumericMatrix::matsub_error_mse(layers.back().a, target, error, &handle, s[WORKERS::COMPUTE]);
          if constexpr (Backend == BACKEND::HOST) {
-            loss += NumericMatrix::matreduce_add(error, &handle);
+            loss += NumericMatrix::matreduce_add(error, &handle, s[WORKERS::COMPUTE]);
          } else {
-            loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle);
+            loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle, s[WORKERS::COMPUTE]);
          }
          PROFILE_END();
          PROFILE_START("Backward");
@@ -301,75 +313,77 @@ public:
       spdlog::debug("Epoch done");
       return loss / (inputData.nrows() * outputData.ncols());
    }
-   
+
    void update_weights_adamw(size_t iteration, T lr, T beta1 = 0.9, T beta2 = 0.999, T epsilon = 1e-8,
                              T decay = 1e-4) noexcept {
       spdlog::stopwatch timer;
       for (auto& curr_layer : layers) {
-       
-         //Weights
-         curr_layer.dw_copy=curr_layer.dw;
-         NumericMatrix::matscale(curr_layer.m_w, beta1, &handle);
-         NumericMatrix::matscale(curr_layer.dw, static_cast<T>(1.0 - beta1), &handle);
-         NumericMatrix::matadd(curr_layer.m_w, curr_layer.dw, curr_layer.m_w, &handle);
-         NumericMatrix::matscale(curr_layer.v_w, beta2, &handle);
-         
-         NumericMatrix::mat_pointwise_mul(curr_layer.dw_copy, curr_layer.dw_copy, curr_layer.tmp);
-         NumericMatrix::matscale(curr_layer.tmp, static_cast<T>(1.0 - beta2), &handle);
-         NumericMatrix::matadd(curr_layer.v_w, curr_layer.tmp, curr_layer.v_w, &handle);
+
+         // Weights
+         //  curr_layer.dw_copy=curr_layer.dw;
+         curr_layer.dw.copy_to(curr_layer.dw_copy, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.m_w, beta1, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.dw, static_cast<T>(1.0 - beta1), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd(curr_layer.m_w, curr_layer.dw, curr_layer.m_w, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.v_w, beta2, &handle, s[WORKERS::COMPUTE]);
+
+         NumericMatrix::mat_pointwise_mul(curr_layer.dw_copy, curr_layer.dw_copy, curr_layer.tmp, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.tmp, static_cast<T>(1.0 - beta2), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd(curr_layer.v_w, curr_layer.tmp, curr_layer.v_w, &handle, s[WORKERS::COMPUTE]);
          T m_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta1, iteration));
          T v_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta2, iteration));
-         
-         NumericMatrix::matscale_to(curr_layer.m_w, curr_layer.mw_hat, m_hat_scale, &handle);
-         NumericMatrix::matscale_to(curr_layer.v_w, curr_layer.vw_hat, v_hat_scale, &handle);
 
-         NumericMatrix::mat_pointwise_sqrt(curr_layer.vw_hat, curr_layer.vw_hat);
-         NumericMatrix::matadd_scalar(curr_layer.vw_hat, curr_layer.vw_hat, epsilon, &handle);
-         NumericMatrix::matscale(curr_layer.mw_hat, static_cast<T>(lr), &handle);
-         NumericMatrix::mat_pointwise_div(curr_layer.mw_hat, curr_layer.vw_hat, curr_layer.tmp);
-         NumericMatrix::matsub(curr_layer.w, curr_layer.tmp, curr_layer.w, &handle);
+         NumericMatrix::matscale_to(curr_layer.m_w, curr_layer.mw_hat, m_hat_scale, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale_to(curr_layer.v_w, curr_layer.vw_hat, v_hat_scale, &handle, s[WORKERS::COMPUTE]);
+
+         NumericMatrix::mat_pointwise_sqrt(curr_layer.vw_hat, curr_layer.vw_hat, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd_scalar(curr_layer.vw_hat, curr_layer.vw_hat, epsilon, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.mw_hat, static_cast<T>(lr), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::mat_pointwise_div(curr_layer.mw_hat, curr_layer.vw_hat, curr_layer.tmp, s[WORKERS::COMPUTE]);
+         NumericMatrix::matsub(curr_layer.w, curr_layer.tmp, curr_layer.w, &handle, s[WORKERS::COMPUTE]);
 
          // Biases
-         curr_layer.db_copy=curr_layer.db;
-         NumericMatrix::matscale(curr_layer.m_b, beta1, &handle);
-         NumericMatrix::matscale(curr_layer.db, static_cast<T>(1.0 - beta1), &handle);
-         NumericMatrix::matadd(curr_layer.m_b, curr_layer.db, curr_layer.m_b, &handle);
+         curr_layer.db.copy_to(curr_layer.db_copy, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.m_b, beta1, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.db, static_cast<T>(1.0 - beta1), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd(curr_layer.m_b, curr_layer.db, curr_layer.m_b, &handle, s[WORKERS::COMPUTE]);
 
-         NumericMatrix::matscale(curr_layer.v_b, beta2, &handle);
-         NumericMatrix::mat_pointwise_mul(curr_layer.db_copy, curr_layer.db_copy, curr_layer.db_tmp);
-         NumericMatrix::matscale(curr_layer.db_tmp, static_cast<T>(1.0 - beta2), &handle);
-         NumericMatrix::matadd(curr_layer.v_b, curr_layer.db_tmp, curr_layer.v_b, &handle);
+         NumericMatrix::matscale(curr_layer.v_b, beta2, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::mat_pointwise_mul(curr_layer.db_copy, curr_layer.db_copy, curr_layer.db_tmp,
+                                          s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.db_tmp, static_cast<T>(1.0 - beta2), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd(curr_layer.v_b, curr_layer.db_tmp, curr_layer.v_b, &handle, s[WORKERS::COMPUTE]);
 
-         NumericMatrix::matscale_to(curr_layer.m_b, curr_layer.mb_hat, m_hat_scale, &handle);
-         NumericMatrix::matscale_to(curr_layer.v_b, curr_layer.vb_hat, v_hat_scale, &handle);
+         NumericMatrix::matscale_to(curr_layer.m_b, curr_layer.mb_hat, m_hat_scale, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale_to(curr_layer.v_b, curr_layer.vb_hat, v_hat_scale, &handle, s[WORKERS::COMPUTE]);
 
-         NumericMatrix::mat_pointwise_sqrt(curr_layer.vb_hat, curr_layer.vb_hat);
-         NumericMatrix::matadd_scalar(curr_layer.vb_hat, curr_layer.vb_hat, epsilon, &handle);
-         NumericMatrix::matscale(curr_layer.mb_hat, static_cast<T>(lr), &handle);
-         NumericMatrix::mat_pointwise_div(curr_layer.mb_hat, curr_layer.vb_hat, curr_layer.db_tmp);
-         NumericMatrix::matsub(curr_layer.b, curr_layer.db_tmp, curr_layer.b, &handle);
-
+         NumericMatrix::mat_pointwise_sqrt(curr_layer.vb_hat, curr_layer.vb_hat, s[WORKERS::COMPUTE]);
+         NumericMatrix::matadd_scalar(curr_layer.vb_hat, curr_layer.vb_hat, epsilon, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::matscale(curr_layer.mb_hat, static_cast<T>(lr), &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::mat_pointwise_div(curr_layer.mb_hat, curr_layer.vb_hat, curr_layer.db_tmp, s[WORKERS::COMPUTE]);
+         NumericMatrix::matsub(curr_layer.b, curr_layer.db_tmp, curr_layer.b, &handle, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("AdamW Weight Update {:.3}s", timer);
    }
 
-   //TODO verify this works correclty with the batched inferense
+   // TODO verify this works correclty with the batched inferense
    void evaluate(NumericMatrix::Matrix<T, Backend>& eval_samples,
                  NumericMatrix::Matrix<T, Backend>& eval_output) noexcept {
 
-      const std::size_t total_samples=eval_samples.nrows();
-      for (std::size_t i=0;i<eval_samples.nrows();i+=batchSize_in_use){
+      const std::size_t total_samples = eval_samples.nrows();
+      for (std::size_t i = 0; i < eval_samples.nrows(); i += batchSize_in_use) {
 
          NumericMatrix::MatrixView<T> x{._data = nullptr, .cols = eval_samples.ncols(), .rows = batchSize_in_use};
          NumericMatrix::MatrixView<T> y{._data = nullptr, .cols = eval_output.ncols(), .rows = batchSize_in_use};
          eval_samples.getView(x, i);
          eval_output.getView(y, i);
          forward(x);
-         tinyAI_gpuMemcpy(y.data(), layers.back().a.data() , layers.back().a.size()*sizeof(T),
-                 tinyAI_gpuMemcpyDeviceToDevice);
+         tinyAI_gpuMemcpyAsync(y.data(), layers.back().a.data(), layers.back().a.size() * sizeof(T),
+                               tinyAI_gpuMemcpyDeviceToDevice, s[WORKERS::COMPUTE]);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
 
-        std::size_t left_over = total_samples - (i + batchSize_in_use);
-        if (left_over > 0 && left_over < batchSize_in_use) {
+         std::size_t left_over = total_samples - (i + batchSize_in_use);
+         if (left_over > 0 && left_over < batchSize_in_use) {
             _pool->defrag();
             migrate_to_batchsize(left_over);
 
@@ -379,12 +393,13 @@ public:
             eval_output.getView(y_last, i + batchSize_in_use);
 
             forward(x_last);
-            tinyAI_gpuMemcpy(y_last.data(), layers.back().a.data(), layers.back().a.size()*sizeof(T),
-                             tinyAI_gpuMemcpyDeviceToDevice);
-            break; 
-       }
-    }
-  }
+            tinyAI_gpuMemcpyAsync(y_last.data(), layers.back().a.data(), layers.back().a.size() * sizeof(T),
+                                  tinyAI_gpuMemcpyDeviceToDevice, s[WORKERS::COMPUTE]);
+            CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
+            break;
+         }
+      }
+   }
 
    // Returns the number of bytes written
    size_t get_weights(T* dst) const noexcept {
@@ -394,19 +409,20 @@ public:
          if constexpr (Backend == BACKEND::HOST) {
             std::memcpy(&dst[write_index], layer.w.data(), layer.w.size() * sizeof(T));
          } else {
-            tinyAI_gpuMemcpy(&dst[write_index], layer.w.data(), layer.w.size() * sizeof(T),
-                             tinyAI_gpuMemcpyDeviceToHost);
+            tinyAI_gpuMemcpyAsync(&dst[write_index], layer.w.data(), layer.w.size() * sizeof(T),
+                                  tinyAI_gpuMemcpyDeviceToHost, s[WORKERS::COMPUTE]);
          }
          write_index += layer.w.size();
          // Biases
          if constexpr (Backend == BACKEND::HOST) {
             std::memcpy(&dst[write_index], layer.b.data(), layer.b.size() * sizeof(T));
          } else {
-            tinyAI_gpuMemcpy(&dst[write_index], layer.b.data(), layer.b.size() * sizeof(T),
-                             tinyAI_gpuMemcpyDeviceToHost);
+            tinyAI_gpuMemcpyAsync(&dst[write_index], layer.b.data(), layer.b.size() * sizeof(T),
+                                  tinyAI_gpuMemcpyDeviceToHost, s[WORKERS::COMPUTE]);
          }
          write_index += layer.b.size();
       }
+      CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
       return write_index * sizeof(T);
    }
 
@@ -418,19 +434,20 @@ public:
          if constexpr (Backend == BACKEND::HOST) {
             std::memcpy(layer.w.data(), &src[read_index], layer.w.size() * sizeof(T));
          } else {
-            tinyAI_gpuMemcpy(layer.w.data(), &src[read_index], layer.w.size() * sizeof(T),
-                             tinyAI_gpuMemcpyHostToDevice);
+            tinyAI_gpuMemcpyAsync(layer.w.data(), &src[read_index], layer.w.size() * sizeof(T),
+                                  tinyAI_gpuMemcpyHostToDevice, s[WORKERS::COMPUTE]);
          }
          read_index += layer.w.size();
          // Biases
          if constexpr (Backend == BACKEND::HOST) {
             std::memcpy(layer.b.data(), &src[read_index], layer.b.size() * sizeof(T));
          } else {
-            tinyAI_gpuMemcpy(layer.b.data(), &src[read_index], layer.b.size() * sizeof(T),
-                             tinyAI_gpuMemcpyHostToDevice);
+            tinyAI_gpuMemcpyAsync(layer.b.data(), &src[read_index], layer.b.size() * sizeof(T),
+                                  tinyAI_gpuMemcpyHostToDevice, s[WORKERS::COMPUTE]);
          }
          read_index += layer.b.size();
       }
+      CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
       return read_index * sizeof(T);
    }
 
