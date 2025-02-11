@@ -78,11 +78,12 @@ public:
       spdlog::debug("TinyAI Initalized on CPU.");
       std::cerr << "TINY AI INITIALIZED" << std::endl;
 
+      for (auto& stream : s) {
+         tinyAI_gpuStreamCreate(&stream);
+      }
+
       if constexpr (Backend == BACKEND::DEVICE) {
          spdlog::debug("TinyAI Initalized on GPU");
-         for (auto& stream : s) {
-            tinyAI_gpuStreamCreate(&stream);
-         }
          auto stat = tinyAI_blasCreate(&handle);
          if (stat != BLAS_SUCCESS) {
             std::cerr << "Stat = " << stat << std::endl;
@@ -105,10 +106,10 @@ public:
    NeuralNetwork operator=(const NeuralNetwork& other) = delete;
    NeuralNetwork operator=(NeuralNetwork&& other) = delete;
    ~NeuralNetwork() {
+      for (const auto& str : s) {
+         tinyAI_gpuStreamDestroy(str);
+      }
       if constexpr (Backend == BACKEND::DEVICE) {
-         for (const auto& str : s) {
-            tinyAI_gpuStreamDestroy(str);
-         }
          spdlog::debug("TinyAI Destroyed on GPU");
          tinyAI_blasDestroy(handle);
       } else {
@@ -208,7 +209,7 @@ public:
       spdlog::debug("Weight Update {:.3}s", timer);
    }
 
-   T train(std::size_t batchSize, T lr = 1e-3) {
+   T train_graph(std::size_t batchSize, T lr = 1e-3) {
       // We need to check whether wed need to reconfigure our internal data
       // structures now due to a batchsize change
       assert(batchSize > 0 && batchSize <= inputData.nrows() &&
@@ -222,8 +223,6 @@ public:
 
       T loss = 0.0;
       PROFILE_START("Epoch Training");
-      PROFILE_START("Pool allocation");
-      PROFILE_END();
 
       std::vector<std::size_t> perm(batchSize_in_use, 0);
       std::size_t* dperm = _pool->allocate<std::size_t>(batchSize_in_use);
@@ -233,7 +232,7 @@ public:
       }
       if constexpr (Backend == BACKEND::DEVICE) {
          tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
-                               s[WORKERS::IO_1]);
+                               s[WORKERS::COMPUTE]);
       }
       for (const auto& stream : s) {
          tinyAI_gpuStreamSynchronize(stream);
@@ -248,22 +247,22 @@ public:
                throw std::runtime_error("TinyAI unable to shuffle rows on the GPU when running with batchsizes larger "
                                         "than the max blocksize of 1024");
             }
-            for (const auto& stream : s) {
-               tinyAI_gpuStreamSynchronize(stream);
-            }
-            NumericMatrix::shuffle_rows<<<1, batchSize_in_use, 0, s[WORKERS::IO_1]>>>(
-                inputData.data(), dperm, batchedInput.data(), inputData.ncols());
-            NumericMatrix::shuffle_rows<<<1, batchSize_in_use, 0, s[WORKERS::IO_2]>>>(
-                outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
-            for (const auto& stream : s) {
-               tinyAI_gpuStreamSynchronize(stream);
-            }
 
-            // NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm,batchSize_in_use,batchedInput.data(),
-            // inputData.ncols(),s[1]) ; tinyAI_gpuStreamSynchronize(s[1]);
-            // NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm,batchSize_in_use,batchedOutput.data(),
-            // outputData.ncols(),s[2]) ; tinyAI_gpuStreamSynchronize(s[2]);
-
+            PROFILE_START("Permutation Indices");
+            for (std::size_t k = 0; k < batchSize_in_use; ++k) {
+               perm[k] = dist(generator);
+            }
+            // Launch this copy here and we wait it in the next loop
+            if constexpr (Backend == BACKEND::DEVICE) {
+               tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
+                                     s[WORKERS::COMPUTE]);
+            }
+            PROFILE_END();
+            NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
+                                                 inputData.ncols(), s[WORKERS::COMPUTE]);
+            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
+            NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
+                                                 outputData.ncols(), s[WORKERS::COMPUTE]);
          } else {
             for (std::size_t k = 0; k < batchSize_in_use; ++k) {
                const std::size_t index = dist(generator);
@@ -273,21 +272,124 @@ public:
          }
          PROFILE_END();
 
-         PROFILE_START("Permutation Indices");
-         for (std::size_t k = 0; k < batchSize_in_use; ++k) {
-            perm[k] = dist(generator);
-         }
-         // Launch this copy here and we wait it in the next loop
-         if constexpr (Backend == BACKEND::DEVICE) {
-            tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
-                                  s[WORKERS::IO_1]);
-         }
-         PROFILE_END();
          // Collect input-output
          batchedInput.getView(sample, 0);
          batchedOutput.getView(target, 0);
+         if (computeGraphsAlive) {
+            PROFILE_START("Forward");
+            cudaGraphLaunch(fwdGraphInstance, s[WORKERS::COMPUTE]);
+            PROFILE_END();
+            PROFILE_START("Error calculation");
+            // Get loss
+            NumericMatrix::matsub_error_mse(layers.back().a, target, error, &handle, s[WORKERS::COMPUTE]);
+            if constexpr (Backend == BACKEND::HOST) {
+               loss += NumericMatrix::matreduce_add(error, &handle, s[WORKERS::COMPUTE]);
+            } else {
+               loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle, s[WORKERS::COMPUTE]);
+            }
+            PROFILE_END();
+            PROFILE_START("Backward");
+            cudaGraphLaunch(bwdGraphInstance, s[WORKERS::COMPUTE]);
+            PROFILE_END();
+         } else {
+            cudaStreamBeginCapture(s[WORKERS::COMPUTE], cudaStreamCaptureModeGlobal);
+            PROFILE_START("Forward");
+            forward(sample);
+            PROFILE_END();
+            cudaStreamEndCapture(s[WORKERS::COMPUTE], &fwdGraph);
+            cudaGraphInstantiate(&fwdGraphInstance, fwdGraph, nullptr, nullptr, 0);
+            PROFILE_START("Error calculation");
+            // Get loss
+            NumericMatrix::matsub_error_mse(layers.back().a, target, error, &handle, s[WORKERS::COMPUTE]);
+            if constexpr (Backend == BACKEND::HOST) {
+               loss += NumericMatrix::matreduce_add(error, &handle, s[WORKERS::COMPUTE]);
+            } else {
+               loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle, s[WORKERS::COMPUTE]);
+            }
+            PROFILE_END();
+            cudaStreamBeginCapture(s[WORKERS::COMPUTE], cudaStreamCaptureModeGlobal);
+            PROFILE_START("Backward");
+            backward(sample, target);
+            PROFILE_END();
+            PROFILE_START("Weight Update AdamW");
+            update_weights_adamw(iter, lr);
+            PROFILE_END();
+            cudaStreamEndCapture(s[WORKERS::COMPUTE], &bwdGraph);
+            cudaGraphInstantiate(&bwdGraphInstance, bwdGraph, nullptr, nullptr, 0);
+            computeGraphsAlive = true;
+         }
+         PROFILE_END();
+         iter++;
+      }
+      PROFILE_END();
+      spdlog::debug("Epoch done");
+      return loss / (inputData.nrows() * outputData.ncols());
+   }
+
+   T train(std::size_t batchSize, T lr = 1e-3) {
+      // We need to check whether wed need to reconfigure our internal data
+      // structures now due to a batchsize change
+      assert(batchSize > 0 && batchSize <= inputData.nrows() &&
+             "Batchsize cannot be bigger than your dataset you fool!");
+      if (batchSize_in_use != batchSize) {
+         migrate_to_batchsize(batchSize);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
+      }
+      NumericMatrix::Matrix<T, Backend> error =
+          NumericMatrix::Matrix<T, Backend>(target.nrows(), target.ncols(), _pool);
+
+      T loss = 0.0;
+      PROFILE_START("Epoch Training");
+
+      std::vector<std::size_t> perm(batchSize_in_use, 0);
+      std::size_t* dperm = _pool->allocate<std::size_t>(batchSize_in_use);
+      for (const auto& stream : s) {
+         tinyAI_gpuStreamSynchronize(stream);
+      }
+      PROFILE_END();
+      for (size_t i = 0; i < inputData.nrows(); i += batchSize) {
+
+         PROFILE_START("BATCH PASS");
+         PROFILE_START("IO");
+         if constexpr (Backend == BACKEND::DEVICE) {
+            if (batchSize_in_use > 1024) {
+               throw std::runtime_error("TinyAI unable to shuffle rows on the GPU when running with batchsizes larger "
+                                        "than the max blocksize of 1024");
+            }
+
+            PROFILE_START("Permutation Indices");
+            for (std::size_t k = 0; k < batchSize_in_use; ++k) {
+               perm[k] = dist(generator);
+            }
+            // Launch this copy here and we wait it in the next loop
+            if constexpr (Backend == BACKEND::DEVICE) {
+               tinyAI_gpuMemcpyAsync(dperm, perm.data(), batchSize * sizeof(std::size_t), tinyAI_gpuMemcpyHostToDevice,
+                                     s[WORKERS::COMPUTE]);
+            }
+            CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
+            PROFILE_END();
+            NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
+                                                 inputData.ncols(), s[WORKERS::COMPUTE]);
+            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
+            NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
+                                                 outputData.ncols(), s[WORKERS::COMPUTE]);
+         } else {
+            for (std::size_t k = 0; k < batchSize_in_use; ++k) {
+               const std::size_t index = dist(generator);
+               std::memcpy(&batchedInput(k, 0), &inputData(index, 0), inputData.ncols() * sizeof(T));
+               std::memcpy(&batchedOutput(k, 0), &outputData(index, 0), outputData.ncols() * sizeof(T));
+            }
+         }
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
+         PROFILE_END();
+
+         // Collect input-output
+         batchedInput.getView(sample, 0);
+         batchedOutput.getView(target, 0);
+
          PROFILE_START("Forward");
          forward(sample);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
          PROFILE_END();
          PROFILE_START("Error calculation");
          // Get loss
@@ -297,18 +399,20 @@ public:
          } else {
             loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle, s[WORKERS::COMPUTE]);
          }
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
          PROFILE_END();
          PROFILE_START("Backward");
          backward(sample, target);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
          PROFILE_END();
          PROFILE_START("Weight Update AdamW");
          update_weights_adamw(iter, lr);
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
+         PROFILE_END();
+         CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
          PROFILE_END();
          iter++;
-         PROFILE_END();
       }
-      PROFILE_START("Pool deallocation");
-      PROFILE_END();
       PROFILE_END();
       spdlog::debug("Epoch done");
       return loss / (inputData.nrows() * outputData.ncols());
@@ -531,5 +635,9 @@ private:
    std::array<tinyAI_gpuStream_t, WORKERS::N_WORKERS> s;
    std::mt19937 generator;
    std::uniform_int_distribution<std::size_t> dist;
+
+   bool computeGraphsAlive = false;
+   cudaGraph_t fwdGraph, bwdGraph;
+   cudaGraphExec_t fwdGraphInstance, bwdGraphInstance;
 };
 } // namespace TINYAI
