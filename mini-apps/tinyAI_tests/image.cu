@@ -4,17 +4,34 @@
 #include "train.h"
 #include <omp.h>
 
+void set_log_level() {
+   spdlog::set_level(spdlog::level::info);
+   if (const char* env_p = std::getenv("DEBUG")) {
+      if (strncmp(env_p, "1", 1) == 0) {
+         spdlog::set_level(spdlog::level::debug);
+         return;
+      }
+   }
+   if (const char* env_p = std::getenv("INFO")) {
+      if (strncmp(env_p, "0", 0) == 0) {
+         spdlog::set_level(spdlog::level::off);
+      }
+   }
+}
+
 int main(int argc, char** argv) {
 
-   if (argc != 2) {
-      spdlog::error("Usage {0:s} <image file> ", argv[0]);
+   if (argc != 3) {
+      spdlog::error("Usage {0:s} <image file>  <nshifts>", argv[0]);
       return 1;
    }
+   set_log_level();
 
    const char* image_filename = argv[1];
    spdlog::info("Training on image: {0:s} ", image_filename);
 
-   constexpr std::size_t n_shifts = 9;
+   const std::size_t n_shifts = std::stoull(argv[2]);
+   ;
    constexpr std::size_t shift_step_x = 32;
    constexpr std::size_t shift_step_y = 32;
    constexpr std::size_t ff_mapping = 512;
@@ -23,16 +40,12 @@ int main(int argc, char** argv) {
    constexpr std::size_t batchSize = 256;
    constexpr type_t lr = 1e-3;
 
-   std::array<MovingImage ,1>imgs{
-   MovingImage(image_filename, n_shifts, shift_step_x, shift_step_y),
+   std::array<MovingImage, 1> imgs{
+       MovingImage(image_filename, n_shifts, shift_step_x, shift_step_y),
    };
-   omp_set_num_threads(1);
-   #pragma omp parallel
-   {
-      auto id = omp_get_thread_num();
-      learn(imgs[id], epochs, batchSize, neurons, ff_mapping, /*fourier scale read the paper-->*/ 10.0,lr);
-   }
-   
-   imgs[0].save();
+   double t = learn(imgs[0], epochs, batchSize, neurons, ff_mapping, /*fourier scale read the paper-->*/ 10.0, lr);
+   std::cout << n_shifts << "," << t << std::endl;
+
+   // imgs[0].save();
    return 0;
 }

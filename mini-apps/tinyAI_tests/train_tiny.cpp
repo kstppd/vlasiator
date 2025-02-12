@@ -4,15 +4,15 @@
 #include <driver_types.h>
 #define USE_GPU
 
-void learn(MovingImage& img, std::size_t max_epochs, std::size_t batchsize, std::size_t neurons, std::size_t ff,
+double learn(MovingImage& img, std::size_t max_epochs, std::size_t batchsize, std::size_t neurons, std::size_t ff,
            type_t scale, type_t lr) {
 
-   size_t N = 2ul * 1024ul * 1024ul * 1024ul;
+   size_t N = 5ul * 1024ul * 1024ul * 1024ul;
 #ifdef USE_GPU
    constexpr auto HW = BACKEND::DEVICE;
    void* mem;
    cudaMalloc(&mem, N);
-   std::cout << mem << std::endl;
+   // std::cout << mem << std::endl;
 #else
    constexpr auto HW = BACKEND::HOST;
    void* mem = (void*)malloc(N);
@@ -39,15 +39,15 @@ void learn(MovingImage& img, std::size_t max_epochs, std::size_t batchsize, std:
    auto V = std::chrono::high_resolution_clock::now();
    for (size_t i = 0; i < max_epochs; i++) {
 
-      auto l = nn.train(batchsize, lr);
+      auto l = nn.train_graph(batchsize, lr);
       if (i % 1 == 0) {
-         printf("Loss at epoch %zu: %f\n", i, l);
+         // printf("Loss at epoch %zu: %f\n", i, l);
       }
    }
    auto Y = std::chrono::high_resolution_clock::now();
    std::chrono::duration<double> duration = Y - V;
-   std::cout << " Tiny training took " << duration.count() << " seconds";
    nn.evaluate(xtrain, ytrain);
    cudaDeviceSynchronize();
    NumericMatrix::export_to_host(ytrain, img.ytrain);
+   return duration.count(); 
 }

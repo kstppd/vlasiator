@@ -75,8 +75,7 @@ public:
          auto* prev_layer = &layers[l - 1];
          curr_layer->setup(arch[l], arch[l - 1], batchSize, l);
       }
-      spdlog::debug("TinyAI Initalized on CPU.");
-      std::cerr << "TINY AI INITIALIZED" << std::endl;
+      spdlog::info("TinyAI initalized on CPU.");
 
       for (auto& stream : s) {
          tinyAI_gpuStreamCreate(&stream);
@@ -94,7 +93,7 @@ public:
             tinyAI_cuSetStream(handle, s[WORKERS::COMPUTE]);
          }
       } else {
-         spdlog::debug("TinyAI Initalized on CPU.");
+         spdlog::info("TinyAI initalized on GPU.");
       }
       set_log_level();
       generator();
@@ -356,15 +355,15 @@ public:
             PROFILE_END();
 
 
-            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
-            NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(inputData.data(), dperm, batchedInput.data(), inputData.ncols());
-            NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
-            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
+            // tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
+            // NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(inputData.data(), dperm, batchedInput.data(), inputData.ncols());
+            // NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
+            // tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
             
-            // NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
-            //                                      inputData.ncols(), s[WORKERS::COMPUTE]);
-            // NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
-            //                                      outputData.ncols(), s[WORKERS::COMPUTE]);
+            NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
+                                                 inputData.ncols(), s[WORKERS::COMPUTE]);
+            NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
+                                                 outputData.ncols(), s[WORKERS::COMPUTE]);
             tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
          } else {
             for (std::size_t k = 0; k < batchSize_in_use; ++k) {
@@ -570,16 +569,19 @@ private:
       }
    }
 
-   void set_log_level() const noexcept {
-      if (const char* env_p = std::getenv("DEBUG")) {
-         if (strncmp(env_p, "1", 1) == 0) {
-            spdlog::debug("Setting log level to DEBUG");
-            spdlog::set_level(spdlog::level::debug);
-         } else {
-            spdlog::set_level(spdlog::level::info);
-            spdlog::debug("Setting log level to INFO");
-         }
-      }
+   void set_log_level() {
+     spdlog::set_level(spdlog::level::info);
+     if (const char *env_p = std::getenv("DEBUG")) {
+       if (strncmp(env_p, "1", 1) == 0) {
+         spdlog::set_level(spdlog::level::debug);
+         return;
+       }
+     }
+     if (const char *env_p = std::getenv("INFO")) {
+       if (strncmp(env_p, "0", 0) == 0) {
+         spdlog::set_level(spdlog::level::off);
+       }
+     }
    }
 
    std::vector<int> arch;
