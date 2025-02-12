@@ -696,7 +696,7 @@ inline void matscale_to(const Matrix<T, BACKEND::HOST>& A, Matrix<T, BACKEND::HO
 
 template <typename T>
 inline void adamw(Matrix<T, BACKEND::HOST>& w, Matrix<T, BACKEND::HOST>& mw, Matrix<T, BACKEND::HOST>& vw,
-                  Matrix<T, BACKEND::HOST>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T lr, T epsilon,
+                  Matrix<T, BACKEND::HOST>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T lr, T epsilon, T weight_decay,
                   tinyAI_gpuStream_t s = 0) {
    for (size_t i = 0; i < w.size(); i++) {
       T dw_sq_val = dw(i) * dw(i);
@@ -704,7 +704,7 @@ inline void adamw(Matrix<T, BACKEND::HOST>& w, Matrix<T, BACKEND::HOST>& mw, Mat
       vw(i) = beta_2 * vw(i) + (T(1.0) - beta_2) * dw_sq_val;
       T mw_hat = mw(i) * m_hat_scale;
       T vw_hat = vw(i) * v_hat_scale;
-      w(i) -= lr * mw_hat / (std::sqrt(vw_hat) + epsilon);
+      w(i) -= lr * (mw_hat / (std::sqrt(vw_hat) + epsilon) + T(1.0e-4) * w(i));
    }
 }
 
