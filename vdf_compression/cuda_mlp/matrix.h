@@ -632,20 +632,6 @@ inline void matadd(const Matrix<T, BACKEND::HOST>& A, const Matrix<T, BACKEND::H
    }
 }
 
-template <typename T, ACTIVATION Activation>
-inline void matadd_and_activate(const Matrix<T, BACKEND::HOST>& A, const Matrix<T, BACKEND::HOST>& B,
-                                Matrix<T, BACKEND::HOST>& C, Matrix<T, BACKEND::HOST>& D, T w, void* cublasHandle,
-                                tinyAI_gpuStream_t s = 0) {
-   (void)cublasHandle;
-   assert(A.ncols() == B.ncols() && A.nrows() == B.nrows());
-   for (size_t i = 0; i < A.nrows(); i++) {
-      for (size_t j = 0; j < A.ncols(); j++) {
-         C(i, j) = A(i, j) + B(i, j);
-         D(i, j) = activate<Activation>(C(i, j), w);
-      }
-   }
-}
-
 template <typename T>
 inline void mataddscaled(const Matrix<T, BACKEND::HOST>& A, const Matrix<T, BACKEND::HOST>& B, T S1, T S2,
                          Matrix<T, BACKEND::HOST>& C, void* cublasHandle, tinyAI_gpuStream_t s = 0) {
@@ -937,6 +923,21 @@ template <typename T, ACTIVATION Activation> __host__ __device__ T activate_prim
       return (val >= 0) ? 1.0 : 1.0 * std::exp(val);
    }
 }
+
+template <typename T, ACTIVATION Activation>
+inline void matadd_and_activate(const Matrix<T, BACKEND::HOST>& A, const Matrix<T, BACKEND::HOST>& B,
+                                Matrix<T, BACKEND::HOST>& C, Matrix<T, BACKEND::HOST>& D, T w, void* cublasHandle,
+                                tinyAI_gpuStream_t s = 0) {
+   (void)cublasHandle;
+   assert(A.ncols() == B.ncols() && A.nrows() == B.nrows());
+   for (size_t i = 0; i < A.nrows(); i++) {
+      for (size_t j = 0; j < A.ncols(); j++) {
+         C(i, j) = A(i, j) + B(i, j);
+         D(i, j) = activate<T,Activation>(C(i, j), w);
+      }
+   }
+}
+
 
 template <typename T, ACTIVATION Activation>
 inline void mat_pointwise_activate(const Matrix<T, BACKEND::HOST>& A, Matrix<T, BACKEND::HOST>& B, T w,
