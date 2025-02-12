@@ -113,31 +113,31 @@ public:
    void forward(const NumericMatrix::Matrix<T, Backend>& input, tinyAI_blasHandle_t* handle,
                 tinyAI_gpuStream_t s = 0) noexcept {
       assert(neurons > 0 && "This layer has 0 neurons!");
-      z.zero_out(s);
       NumericMatrix::matmul(input, w, z, handle, s);
       NumericMatrix::matbroadcast(b, b_broadcasted, s);
-      NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
-      NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
+      NumericMatrix::matadd_and_activate<T, Activation>(z, b_broadcasted, z, a, wmega, handle, s);
+      // NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
+      // NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
    }
 
    void forward(const NumericMatrix::MatrixView<T>& input, tinyAI_blasHandle_t* handle,
                 tinyAI_gpuStream_t s = 0) noexcept {
       assert(neurons > 0 && "This layer has 0 neurons!");
-      z.zero_out(s);
       NumericMatrix::matmul(input, w, z, handle, s);
       NumericMatrix::matbroadcast(b, b_broadcasted, s);
-      NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
-      NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
+      NumericMatrix::matadd_and_activate<T, Activation>(z, b_broadcasted, z, a, wmega, handle, s);
+      // NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
+      // NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
    }
 
    void forward(const NumericMatrix::ConstMatrixView<T>& input, tinyAI_blasHandle_t* handle,
                 tinyAI_gpuStream_t s = 0) noexcept {
       assert(neurons > 0 && "This layer has 0 neurons!");
-      z.zero_out(s);
       NumericMatrix::matmul(input, w, z, handle, s);
       NumericMatrix::matbroadcast(b, b_broadcasted, s);
-      NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
-      NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
+      NumericMatrix::matadd_and_activate<T, Activation>(z, b_broadcasted, z, a, wmega, handle, s);
+      // NumericMatrix::matadd(z, b_broadcasted, z, handle, s);
+      // NumericMatrix::mat_pointwise_activate<T, Activation>(z, a, wmega, s);
    }
 };
 } // namespace TINYAI

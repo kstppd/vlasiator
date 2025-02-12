@@ -175,7 +175,6 @@ public:
 
          auto& next_layer = layers[i + 1];
          auto& curr_layer = layers[i];
-         next_layer.buffer.zero_out(s[WORKERS::COMPUTE]);
          NumericMatrix::transpose_into(next_layer.w, next_layer.w_t, s[WORKERS::COMPUTE]);
          NumericMatrix::matmul(next_layer.delta, next_layer.w_t, next_layer.buffer, &handle, s[WORKERS::COMPUTE]);
          NumericMatrix::mat_pointwise_activate_prime<T, Activation>(curr_layer.z, curr_layer.a_prime, curr_layer.wmega,
@@ -408,8 +407,8 @@ public:
    void update_weights_adamw(size_t iteration, T lr, T beta1 = 0.9, T beta2 = 0.999, T epsilon = 1e-8,
                              T decay = 1e-4) noexcept {
       spdlog::stopwatch timer;
-      T m_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta1, iteration));
-      T v_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta2, iteration));
+      const T m_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta1, iteration));
+      const T v_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta2, iteration));
       for (auto& curr_layer : layers) {
          // Weights
          NumericMatrix::adamw(curr_layer.w, curr_layer.m_w, curr_layer.v_w, curr_layer.dw, m_hat_scale, v_hat_scale,
@@ -417,6 +416,10 @@ public:
          // Biases
          NumericMatrix::adamw(curr_layer.b, curr_layer.m_b, curr_layer.v_b, curr_layer.db, m_hat_scale, v_hat_scale,
                               beta1, beta2, lr, epsilon, s[WORKERS::COMPUTE]);
+
+         // NumericMatrix::adamw2(curr_layer.w, curr_layer.m_w, curr_layer.v_w, curr_layer.dw, curr_layer.b,
+         // curr_layer.m_b, curr_layer.v_b, curr_layer.db, m_hat_scale, v_hat_scale, beta1, beta2, lr, epsilon,
+         // s[WORKERS::COMPUTE]);
       }
       spdlog::debug("AdamW Weight Update {:.3}s", timer);
    }
