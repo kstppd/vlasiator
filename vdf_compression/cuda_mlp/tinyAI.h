@@ -196,19 +196,6 @@ public:
       spdlog::debug("Backward {:.3}s", timer);
    }
 
-   void update_weights() noexcept {
-      spdlog::stopwatch timer;
-      for (std::size_t i = 0; i < layers.size(); i++) {
-         auto& current = layers[i];
-         T lr = 1e-1;
-         NumericMatrix::matscale(current.dw, static_cast<T>(lr / batchSize_in_use), &handle);
-         NumericMatrix::matscale(current.db, static_cast<T>(lr / batchSize_in_use), &handle);
-         NumericMatrix::matsub(current.w, current.dw, current.w, &handle);
-         NumericMatrix::matsub(current.b, current.db, current.b, &handle);
-      }
-      spdlog::debug("Weight Update {:.3}s", timer);
-   }
-
    T train_graph(std::size_t batchSize, T lr = 1e-3) {
       // We need to check whether wed need to reconfigure our internal data
       // structures now due to a batchsize change
@@ -421,51 +408,15 @@ public:
    void update_weights_adamw(size_t iteration, T lr, T beta1 = 0.9, T beta2 = 0.999, T epsilon = 1e-8,
                              T decay = 1e-4) noexcept {
       spdlog::stopwatch timer;
+      T m_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta1, iteration));
+      T v_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta2, iteration));
       for (auto& curr_layer : layers) {
-
          // Weights
-         //  curr_layer.dw_copy=curr_layer.dw;
-         curr_layer.dw.copy_to(curr_layer.dw_copy, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.m_w, beta1, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.dw, static_cast<T>(1.0 - beta1), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd(curr_layer.m_w, curr_layer.dw, curr_layer.m_w, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.v_w, beta2, &handle, s[WORKERS::COMPUTE]);
-
-         NumericMatrix::mat_pointwise_mul(curr_layer.dw_copy, curr_layer.dw_copy, curr_layer.tmp, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.tmp, static_cast<T>(1.0 - beta2), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd(curr_layer.v_w, curr_layer.tmp, curr_layer.v_w, &handle, s[WORKERS::COMPUTE]);
-         T m_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta1, iteration));
-         T v_hat_scale = static_cast<T>(1.0) / (1 - std::pow(beta2, iteration));
-
-         NumericMatrix::matscale_to(curr_layer.m_w, curr_layer.mw_hat, m_hat_scale, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale_to(curr_layer.v_w, curr_layer.vw_hat, v_hat_scale, &handle, s[WORKERS::COMPUTE]);
-
-         NumericMatrix::mat_pointwise_sqrt(curr_layer.vw_hat, curr_layer.vw_hat, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd_scalar(curr_layer.vw_hat, curr_layer.vw_hat, epsilon, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.mw_hat, static_cast<T>(lr), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::mat_pointwise_div(curr_layer.mw_hat, curr_layer.vw_hat, curr_layer.tmp, s[WORKERS::COMPUTE]);
-         NumericMatrix::matsub(curr_layer.w, curr_layer.tmp, curr_layer.w, &handle, s[WORKERS::COMPUTE]);
-
+         NumericMatrix::adamw(curr_layer.w, curr_layer.m_w, curr_layer.v_w, curr_layer.dw, m_hat_scale, v_hat_scale,
+                              beta1, beta2, lr, epsilon, s[WORKERS::COMPUTE]);
          // Biases
-         curr_layer.db.copy_to(curr_layer.db_copy, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.m_b, beta1, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.db, static_cast<T>(1.0 - beta1), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd(curr_layer.m_b, curr_layer.db, curr_layer.m_b, &handle, s[WORKERS::COMPUTE]);
-
-         NumericMatrix::matscale(curr_layer.v_b, beta2, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::mat_pointwise_mul(curr_layer.db_copy, curr_layer.db_copy, curr_layer.db_tmp,
-                                          s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.db_tmp, static_cast<T>(1.0 - beta2), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd(curr_layer.v_b, curr_layer.db_tmp, curr_layer.v_b, &handle, s[WORKERS::COMPUTE]);
-
-         NumericMatrix::matscale_to(curr_layer.m_b, curr_layer.mb_hat, m_hat_scale, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale_to(curr_layer.v_b, curr_layer.vb_hat, v_hat_scale, &handle, s[WORKERS::COMPUTE]);
-
-         NumericMatrix::mat_pointwise_sqrt(curr_layer.vb_hat, curr_layer.vb_hat, s[WORKERS::COMPUTE]);
-         NumericMatrix::matadd_scalar(curr_layer.vb_hat, curr_layer.vb_hat, epsilon, &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::matscale(curr_layer.mb_hat, static_cast<T>(lr), &handle, s[WORKERS::COMPUTE]);
-         NumericMatrix::mat_pointwise_div(curr_layer.mb_hat, curr_layer.vb_hat, curr_layer.db_tmp, s[WORKERS::COMPUTE]);
-         NumericMatrix::matsub(curr_layer.b, curr_layer.db_tmp, curr_layer.b, &handle, s[WORKERS::COMPUTE]);
+         NumericMatrix::adamw(curr_layer.b, curr_layer.m_b, curr_layer.v_b, curr_layer.db, m_hat_scale, v_hat_scale,
+                              beta1, beta2, lr, epsilon, s[WORKERS::COMPUTE]);
       }
       spdlog::debug("AdamW Weight Update {:.3}s", timer);
    }
