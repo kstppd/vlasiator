@@ -696,7 +696,7 @@ inline void matscale_to(const Matrix<T, BACKEND::HOST>& A, Matrix<T, BACKEND::HO
 
 template <typename T>
 inline void adamw(Matrix<T, BACKEND::HOST>& w, Matrix<T, BACKEND::HOST>& mw, Matrix<T, BACKEND::HOST>& vw,
-                  Matrix<T, BACKEND::HOST>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T lr, T epsilon, T weight_decay,
+                  Matrix<T, BACKEND::HOST>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T weight_decay, T lr, T epsilon,
                   tinyAI_gpuStream_t s = 0) {
    for (size_t i = 0; i < w.size(); i++) {
       T dw_sq_val = dw(i) * dw(i);
@@ -704,7 +704,7 @@ inline void adamw(Matrix<T, BACKEND::HOST>& w, Matrix<T, BACKEND::HOST>& mw, Mat
       vw(i) = beta_2 * vw(i) + (T(1.0) - beta_2) * dw_sq_val;
       T mw_hat = mw(i) * m_hat_scale;
       T vw_hat = vw(i) * v_hat_scale;
-      w(i) -= lr * (mw_hat / (std::sqrt(vw_hat) + epsilon) + T(1.0e-4) * w(i));
+      w(i) -= lr * (mw_hat / (std::sqrt(vw_hat) + epsilon) + weight_decay * w(i));
    }
 }
 
@@ -1265,7 +1265,7 @@ inline void matsub(const Matrix<T, BACKEND::DEVICE>& A, const Matrix<T, BACKEND:
 }
 
 template <typename T>
-__global__ void adamw_kernel(T* w, T* mw, T* vw, T* dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T lr,
+__global__ void adamw_kernel(T* w, T* mw, T* vw, T* dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T weight_decay, T lr,
                              T epsilon, std::size_t len) {
    const std::size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
    if (tid < len) {
@@ -1277,18 +1277,18 @@ __global__ void adamw_kernel(T* w, T* mw, T* vw, T* dw, T m_hat_scale, T v_hat_s
       vw[tid] = vw_new;
       T mw_hat = mw_new * m_hat_scale;
       T vw_hat = vw_new * v_hat_scale;
-      w[tid] -= lr * mw_hat / (std::sqrt(vw_hat) + epsilon);
+      w[tid] -= lr * (mw_hat / (std::sqrt(vw_hat) + epsilon) + weight_decay * w[tid]);
    }
 }
 
 template <typename T>
 inline void adamw(Matrix<T, BACKEND::DEVICE>& w, Matrix<T, BACKEND::DEVICE>& mw, Matrix<T, BACKEND::DEVICE>& vw,
-                  Matrix<T, BACKEND::DEVICE>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T lr, T epsilon,
+                  Matrix<T, BACKEND::DEVICE>& dw, T m_hat_scale, T v_hat_scale, T beta_1, T beta_2, T weight_decay, T lr, T epsilon,
                   tinyAI_gpuStream_t s = 0) {
    const size_t threads = std::min(__m_BLOCKSIZE__, w.size());
    const size_t blocks = w.size() / __m_BLOCKSIZE__ + (w.size() % __m_BLOCKSIZE__ != 0);
    adamw_kernel<<<blocks, threads, 0, s>>>(w.data(), mw.data(), vw.data(), dw.data(), m_hat_scale, v_hat_scale, beta_1,
-                                           beta_2, lr, epsilon, w.size());
+                                           beta_2, weight_decay, lr, epsilon, w.size());
    CHECK_ERR(tinyAI_gpuPeekAtLastError());
 }
 

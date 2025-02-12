@@ -354,11 +354,18 @@ public:
             }
             CHECK_ERR(tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]));
             PROFILE_END();
-            NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
-                                                 inputData.ncols(), s[WORKERS::COMPUTE]);
+
+
             tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
-            NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
-                                                 outputData.ncols(), s[WORKERS::COMPUTE]);
+            NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(inputData.data(), dperm, batchedInput.data(), inputData.ncols());
+            NumericMatrix::shuffle_rows<<<1,batchSize_in_use,0,s[WORKERS::COMPUTE]>>>(outputData.data(), dperm, batchedOutput.data(), outputData.ncols());
+            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
+            
+            // NumericMatrix::shuffle_rows_warpwide(inputData.data(), dperm, batchSize_in_use, batchedInput.data(),
+            //                                      inputData.ncols(), s[WORKERS::COMPUTE]);
+            // NumericMatrix::shuffle_rows_warpwide(outputData.data(), dperm, batchSize_in_use, batchedOutput.data(),
+            //                                      outputData.ncols(), s[WORKERS::COMPUTE]);
+            tinyAI_gpuStreamSynchronize(s[WORKERS::COMPUTE]);
          } else {
             for (std::size_t k = 0; k < batchSize_in_use; ++k) {
                const std::size_t index = dist(generator);
@@ -412,10 +419,10 @@ public:
       for (auto& curr_layer : layers) {
          // Weights
          NumericMatrix::adamw(curr_layer.w, curr_layer.m_w, curr_layer.v_w, curr_layer.dw, m_hat_scale, v_hat_scale,
-                              beta1, beta2, lr, epsilon, s[WORKERS::COMPUTE]);
+                              beta1, beta2, decay, lr, epsilon, s[WORKERS::COMPUTE]);
          // Biases
          NumericMatrix::adamw(curr_layer.b, curr_layer.m_b, curr_layer.v_b, curr_layer.db, m_hat_scale, v_hat_scale,
-                              beta1, beta2, lr, epsilon, s[WORKERS::COMPUTE]);
+                              beta1, beta2, decay, lr, epsilon, s[WORKERS::COMPUTE]);
 
          // NumericMatrix::adamw2(curr_layer.w, curr_layer.m_w, curr_layer.v_w, curr_layer.dw, curr_layer.b,
          // curr_layer.m_b, curr_layer.v_b, curr_layer.db, m_hat_scale, v_hat_scale, beta1, beta2, lr, epsilon,
