@@ -7,6 +7,7 @@
 #define tinyAI_StreamEndCapture cudaStreamEndCapture
 #define tinyAI_GraphInstantiate cudaGraphInstantiate 
 #define tinyAI_StreamCaptureModeGlobal cudaStreamCaptureModeGlobal
+#define tinyAI_cuSetStream cublasSetStream
 
 #define tinyAI_blasHandle_t cublasHandle_t
 #define tinyAI_randState curandState
@@ -172,5 +173,6 @@
 #define tinyAI_gpuCpuDeviceId hipCpuDeviceId
 #define tinyAI_gpuMemoryAdvise hipMemoryAdvise
 #define tinyAI_gpuMemAdvise hipMemAdvise
+#define tinyAI_cuSetStream hipblasSetStream 
 
 #endif

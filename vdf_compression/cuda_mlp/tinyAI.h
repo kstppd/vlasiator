@@ -91,7 +91,7 @@ public:
             throw std::runtime_error("Failed to initialize CUBLAS");
          } else {
             spdlog::debug("CUBLAS initialized succesfully.");
-            cublasSetStream(handle, s[WORKERS::COMPUTE]);
+            tinyAI_cuSetStream(handle, s[WORKERS::COMPUTE]);
          }
       } else {
          spdlog::debug("TinyAI Initalized on CPU.");
