@@ -263,7 +263,7 @@ public:
          batchedOutput.getView(target, 0);
          if (computeGraphsAlive) {
             PROFILE_START("Forward");
-            cudaGraphLaunch(fwdGraphInstance, s[WORKERS::COMPUTE]);
+            tinyAI_GraphLaunch(fwdGraphInstance, s[WORKERS::COMPUTE]);
             PROFILE_END();
             PROFILE_START("Error calculation");
             // Get loss
@@ -275,15 +275,15 @@ public:
             }
             PROFILE_END();
             PROFILE_START("Backward");
-            cudaGraphLaunch(bwdGraphInstance, s[WORKERS::COMPUTE]);
+            tinyAI_GraphLaunch(bwdGraphInstance, s[WORKERS::COMPUTE]);
             PROFILE_END();
          } else {
-            cudaStreamBeginCapture(s[WORKERS::COMPUTE], cudaStreamCaptureModeGlobal);
+            tinyAI_StreamBeginCapture(s[WORKERS::COMPUTE], tinyAI_StreamCaptureModeGlobal);
             PROFILE_START("Forward");
             forward(sample);
             PROFILE_END();
-            cudaStreamEndCapture(s[WORKERS::COMPUTE], &fwdGraph);
-            cudaGraphInstantiate(&fwdGraphInstance, fwdGraph, nullptr, nullptr, 0);
+            tinyAI_StreamEndCapture(s[WORKERS::COMPUTE], &fwdGraph);
+            tinyAI_GraphInstantiate(&fwdGraphInstance, fwdGraph, nullptr, nullptr, 0);
             PROFILE_START("Error calculation");
             // Get loss
             NumericMatrix::matsub_error_mse(layers.back().a, target, error, &handle, s[WORKERS::COMPUTE]);
@@ -293,15 +293,15 @@ public:
                loss += NumericMatrix::matreduce_add_gpu(error, _pool, &handle, s[WORKERS::COMPUTE]);
             }
             PROFILE_END();
-            cudaStreamBeginCapture(s[WORKERS::COMPUTE], cudaStreamCaptureModeGlobal);
+            tinyAI_StreamBeginCapture(s[WORKERS::COMPUTE], tinyAI_StreamCaptureModeGlobal);
             PROFILE_START("Backward");
             backward(sample, target);
             PROFILE_END();
             PROFILE_START("Weight Update AdamW");
             update_weights_adamw(iter, lr);
             PROFILE_END();
-            cudaStreamEndCapture(s[WORKERS::COMPUTE], &bwdGraph);
-            cudaGraphInstantiate(&bwdGraphInstance, bwdGraph, nullptr, nullptr, 0);
+            tinyAI_StreamEndCapture(s[WORKERS::COMPUTE], &bwdGraph);
+            tinyAI_GraphInstantiate(&bwdGraphInstance, bwdGraph, nullptr, nullptr, 0);
             computeGraphsAlive = true;
          }
          PROFILE_END();
@@ -591,7 +591,7 @@ private:
    std::uniform_int_distribution<std::size_t> dist;
 
    bool computeGraphsAlive = false;
-   cudaGraph_t fwdGraph, bwdGraph;
-   cudaGraphExec_t fwdGraphInstance, bwdGraphInstance;
+   tinyAI_Graph_t fwdGraph, bwdGraph;
+   tinyAI_GraphExec_t fwdGraphInstance, bwdGraphInstance;
 };
 } // namespace TINYAI

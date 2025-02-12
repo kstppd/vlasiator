@@ -1,5 +1,13 @@
 #ifdef __CUDACC__
 
+#define tinyAI_Graph_t  cudaGraph_t 
+#define tinyAI_GraphExec_t cudaGraphExec_t
+#define tinyAI_GraphLaunch cudaGraphLaunch
+#define tinyAI_StreamBeginCapture cudaStreamBeginCapture
+#define tinyAI_StreamEndCapture cudaStreamEndCapture
+#define tinyAI_GraphInstantiate cudaGraphInstantiate 
+#define tinyAI_StreamCaptureModeGlobal cudaStreamCaptureModeGlobal
+
 #define tinyAI_blasHandle_t cublasHandle_t
 #define tinyAI_randState curandState
 #define tinyAI_randinit curand_init
@@ -85,6 +93,14 @@
 #define tinyAI_gpuMemAdvise cudaMemAdvise
 
 #elif __HIP__
+
+#define tinyAI_Graph_t  hipGraph_t 
+#define tinyAI_GraphExec_t hipGraphExec_t
+#define tinyAI_GraphLaunch hipGraphLaunch
+#define tinyAI_StreamBeginCapture hipStreamBeginCapture
+#define tinyAI_StreamEndCapture hipStreamEndCapture
+#define tinyAI_GraphInstantiate hipGraphInstantiate 
+#define tinyAI_StreamCaptureModeGlobal hipStreamCaptureModeGlobal
 
 #define tinyAI_blasHandle_t hipblasHandle_t
 #define tinyAI_blasStatus_t hipblasStatus_t
