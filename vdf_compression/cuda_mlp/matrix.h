@@ -1482,7 +1482,11 @@ inline constexpr std::array<std::size_t, 2> launch_params(std::size_t arraySize,
 }
 
 template <typename T> __global__ void reduce_sum_kernel(const T* data, T* block_sums, std::size_t len) {
+#ifdef __NVCC__
    __shared__ T shared_sum[__m_WARPSIZE__];
+#else
+   __shared__ T shared_sum[__m_WARPSIZE__/4];
+#endif
    std::size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
    std::size_t lane = threadIdx.x % __m_WARPSIZE__;
    std::size_t warp_id = threadIdx.x / __m_WARPSIZE__;
