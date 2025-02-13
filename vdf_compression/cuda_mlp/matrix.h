@@ -285,7 +285,15 @@ public:
       if (_data == nullptr) {
          throw std::bad_alloc();
       }
-      zero_out();
+      //YES this is a SYNC memset move on!
+      // zero_out();
+      if constexpr (backend == BACKEND::DEVICE) {
+         CHECK_ERR(tinyAI_gpuMemset(_data, 0, size() * sizeof(T)));
+      }
+      if constexpr (backend == BACKEND::HOST) {
+         memset(_data, 0, size() * sizeof(T));
+      }
+      tinyAI_gpuDeviceSynchronize();
    }
 
    Matrix(const Matrix& other) {
