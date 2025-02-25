@@ -30,7 +30,7 @@
 
 #include "../definitions.h"
 #include "../common.h"
-#include "../spatial_cell.hpp"
+#include "../spatial_cell_wrapper.hpp"
 
 using namespace spatial_cell;
 
@@ -43,9 +43,9 @@ void blockVelocityFirstMoments(const Realf* avgs,const Real* blockParams,
 template<typename REAL> 
 void blockVelocitySecondMoments(const Realf* avgs,const Real* blockParams,
                                 const REAL v[3],
-                                REAL* array);
+                                std::vector<Real>& array);
 
-void calculateMoments_R_maxdt(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+void calculateMoments_R(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                               const std::vector<CellID>& cells,
                               const bool& computeSecond);
 
@@ -62,7 +62,7 @@ void calculateMoments_V(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpi
  * least size four. After this function returns, the contents of 
  * 'array' are as follows: array[0]=n; array[1]=n*Vx; array[2]=nVy;
  * array[3]=nVz; Here n is the scaled number density, i.e., number density 
- * times population mass / proton mass. This function is AMR safe.
+ * times population mass / proton mass. This function is VAMR safe.
  * @param avgs Distribution function.
  * @param blockParams Parameters for the given velocity block.
  * @param array Array of at least size four where the calculated moments are added.*/
@@ -100,7 +100,7 @@ void blockVelocityFirstMoments(
  * results to 'array', which must have at least size three. After this function 
  * returns, the contents of 'array' are as follows: array[0]=n(Vx-Vx0); 
  * array[1]=n(Vy-Vy0); array[2]=n(Vz-Vz0); Here Vx0,Vy0,Vz0 are the components 
- * of the bulk velocity (calculated over all species). This function is AMR safe.
+ * of the bulk velocity (calculated over all species). This function is VAMR safe.
  * @param avgs Distribution function.
  * @param blockParams Parameters for the given velocity block.
  * @param averageVX Bulk velocity x
@@ -114,13 +114,16 @@ void blockVelocitySecondMoments(
         const REAL averageVX,
         const REAL averageVY,
         const REAL averageVZ,
-        REAL* array) {
+        std::vector<Real>& array) {
 
    const Real HALF = 0.5;
 
    Real nvx2_sum = 0.0;
    Real nvy2_sum = 0.0;
    Real nvz2_sum = 0.0;
+   Real nvyvz_sum = 0.0;
+   Real nvxvz_sum = 0.0;
+   Real nvxvy_sum = 0.0;
    for (uint k=0; k<WID; ++k) for (uint j=0; j<WID; ++j) for (uint i=0; i<WID; ++i) {
       const Real VX = blockParams[BlockParams::VXCRD] + (i+HALF)*blockParams[BlockParams::DVX];
       const Real VY = blockParams[BlockParams::VYCRD] + (j+HALF)*blockParams[BlockParams::DVY];
@@ -129,12 +132,19 @@ void blockVelocitySecondMoments(
       nvx2_sum += avgs[cellIndex(i,j,k)] * (VX - averageVX) * (VX - averageVX);
       nvy2_sum += avgs[cellIndex(i,j,k)] * (VY - averageVY) * (VY - averageVY);
       nvz2_sum += avgs[cellIndex(i,j,k)] * (VZ - averageVZ) * (VZ - averageVZ);
+
+      nvyvz_sum += avgs[cellIndex(i, j, k)] * (VY - averageVY) * (VZ - averageVZ);
+      nvxvz_sum += avgs[cellIndex(i, j, k)] * (VX - averageVX) * (VZ - averageVZ);
+      nvxvy_sum += avgs[cellIndex(i, j, k)] * (VX - averageVX) * (VY - averageVY);
    }
    
    const Real DV3 = blockParams[BlockParams::DVX]*blockParams[BlockParams::DVY]*blockParams[BlockParams::DVZ];
    array[0] += nvx2_sum * DV3;
    array[1] += nvy2_sum * DV3;
    array[2] += nvz2_sum * DV3;
+   array[3] += nvyvz_sum * DV3;
+   array[4] += nvxvz_sum * DV3;
+   array[5] += nvxvy_sum * DV3;
 }
 
 #endif

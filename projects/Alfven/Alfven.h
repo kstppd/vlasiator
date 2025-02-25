@@ -32,7 +32,6 @@ namespace projects {
       Real rho;
       Real T;
       Real A_VEL;
-      uint nVelocitySamples;
    };
 
    class Alfven: public Project {
@@ -43,6 +42,11 @@ namespace projects {
       virtual bool initialize(void);
       static void addParameters(void);
       virtual void getParameters(void);
+      virtual void setProjectBField(
+         FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+         FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+         FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      );
       
     protected:
       Real getDistribValue(
@@ -67,7 +71,6 @@ namespace projects {
       Real ALPHA;
       Real WAVELENGTH;
       Real A_MAG;
-      uint nSpaceSamples;
       std::vector<AlfvenSpeciesParameters> speciesParams;
    } ; // class Alfven
 } // namespace projects

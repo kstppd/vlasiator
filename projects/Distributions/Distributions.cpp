@@ -150,30 +150,52 @@ namespace projects {
    }
 
    void Distributions::calcCellParameters(spatial_cell::SpatialCell* cell,creal& t) {
-      Real* cellParams = cell->get_cell_parameters();
-      setRandomCellSeed(cell,cellParams);
-      if (this->lambda != 0.0) {
-         cellParams[CellParams::PERBX] = this->dBx*cos(2.0 * M_PI * cellParams[CellParams::XCRD] / this->lambda);
-         cellParams[CellParams::PERBY] = this->dBy*sin(2.0 * M_PI * cellParams[CellParams::XCRD] / this->lambda);
-         cellParams[CellParams::PERBZ] = this->dBz*cos(2.0 * M_PI * cellParams[CellParams::XCRD] / this->lambda);
-      }
-
-      cellParams[CellParams::PERBX] += this->magXPertAbsAmp * (0.5 - getRandomNumber(cell));
-      cellParams[CellParams::PERBY] += this->magYPertAbsAmp * (0.5 - getRandomNumber(cell));
-      cellParams[CellParams::PERBZ] += this->magZPertAbsAmp * (0.5 - getRandomNumber(cell));
-
+      std::default_random_engine rndState;
+      setRandomCellSeed(cell,rndState);
       for (uint i=0; i<2; i++) {
-         this->rhoRnd[i] = this->rho[i] + this->rhoPertAbsAmp[i] * (0.5 - getRandomNumber(cell));
+         this->rhoRnd[i] = this->rho[i] + this->rhoPertAbsAmp[i] * (0.5 - getRandomNumber(rndState));
       }
    }
 
-   void Distributions::setCellBackgroundField(SpatialCell* cell) {
+   void Distributions::setProjectBField(
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+   ) {
       ConstantField bgField;
       bgField.initialize(this->Bx,
                          this->By,
                          this->Bz);
       
-      setBackgroundField(bgField,cell->parameters.data(), cell->derivatives.data(),cell->derivativesBVOL.data());
+      setBackgroundField(bgField, BgBGrid);
+      
+      if(!P::isRestart) {
+         const auto localSize = BgBGrid.getLocalSize().data();
+         
+#pragma omp parallel for collapse(3)
+         for (FsGridTools::FsIndex_t x = 0; x < localSize[0]; ++x) {
+            for (FsGridTools::FsIndex_t y = 0; y < localSize[1]; ++y) {
+               for (FsGridTools::FsIndex_t z = 0; z < localSize[2]; ++z) {
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* cell = perBGrid.get(x, y, z);
+                  const int64_t cellid = perBGrid.GlobalIDForCoords(x, y, z);
+                  const std::array<Real, 3> xyz = perBGrid.getPhysicalCoords(x, y, z);
+                  
+                  std::default_random_engine rndState;
+                  setRandomSeed(cellid,rndState);
+                  
+                  if (this->lambda != 0.0) {
+                     cell->at(fsgrids::bfield::PERBX) = this->dBx*cos(2.0 * M_PI * xyz[0] / this->lambda);
+                     cell->at(fsgrids::bfield::PERBY) = this->dBy*sin(2.0 * M_PI * xyz[0] / this->lambda);
+                     cell->at(fsgrids::bfield::PERBZ) = this->dBz*cos(2.0 * M_PI * xyz[0] / this->lambda);
+                  }
+
+                  cell->at(fsgrids::bfield::PERBX) += this->magXPertAbsAmp * (0.5 - getRandomNumber(rndState));
+                  cell->at(fsgrids::bfield::PERBY) += this->magYPertAbsAmp * (0.5 - getRandomNumber(rndState));
+                  cell->at(fsgrids::bfield::PERBZ) += this->magZPertAbsAmp * (0.5 - getRandomNumber(rndState));
+               }
+            }
+         }
+      }
    }
    
    vector<std::array<Real, 3>> Distributions::getV0(

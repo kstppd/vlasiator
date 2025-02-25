@@ -29,7 +29,6 @@
    #define DEBUG_FSOLVER
 #endif
 
-namespace fs = fieldsolver;
 namespace pc = physicalconstants;
 using namespace std;
 
@@ -94,11 +93,11 @@ Real calculateCflSpeed(
  * \param ret_vW Whistler speed returned
  */
 void calculateWaveSpeedYZ(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
    cint i,
    cint j,
    cint k,
@@ -164,13 +163,22 @@ void calculateWaveSpeedYZ(
    // Simulations which predominantly contain heavier ion species will have to change this!
    //
    // See
+   // T E Stringer, Low-frequency waves in an unbounded plasma
+   // Journal of Nuclear Energy. Part C, Plasma Physics, Accelerators, Thermonuclear Research
+   // Volume 5, Number 2, page 89
+   // Section BC in Fig. 1 and Table 1, referenced later e.g. by Gary, for the current one,
+   // and the below for the heavy ions
    // https://www.ann-geophys.net/26/1605/2008/  (Whistler waves)
    // and
    // http://iopscience.iop.org/article/10.1088/0253-6102/43/2/026/meta (Alfven waves)
    // for details.
    const Real vA2 = divideIfNonZero(Bmag2, pc::MU_0*rhom); // Alfven speed
    const Real vS2 = divideIfNonZero(p11+p22+p33, 2.0*rhom); // sound speed, adiabatic coefficient 3/2, P=1/3*trace in sound speed
-   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+//   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+   const Real vW = Parameters::ohmHallTerm > 0 ?
+      sqrt(vA2) * (1 + divideIfNonZero(2*M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)
+            / sqrt(1 + divideIfNonZero(  M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)))
+      : 0.0; // whistler speed
    
    ret_vA = sqrt(vA2);
    ret_vS = sqrt(vS2);
@@ -208,11 +216,11 @@ void calculateWaveSpeedYZ(
  * \param ret_vW Whistler speed returned
  */
 void calculateWaveSpeedXZ(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
    cint i,
    cint j,
    cint k,
@@ -278,13 +286,22 @@ void calculateWaveSpeedXZ(
    // Simulations which predominantly contain heavier ion species will have to change this!
    //
    // See
+   // T E Stringer, Low-frequency waves in an unbounded plasma
+   // Journal of Nuclear Energy. Part C, Plasma Physics, Accelerators, Thermonuclear Research
+   // Volume 5, Number 2, page 89
+   // Section BC in Fig. 1 and Table 1, referenced later e.g. by Gary, for the current one,
+   // and the below for the heavy ions
    // https://www.ann-geophys.net/26/1605/2008/  (Whistler waves)
    // and
    // http://iopscience.iop.org/article/10.1088/0253-6102/43/2/026/meta (Alfven waves)
    // for details.
    const Real vA2 = divideIfNonZero(Bmag2, pc::MU_0*rhom); // Alfven speed
    const Real vS2 = divideIfNonZero(p11+p22+p33, 2.0*rhom); // sound speed, adiabatic coefficient 3/2, P=1/3*trace in sound speed
-   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+//   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+   const Real vW = Parameters::ohmHallTerm > 0 ?
+      sqrt(vA2) * (1 + divideIfNonZero(2*M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)
+            / sqrt(1 + divideIfNonZero(  M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)))
+      : 0.0; // whistler speed
    
    ret_vA = sqrt(vA2);
    ret_vS = sqrt(vS2);
@@ -322,11 +339,11 @@ void calculateWaveSpeedXZ(
  * \param ret_vW Whistler speed returned
  */
 void calculateWaveSpeedXY(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
    cint i,
    cint j,
    cint k,
@@ -392,13 +409,22 @@ void calculateWaveSpeedXY(
    // Simulations which predominantly contain heavier ion species will have to change this!
    //
    // See
+   // T E Stringer, Low-frequency waves in an unbounded plasma
+   // Journal of Nuclear Energy. Part C, Plasma Physics, Accelerators, Thermonuclear Research
+   // Volume 5, Number 2, page 89
+   // Section BC in Fig. 1 and Table 1, referenced later e.g. by Gary, for the current one,
+   // and the below for the heavy ions
    // https://www.ann-geophys.net/26/1605/2008/  (Whistler waves)
    // and
    // http://iopscience.iop.org/article/10.1088/0253-6102/43/2/026/meta (Alfven waves)
    // for details.
    const Real vA2 = divideIfNonZero(Bmag2, pc::MU_0*rhom); // Alfven speed
    const Real vS2 = divideIfNonZero(p11+p22+p33, 2.0*rhom); // sound speed, adiabatic coefficient 3/2, P=1/3*trace in sound speed
-   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+//   const Real vW = Parameters::ohmHallTerm > 0 ? divideIfNonZero(2.0*M_PI*vA2*pc::MASS_PROTON, perBGrid.DX*pc::CHARGE*sqrt(Bmag2)) : 0.0; // whistler speed
+   const Real vW = Parameters::ohmHallTerm > 0 ?
+      sqrt(vA2) * (1 + divideIfNonZero(2*M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)
+            / sqrt(1 + divideIfNonZero(  M_PI*M_PI*pc::MASS_PROTON*pc::MASS_PROTON, perBGrid.DX*perBGrid.DX*rhom*pc::CHARGE*pc::CHARGE*pc::MU_0)))
+      : 0.0; // whistler speed
    
    ret_vA = sqrt(vA2);
    ret_vS = sqrt(vS2);
@@ -426,15 +452,15 @@ void calculateWaveSpeedXY(
  * \param RKCase Element in the enum defining the Runge-Kutta method steps
  */
 void calculateEdgeElectricFieldX(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-   FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    cint i,
    cint j,
    cint k,
@@ -784,15 +810,15 @@ void calculateEdgeElectricFieldX(
  * \param RKCase Element in the enum defining the Runge-Kutta method steps
  */
 void calculateEdgeElectricFieldY(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-   FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    cint i,
    cint j,
    cint k,
@@ -1141,15 +1167,15 @@ void calculateEdgeElectricFieldY(
  * \param RKCase Element in the enum defining the Runge-Kutta method steps
  */
 void calculateEdgeElectricFieldZ(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-   FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    cint i,
    cint j,
    cint k,
@@ -1513,15 +1539,15 @@ void calculateEdgeElectricFieldZ(
  * 
  */
 void calculateElectricField(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-   FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    cint i,
    cint j,
    cint k,
@@ -1530,15 +1556,11 @@ void calculateElectricField(
 ) {
    cuint cellSysBoundaryFlag = technicalGrid.get(i,j,k)->sysBoundaryFlag;
    
-   if (cellSysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) return;
+   if (cellSysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE || cellSysBoundaryFlag == sysboundarytype::OUTER_BOUNDARY_PADDING) return;
    
-   cuint cellSysBoundaryLayer = technicalGrid.get(i,j,k)->sysBoundaryLayer;
+   cuint bitfield = technicalGrid.get(i,j,k)->SOLVE;
    
-   if ((cellSysBoundaryFlag != sysboundarytype::NOT_SYSBOUNDARY) && (cellSysBoundaryLayer != 1)) {
-      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 0);
-      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 1);
-      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 2);
-   } else {
+   if ((bitfield & compute::EX) == compute::EX) {
       calculateEdgeElectricFieldX(
          perBGrid,
          EGrid,
@@ -1554,6 +1576,11 @@ void calculateElectricField(
          k,
          RKCase
       );
+   } else {
+      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 0);
+   }
+   
+   if ((bitfield & compute::EY) == compute::EY) {
       calculateEdgeElectricFieldY(
          perBGrid,
          EGrid,
@@ -1569,6 +1596,11 @@ void calculateElectricField(
          k,
          RKCase
       );
+   } else {
+      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 1);
+   }
+   
+   if ((bitfield & compute::EZ) == compute::EZ) {
       calculateEdgeElectricFieldZ(
          perBGrid,
          EGrid,
@@ -1584,6 +1616,8 @@ void calculateElectricField(
          k,
          RKCase
       );
+   } else {
+      sysBoundaries.getSysBoundary(cellSysBoundaryFlag)->fieldSolverBoundaryCondElectricField(EGrid, i, j, k, 2);
    }
 }
 
@@ -1600,7 +1634,8 @@ void calculateElectricField(
  * \param momentsGrid fsGrid holding the moment quantities at runge-kutta t=0
  * \param momentsDt2Grid fsGrid holding the moment quantities at runge-kutta t=0.5
  * \param dPerBGrid fsGrid holding the derivatives of perturbed B
- * \param dMomentsGrid fsGrid holding the derviatives of moments
+ * \param dMomentsGrid fsGrid holding the derivatives of moments
+ * \param dMomentsDt2Grid fsGrid holding the derivatives of moments at runge-kutta t=0.5
  * \param BgBGrid fsGrid holding the background B quantities
  * \param technicalGrid fsGrid holding technical information (such as boundary types)
  * \param sysBoundaries System boundary conditions existing
@@ -1609,97 +1644,112 @@ void calculateElectricField(
  * \sa calculateElectricField calculateEdgeElectricFieldX calculateEdgeElectricFieldY calculateEdgeElectricFieldZ
  */
 void calculateUpwindedElectricFieldSimple(
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBGrid,
-   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, 2> & perBDt2Grid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EGrid,
-   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, 2> & EDt2Grid,
-   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, 2> & EHallGrid,
-   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, 2> & EGradPeGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsGrid,
-   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, 2> & momentsDt2Grid,
-   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, 2> & dPerBGrid,
-   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, 2> & dMomentsGrid,
-   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, 2> & BgBGrid,
-   FsGrid< fsgrids::technical, 2> & technicalGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+   FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBDt2Grid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EGrid,
+   FsGrid< std::array<Real, fsgrids::efield::N_EFIELD>, FS_STENCIL_WIDTH> & EDt2Grid,
+   FsGrid< std::array<Real, fsgrids::ehall::N_EHALL>, FS_STENCIL_WIDTH> & EHallGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeGrid,
+   FsGrid< std::array<Real, fsgrids::egradpe::N_EGRADPE>, FS_STENCIL_WIDTH> & EGradPeDt2Grid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsGrid,
+   FsGrid< std::array<Real, fsgrids::moments::N_MOMENTS>, FS_STENCIL_WIDTH> & momentsDt2Grid,
+   FsGrid< std::array<Real, fsgrids::dperb::N_DPERB>, FS_STENCIL_WIDTH> & dPerBGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsGrid,
+   FsGrid< std::array<Real, fsgrids::dmoments::N_DMOMENTS>, FS_STENCIL_WIDTH> & dMomentsDt2Grid,
+   FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    SysBoundary& sysBoundaries,
-   cint& RKCase
+   cint& RKCase,
+   const bool communicateEGradPeOrMomentsDerivatives
 ) {
-   int timer;
    //const std::array<int, 3> gridDims = technicalGrid.getLocalSize();
-   const int* gridDims = &technicalGrid.getLocalSize()[0];
+   const FsGridTools::FsIndex_t* gridDims = &technicalGrid.getLocalSize()[0];
    const size_t N_cells = gridDims[0]*gridDims[1]*gridDims[2];
-   phiprof::start("Calculate upwinded electric field");
+   phiprof::Timer upwindedETimer {"Calculate upwinded electric field"};
+   int computeTimerID {phiprof::initializeTimer("Electric field compute cells")};
    
-   timer=phiprof::initializeTimer("MPI","MPI");
-   phiprof::start(timer);
+   phiprof::Timer mpiTimer {"Electric field ghost updates MPI", {"MPI"}};
+   // Update ghosts if necessary, unless previous terms have already updated them
    if(P::ohmHallTerm > 0) {
       EHallGrid.updateGhostCells();
    }
-   if(P::ohmGradPeTerm > 0) {
-      EGradPeGrid.updateGhostCells();
+   if(P::ohmGradPeTerm > 0 && communicateEGradPeOrMomentsDerivatives) {
+      if (RKCase == RK_ORDER1 || RKCase == RK_ORDER2_STEP2) {
+         EGradPeGrid.updateGhostCells();
+      } else {
+         EGradPeDt2Grid.updateGhostCells();
+      }
    }
-   if(P::ohmHallTerm == 0 && P::ohmGradPeTerm == 0) {
+   if(P::ohmHallTerm == 0) {
       dPerBGrid.updateGhostCells();
-      dMomentsGrid.updateGhostCells();
    }
-   phiprof::stop(timer);
+   if(P::ohmHallTerm == 0 && P::ohmGradPeTerm == 0 && communicateEGradPeOrMomentsDerivatives) {
+      if (RKCase == RK_ORDER1 || RKCase == RK_ORDER2_STEP2) {
+         dMomentsGrid.updateGhostCells();
+      } else {
+         dMomentsDt2Grid.updateGhostCells();
+      }
+   }
+   
+   mpiTimer.stop();
    
    // Calculate upwinded electric field on inner cells
-   timer=phiprof::initializeTimer("Compute cells");
-   phiprof::start(timer);
-   #pragma omp parallel for collapse(3)
-   for (int k=0; k<gridDims[2]; k++) {
-      for (int j=0; j<gridDims[1]; j++) {
-         for (int i=0; i<gridDims[0]; i++) {
-            if (RKCase == RK_ORDER1 || RKCase == RK_ORDER2_STEP2) {
-               calculateElectricField(
-                  perBGrid,
-                  EGrid,
-                  EHallGrid,
-                  EGradPeGrid,
-                  momentsGrid,
-                  dPerBGrid,
-                  dMomentsGrid,
-                  BgBGrid,
-                  technicalGrid,
-                  i,
-                  j,
-                  k,
-                  sysBoundaries,
-                  RKCase
-               );
-            } else { // RKCase == RK_ORDER2_STEP1
-               calculateElectricField(
-                  perBDt2Grid,
-                  EDt2Grid,
-                  EHallGrid,
-                  EGradPeGrid,
-                  momentsDt2Grid,
-                  dPerBGrid,
-                  dMomentsGrid,
-                  BgBGrid,
-                  technicalGrid,
-                  i,
-                  j,
-                  k,
-                  sysBoundaries,
-                  RKCase
-               );
+   #pragma omp parallel
+   {
+      phiprof::Timer computeTimer {computeTimerID};
+      #pragma omp for collapse(2)
+      for (FsGridTools::FsIndex_t k=0; k<gridDims[2]; k++) {
+         for (FsGridTools::FsIndex_t j=0; j<gridDims[1]; j++) {
+            for (FsGridTools::FsIndex_t i=0; i<gridDims[0]; i++) {
+               if (RKCase == RK_ORDER1 || RKCase == RK_ORDER2_STEP2) {
+                  calculateElectricField(
+                     perBGrid,
+                     EGrid,
+                     EHallGrid,
+                     EGradPeGrid,
+                     momentsGrid,
+                     dPerBGrid,
+                     dMomentsGrid,
+                     BgBGrid,
+                     technicalGrid,
+                     i,
+                     j,
+                     k,
+                     sysBoundaries,
+                     RKCase
+                  );
+               } else { // RKCase == RK_ORDER2_STEP1
+                  calculateElectricField(
+                     perBDt2Grid,
+                     EDt2Grid,
+                     EHallGrid,
+                     EGradPeDt2Grid,
+                     momentsDt2Grid,
+                     dPerBGrid,
+                     dMomentsDt2Grid,
+                     BgBGrid,
+                     technicalGrid,
+                     i,
+                     j,
+                     k,
+                     sysBoundaries,
+                     RKCase
+                  );
+               }
             }
          }
       }
+      computeTimer.stop(N_cells,"Spatial Cells");
    }
-   phiprof::stop(timer,N_cells,"Spatial Cells");
    
-   timer=phiprof::initializeTimer("MPI","MPI");
-   phiprof::start(timer);
+   mpiTimer.start();
    // Exchange electric field with neighbouring processes
    if (RKCase == RK_ORDER1 || RKCase == RK_ORDER2_STEP2) {
       EGrid.updateGhostCells();
    } else { 
       EDt2Grid.updateGhostCells();
    }
-   phiprof::stop(timer);
+   mpiTimer.stop();
    
-   phiprof::stop("Calculate upwinded electric field",N_cells,"Spatial Cells");
+   upwindedETimer.stop(N_cells,"Spatial Cells");
 }

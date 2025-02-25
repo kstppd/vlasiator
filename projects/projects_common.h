@@ -22,7 +22,7 @@
 
 #ifndef PROJECTS_COMMON_H
 #define PROJECTS_COMMON_H
-#include "../spatial_cell.hpp"
+#include "../spatial_cell_wrapper.hpp"
 #include <dccrg.hpp>
 #include <dccrg_cartesian_geometry.hpp>
 
@@ -65,30 +65,5 @@ namespace projects {
    const uint MISSING_ZPOS = (1 << projects::ZP1_YCC_XCC);
    const uint FACE_NBR_BITMASK = (MISSING_ZNEG | MISSING_YNEG | MISSING_XNEG | MISSING_XPOS | MISSING_YPOS | MISSING_ZPOS);
 }
-
-// *********************************
-// ***** TEMPLATE DECLARATIONS *****
-// *********************************
-
-template<typename CELLID,class CONT> bool classifyLevequeGhostCell(const SpatialCell& cell,const CELLID& cellID,const CONT& nbrs);
-
-template<typename CELLID> CELLID getNeighbour(const dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,const CELLID& cellID,const int& i,const int& j,const int& k);
-
-
-// ********************************
-// ***** TEMPLATE DEFINITIONS *****
-// ********************************
-
-template<typename CELLID> CELLID getNeighbour(const dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,const CELLID& cellID,const int& i,const int& j,const int& k){
-    auto neighbors = mpiGrid.get_neighbors_of_at_offset(cellID, i, j, k);
-
-    //FIXME: support refined grids
-    if(neighbors.size() > 0) {
-        return neighbors[0].first;
-    } else {
-        return INVALID_CELLID;
-    }
-}
-
 
 #endif

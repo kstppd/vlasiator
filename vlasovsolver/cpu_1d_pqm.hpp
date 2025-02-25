@@ -36,7 +36,6 @@ using namespace std;
 
 /*make sure quartic polynomial is monotonic*/
 inline void filter_pqm_monotonicity(Vec *values, uint k, Vec &fv_l, Vec &fv_r, Vec &fd_l, Vec &fd_r){   
-   const Vec root_outside = Vec(100.0); //fixed values give to roots clearly outside [0,1], or nonexisting ones*/
    /*second derivative coefficients, eq 23 in white et al.*/
    Vec b0 =   60.0 * values[k] - 24.0 * fv_r - 36.0 * fv_l + 3.0 * (fd_r - 3.0 * fd_l);
    Vec b1 = -360.0 * values[k] + 36.0 * fd_l - 24.0 * fd_r + 168.0 * fv_r + 192.0 * fv_l;
@@ -99,7 +98,7 @@ inline void filter_pqm_monotonicity(Vec *values, uint k, Vec &fv_l, Vec &fv_r, V
       //todo store and then load data to avoid inserts (is it beneficial...?)
       
 //serialized the handling of inflexion points, these do not happen for smooth regions
-#pragma ivdep
+#pragma omp simd
       for(uint i = 0;i < VECL; i++) {
          if(fixInflexion[i]){
             //need to collapse, at least one inflexion point has wrong
@@ -152,13 +151,13 @@ inline void filter_pqm_monotonicity(Vec *values, uint k, Vec &fv_l, Vec &fv_r, V
 //   White, Laurent, and Alistair Adcroft. “A High-Order Finite Volume Remapping Scheme for Nonuniform Grids: The Piecewise Quartic Method (PQM).” Journal of Computational Physics 227, no. 15 (July 2008): 7394–7422. doi:10.1016/j.jcp.2008.04.026.
 // */
 
-inline void compute_pqm_coeff(Vec *values, face_estimate_order order, uint k, Vec a[5]){
+inline void compute_pqm_coeff(Vec *values, face_estimate_order order, uint k, Vec a[5], const Realv threshold){
    Vec fv_l; /*left face value*/
    Vec fv_r; /*right face value*/
    Vec fd_l; /*left face derivative*/
    Vec fd_r; /*right face derivative*/
    
-   compute_filtered_face_values_derivatives(values, k, order, fv_l, fv_r, fd_l, fd_r); 
+   compute_filtered_face_values_derivatives(values, k, order, fv_l, fv_r, fd_l, fd_r, threshold);
    filter_pqm_monotonicity(values, k, fv_l, fv_r, fd_l, fd_r); 
    
    //Fit a second order polynomial for reconstruction see, e.g., White

@@ -27,6 +27,7 @@
 #include "readfields.h"
 #include "vectorclass.h"
 #include "vector3d.h"
+#include "particleparameters.h"
 #include "../definitions.h"
 
 /* Debugging image output */
@@ -118,4 +119,3 @@ void debug_output(Field& F, const char* filename) {
       std::cerr << "Writing " << filename << " failed: " << strerror(errno) << std::endl;
    }
 }
-

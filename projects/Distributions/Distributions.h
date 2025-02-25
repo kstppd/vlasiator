@@ -36,7 +36,11 @@ namespace projects {
       virtual bool initialize(void);
       static void addParameters(void);
       virtual void getParameters(void);
-      virtual void setCellBackgroundField(spatial_cell::SpatialCell* cell);
+      virtual void setProjectBField(
+         FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+         FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+         FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+      );
     protected:
       Real getDistribValue(
                            creal& x,creal& y, creal& z,
@@ -83,7 +87,6 @@ namespace projects {
       //          Real Vy2PertAbsAmp;
       //          Real Vz2PertAbsAmp;
       Real lambda;
-      uint nVelocitySamples;
    }; // class Distributions
 } //  namespace projects
 

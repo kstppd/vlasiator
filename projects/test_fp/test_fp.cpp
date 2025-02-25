@@ -105,59 +105,81 @@ namespace projects {
       return result;
    }
    
-   void test_fp::setCellBackgroundField(spatial_cell::SpatialCell *cell) const {
-      setBackgroundFieldToZero(cell->parameters.data(), cell->derivatives.data(),cell->derivativesBVOL.data());
+   void test_fp::setProjectBField(
+      FsGrid< std::array<Real, fsgrids::bfield::N_BFIELD>, FS_STENCIL_WIDTH> & perBGrid,
+      FsGrid< std::array<Real, fsgrids::bgbfield::N_BGB>, FS_STENCIL_WIDTH> & BgBGrid,
+      FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid
+   ) {
+      setBackgroundFieldToZero(BgBGrid);
+      
+      if(!P::isRestart) {
+         auto localSize = perBGrid.getLocalSize().data();
+         
+         creal dx = perBGrid.DX * 3.5;
+         creal dy = perBGrid.DY * 3.5;
+         creal dz = perBGrid.DZ * 3.5;
+         
+         Real areaFactor = 1.0;
+         
+         #pragma omp parallel for collapse(3)
+         for (FsGridTools::FsIndex_t i = 0; i < localSize[0]; ++i) {
+            for (FsGridTools::FsIndex_t j = 0; j < localSize[1]; ++j) {
+               for (FsGridTools::FsIndex_t k = 0; k < localSize[2]; ++k) {
+                  const std::array<Real, 3> xyz = perBGrid.getPhysicalCoords(i, j, k);
+                  std::array<Real, fsgrids::bfield::N_BFIELD>* cell = perBGrid.get(i, j, k);
+                  
+                  creal x = xyz[0] + 0.5 * perBGrid.DX;
+                  creal y = xyz[1] + 0.5 * perBGrid.DY;
+                  creal z = xyz[2] + 0.5 * perBGrid.DZ;
+                  
+                  switch (this->CASE) {
+                     case BXCASE:         
+                        cell->at(fsgrids::bfield::PERBX) = 0.1 * this->B0 * areaFactor;
+                        //areaFactor = (CellParams::DY * CellParams::DZ) / (dy * dz);
+                        if (y >= -dy && y <= dy)
+                           if (z >= -dz && z <= dz)
+                              cell->at(fsgrids::bfield::PERBX) = this->B0 * areaFactor;
+                        break;
+                     case BYCASE:
+                        cell->at(fsgrids::bfield::PERBY) = 0.1 * this->B0 * areaFactor;
+                        //areaFactor = (CellParams::DX * CellParams::DZ) / (dx * dz);
+                        if (x >= -dx && x <= dx)
+                           if (z >= -dz && z <= dz)
+                              cell->at(fsgrids::bfield::PERBY) = this->B0 * areaFactor;
+                        break;
+                     case BZCASE:
+                        cell->at(fsgrids::bfield::PERBZ) = 0.1 * this->B0 * areaFactor;
+                        //areaFactor = (CellParams::DX * CellParams::DY) / (dx * dy);
+                        if (x >= -dx && x <= dx)
+                           if (y >= -dy && y <= dy)
+                              cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
+                        break;
+                     case BALLCASE:
+                        cell->at(fsgrids::bfield::PERBX) = 0.1 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBY) = 0.1 * this->B0 * areaFactor;
+                        cell->at(fsgrids::bfield::PERBZ) = 0.1 * this->B0 * areaFactor;
+                        
+                        //areaFactor = (CellParams::DX * CellParams::DY) / (dx * dy);
+                        
+                        if (y >= -dy && y <= dy)
+                           if (z >= -dz && z <= dz)
+                              cell->at(fsgrids::bfield::PERBX) = this->B0 * areaFactor;
+                        if (x >= -dx && x <= dx)
+                           if (z >= -dz && z <= dz)
+                              cell->at(fsgrids::bfield::PERBY) = this->B0 * areaFactor;
+                        if (x >= -dx && x <= dx)
+                           if (y >= -dy && y <= dy)
+                              cell->at(fsgrids::bfield::PERBZ) = this->B0 * areaFactor;
+                        break;
+                  }
+               }
+            }
+         }
+      }
    }
    
    void test_fp::calcCellParameters(spatial_cell::SpatialCell* cell,creal& t) {
-      Real* cellParams = cell->get_cell_parameters();
-      cellParams[CellParams::EX   ] = 0.0;
-      cellParams[CellParams::EY   ] = 0.0;
-      cellParams[CellParams::EZ   ] = 0.0;
-      cellParams[CellParams::PERBX   ] = 0.0;
-      cellParams[CellParams::PERBY   ] = 0.0;
-      cellParams[CellParams::PERBZ   ] = 0.0;
       
-      typedef Parameters P;
-      creal dx = cellParams[CellParams::DX];
-      creal x = cellParams[CellParams::XCRD] + 0.5 * dx;
-      creal y = cellParams[CellParams::YCRD] + 0.5 * cellParams[CellParams::DY];
-      creal z = cellParams[CellParams::ZCRD] + 0.5 * cellParams[CellParams::DZ];
-      
-      switch (this->CASE) {
-      case BXCASE:
-         cellParams[CellParams::PERBX] = 0.1 * this->B0;
-         if (y >= -3.5 * dx && y <= 3.5 * dx)
-           if (z >= -3.5 * dx && z <= 3.5 * dx)
-             cellParams[CellParams::PERBX] = this->B0;
-         break;
-      case BYCASE:
-         cellParams[CellParams::PERBY] = 0.1 * this->B0;
-         if (x >= -3.5 * dx && x <= 3.5 * dx)
-           if (z >= -3.5 * dx && z <= 3.5 * dx)
-             cellParams[CellParams::PERBY] = this->B0;
-         break;
-      case BZCASE:
-         cellParams[CellParams::PERBZ] = 0.1 * this->B0;
-         if (x >= -3.5 * dx && x <= 3.5 * dx)
-           if (y >= -3.5 * dx && y <= 3.5 * dx)
-             cellParams[CellParams::PERBZ] = this->B0;
-         break;
-       case BALLCASE:
-         cellParams[CellParams::PERBX] = 0.1 * this->B0;
-         cellParams[CellParams::PERBY] = 0.1 * this->B0;
-         cellParams[CellParams::PERBZ] = 0.1 * this->B0;
-         if (y >= -3.5 * dx && y <= 3.5 * dx)
-           if (z >= -3.5 * dx && z <= 3.5 * dx)
-             cellParams[CellParams::PERBX] = this->B0;
-         if (x >= -3.5 * dx && x <= 3.5 * dx)
-           if (z >= -3.5 * dx && z <= 3.5 * dx)
-             cellParams[CellParams::PERBY] = this->B0;
-         if (x >= -3.5 * dx && x <= 3.5 * dx)
-           if (y >= -3.5 * dx && y <= 3.5 * dx)
-             cellParams[CellParams::PERBZ] = this->B0;
-         break;
-      }
    }
    
    vector<std::array<Real, 3>> test_fp::getV0(
@@ -174,24 +196,25 @@ namespace projects {
       Real VX=0.0,VY=0.0,VZ=0.0;
       if (this->shear == true)
       {
-         Real ksi,eta;
+         //Real ksi;
+         Real eta;
          switch (this->CASE) {
             case BXCASE:
-               ksi = ((y + 0.5 * dy)  * cos(this->ALPHA) + (z + 0.5 * dz) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
+               //ksi = ((y + 0.5 * dy)  * cos(this->ALPHA) + (z + 0.5 * dz) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
                eta = (-(y + 0.5 * dy)  * sin(this->ALPHA) + (z + 0.5 * dz) * cos(this->ALPHA)) / (2.0 * sqrt(2.0));
                VX = 0.0;
                VY = sign(cos(this->ALPHA)) * 0.5 + 0.1*cos(this->ALPHA) * sin(2.0 * M_PI * eta);
                VZ = sign(sin(this->ALPHA)) * 0.5 + 0.1*sin(this->ALPHA) * sin(2.0 * M_PI * eta);
                break;
             case BYCASE:
-               ksi = ((z + 0.5 * dz)  * cos(this->ALPHA) + (x + 0.5 * dx) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
+               //ksi = ((z + 0.5 * dz)  * cos(this->ALPHA) + (x + 0.5 * dx) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
                eta = (-(z + 0.5 * dz)  * sin(this->ALPHA) + (x + 0.5 * dx) * cos(this->ALPHA)) / (2.0 * sqrt(2.0));
                VX = sign(sin(this->ALPHA)) * 0.5 + 0.1*sin(this->ALPHA) * sin(2.0 * M_PI * eta);
                VY = 0.0;
                VZ = sign(cos(this->ALPHA)) * 0.5 + 0.1*cos(this->ALPHA) * sin(2.0 * M_PI * eta);
                break;
             case BZCASE:
-               ksi = ((x + 0.5 * dx)  * cos(this->ALPHA) + (y + 0.5 * dy) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
+               //ksi = ((x + 0.5 * dx)  * cos(this->ALPHA) + (y + 0.5 * dy) * sin(this->ALPHA)) / (2.0 * sqrt(2.0));
                eta = (-(x + 0.5 * dx)  * sin(this->ALPHA) + (y + 0.5 * dy) * cos(this->ALPHA)) / (2.0 * sqrt(2.0));
                VX = sign(cos(this->ALPHA)) * 0.5 + 0.1*cos(this->ALPHA) * sin(2.0 * M_PI * eta);
                VY = sign(sin(this->ALPHA)) * 0.5 + 0.1*sin(this->ALPHA) * sin(2.0 * M_PI * eta);
@@ -250,4 +273,5 @@ namespace projects {
       
       return this->getV0(x,y,z,dx,dy,dz,popID);
    }
+
 }// namespace projects
