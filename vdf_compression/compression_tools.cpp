@@ -334,6 +334,28 @@ ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_
    return ASTERIX::OrderedVDF{.sparse_vdf_bytes=total_blocks*WID*WID*WID*sizeof(Realf),.vdf_vals = vspace, .v_limits = vlims, .shape = {nx, ny, nz}};
 }
 
+void run_hermite() {
+   std::cout << "here we go" << std::endl;
+}
+
+void compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,size_t number_of_spatial_cells) {
+   for (uint popID = 0; popID < getObjectWrapper().particleSpecies.size(); ++popID) {
+      const auto& local_cells = getLocalCells();
+      for (auto& cid : local_cells) { // loop over spatial cells
+         SpatialCell* sc = mpiGrid[cid];
+         run_hermite();
+         //OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
+         //Do hermite
+         // Do reverse hermite
+         //overwrite_pop_spatial_cell_vdf(sc, popID, vdf);
+   
+         } // loop over all spatial cells
+      }    // loop over all populations
+   }
+
+
+
+
 void ASTERIX::overwrite_cellids_vdfs(const std::span<const CellID> cids, uint popID,
                                      dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
                                      const std::vector<std::array<Real, 3>>& vcoords,

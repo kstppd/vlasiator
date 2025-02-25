@@ -22,7 +22,7 @@
 
 #include "compression.h"
 #include "compression_tools.h"
-#include "zfp/array1.hpp"
+// #include "zfp/array1.hpp"
 #include <atomic>
 #include <concepts>
 #include <fstream>
@@ -34,7 +34,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <zfp.h>
+// #include <zfp.h>
 
 #include "../object_wrapper.h"
 #include "../spatial_cell_wrapper.hpp"
