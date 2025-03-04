@@ -65,6 +65,9 @@ void compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid
 */
 void compress_vdfs_transfer_learning(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid);
 
+template <typename T>
+void uncompress_phasespace6D(PhaseSpace6D<float>& rv, char* weights, std::size_t n_weights_bytes);
+
 std::size_t probe_network_size_in_bytes(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
                                         size_t number_of_spatial_cells);
 

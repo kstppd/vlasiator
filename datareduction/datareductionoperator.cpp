@@ -1089,7 +1089,7 @@ namespace DRO {
             * parameters[n * BlockParams::N_VELOCITY_BLOCK_PARAMS + BlockParams::DVZ];
             vector< array<uint, 3> > vCellIndices;
             vCellIndices.clear();
-            if( calculateNonthermal == true ) {
+           if( calculateNonthermal == true ) {
                getNonthermalVelocityCellIndices(&parameters[n * BlockParams::N_VELOCITY_BLOCK_PARAMS], vCellIndices, popID);
             } else {
                getThermalVelocityCellIndices(&parameters[n * BlockParams::N_VELOCITY_BLOCK_PARAMS], vCellIndices, popID);

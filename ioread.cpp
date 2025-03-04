@@ -947,13 +947,57 @@ bool _readBlockDataCompressionMLP6D(vlsv::ParallelReader & file,
       std::cerr<<"MLP CLUSTERS PER RANK ARE INVALID"<<std::endl;
       return false;
    }
-   // const std::size_t nmlps = std::accumulate(nclusters.cbegin(),nclusters.cend(),0);
-   // ASTERIX::PhaseSpace6D<float> rv(technicalGrid,mpiGrid,0); 
-   // std::cout<<"Phase Space size="<<rv.nrows<<" "<<rv.ncols<<std::endl;
+   std::vector<char>mlp_bytes(nbytes[0]);
+   
+   if (file.readArray("BLOCKVARIABLE", attribs, 0, nbytes[0], mlp_bytes.data()) == false) {
+      cerr << "ERROR, failed to read MLP BYTES in " << __FILE__ << ":" << __LINE__ << endl;
+      return false;
+   }
+   ASTERIX::PhaseSpace6D<float> rv(mlp_bytes,technicalGrid,mpiGrid,0); 
+   std::cout<<"Phase Space size="<<rv.nrows<<" "<<rv.ncols<<std::endl;
+   ASTERIX::uncompress_phasespace6D<float>(rv,mlp_bytes.data(),nbytes[0]);
+   Real sparse = getObjectWrapper().particleSpecies[popID].sparseMinValue;
+   rv.denormalize(sparse);
+   const auto gridDims(technicalGrid.getLocalSize());
+   std::size_t row=0;
+   for (FsGridTools::FsIndex_t k = 0; k < gridDims[2]; k++) {
+      for (FsGridTools::FsIndex_t j = 0; j < gridDims[1]; j++) {
+         for (FsGridTools::FsIndex_t i = 0; i < gridDims[0]; i++) {
+            const std::array<FsGridTools::FsIndex_t, 3> globalIndices = technicalGrid.getGlobalIndices(i, j, k);
+            const dccrg::Types<3>::indices_t indices = {{(uint64_t)globalIndices[0], (uint64_t)globalIndices[1],
+                                                         (uint64_t)globalIndices[2]}}; // cast to avoid warnings
+            CellID cid = mpiGrid.get_existing_cell(indices, 0, mpiGrid.mapping.get_maximum_refinement_level());
+            SpatialCell* sc=mpiGrid[cid];
+            if (!sc){std::cerr<<"invalid sc"<<std::endl;abort();}
+            ASTERIX::VCoords vcoords{.vx=rv.space[row*rv.ncols+3],.vy=rv.space[row*rv.ncols+4],.vz=rv.space[row*rv.ncols+5] };
+            const auto gid=sc->get_velocity_block(popID, &vcoords.vx);
+            if (gid==vmesh::INVALID_GLOBALID){
+               row++;
+               continue;
+            }
+            if (rv.f[row]>sparse){
+               sc->add_velocity_block(gid,popID);
+               auto id = sc->get_velocity_cell( popID,gid,vcoords.vx,vcoords.vy,vcoords.vz);
+               auto lid = sc->get_velocity_block_local_id(gid, popID);
+               if (lid==vmesh::INVALID_LOCALID){std::cerr<<"invalid lid"<<std::endl;abort();}
+               vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
+               const Real* blockParams = sc->get_block_parameters(popID);
+               Realf* data = blockContainer.getData();
+               auto bp = blockParams + lid * BlockParams::N_VELOCITY_BLOCK_PARAMS;
+               Realf* vdf_data = &data[id];
+               *vdf_data=rv.f[row];
+            }
+            row++;
+         }
+      }
+   } // over real space
 
+   auto cids=getLocalCells();
+   for (auto c:cids){
+      mpiGrid[c]->adjustSingleCellVelocityBlocks(popID);
 
-   std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
-   abort();
+   }
+   return true;
 }
 
 /** Read velocity block mesh data and distribution function data belonging to this process 

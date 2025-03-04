@@ -151,9 +151,9 @@ class PhaseSpace6D{
          T fsum = 0.0;
          Real sparse = getObjectWrapper().particleSpecies[popID].sparseMinValue;
          const auto gridDims(technicalGrid.getLocalSize());
-         for (FsGridTools::FsIndex_t k = 0; k < gridDims[2]; k++) {
-            for (FsGridTools::FsIndex_t j = 0; j < gridDims[1]; j++) {
-               for (FsGridTools::FsIndex_t i = 0; i < gridDims[0]; i++) {
+         for (FsGridTools::FsIndex_t k = 0; k < gridDims[2]; k+=1) {
+            for (FsGridTools::FsIndex_t j = 0; j < gridDims[1]; j+=1) {
+               for (FsGridTools::FsIndex_t i = 0; i < gridDims[0]; i+=1) {
                   const std::array<FsGridTools::FsIndex_t, 3> globalIndices = technicalGrid.getGlobalIndices(i, j, k);
                   const dccrg::Types<3>::indices_t indices = {
                       {(uint64_t)globalIndices[0], (uint64_t)globalIndices[1], (uint64_t)globalIndices[2]}};
@@ -168,18 +168,18 @@ class PhaseSpace6D{
                   for (std::size_t n = 0; n < total_blocks; ++n) {
                      const auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
                      const Realf* vdf_data = &data[n * WID3];
-                     for (uint k = 0; k < WID; ++k) {
-                        for (uint j = 0; j < WID; ++j) {
-                           for (uint i = 0; i < WID; ++i) {
-                              const T vx = (bp[BlockParams::VXCRD] + (i + 0.5) * bp[BlockParams::DVX]);
-                              const T vy = (bp[BlockParams::VYCRD] + (j + 0.5) * bp[BlockParams::DVY]);
-                              const T vz = (bp[BlockParams::VZCRD] + (k + 0.5) * bp[BlockParams::DVZ]);
-                              const T value = static_cast<T>(vdf_data[cellIndex(i, j, k)]);
-                              // const T scaled_value =
-                              //     std::abs(std::log10(std::max(value, static_cast<T>(0.1f * sparse))));
-                               
+                     for (uint kk = 0; kk < WID; kk+=1) {
+                        for (uint jj = 0; jj < WID; jj+=1) {
+                           for (uint ii = 0; ii < WID; ii+=1) {
+                              const T vx = (bp[BlockParams::VXCRD] + (ii + 0.5) * bp[BlockParams::DVX]);
+                              const T vy = (bp[BlockParams::VYCRD] + (jj + 0.5) * bp[BlockParams::DVY]);
+                              const T vz = (bp[BlockParams::VZCRD] + (kk + 0.5) * bp[BlockParams::DVZ]);
+                              const T value = static_cast<T>(vdf_data[cellIndex(ii, jj, kk)]);
                               const T scaled_value =
-                                  std::abs(std::max(value, static_cast<T>(0.1f * sparse)));                               
+                                  std::abs(std::log10(std::max(value, static_cast<T>(0.1f * sparse))));
+                               
+                              // const T scaled_value =
+                              //     std::abs(std::max(value, static_cast<T>(0.1f * sparse)));                               
                               this->space.push_back(coords[0]);
                               this->space.push_back(coords[1]);
                               this->space.push_back(coords[2]);
@@ -211,7 +211,6 @@ class PhaseSpace6D{
          }
          norms.std=std::sqrt(diff2 / f.size());
 
-         normalize();
          // auto min_f=*std::min_element(f.begin(),f.end());
          // auto max_f=*std::max_element(f.begin(),f.end());
          // auto min_v=*std::min_element(space.begin(),space.end());
@@ -221,7 +220,60 @@ class PhaseSpace6D{
          //    std::cerr<<rv_lims[i]<<", ";
          // }
          // std::cerr<<std::endl;
+         normalize();
       }
+      
+   PhaseSpace6D(const std::vector<char>&serialized_state,FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid,
+                dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, uint popID) {
+
+      const auto local_start=technicalGrid.getLocalStart();
+      const auto local_size=technicalGrid.getLocalSize();
+      const auto coords0 = technicalGrid.getPhysicalCoords(0,0,0);
+      const auto coords1 = technicalGrid.getPhysicalCoords(local_size[0],local_size[1],local_size[2]);
+      deserialize_from((unsigned char*)serialized_state.data());
+      
+      const auto vxmin = this->rv_lims[3] + (T(0.5) * (this->rv_lims[9] - this->rv_lims[3]));
+      const auto vymin = this->rv_lims[4] + (T(0.5) * (this->rv_lims[10] - this->rv_lims[4]));
+      const auto vzmin = this->rv_lims[5] + (T(0.5) * (this->rv_lims[11] - this->rv_lims[5]));
+
+      const auto vxmax = this->rv_lims[3] + ((T(1.5)) * (this->rv_lims[9] - this->rv_lims[3]));
+      const auto vymax = this->rv_lims[4] + ((T(1.5)) * (this->rv_lims[10] - this->rv_lims[4]));
+      const auto vzmax = this->rv_lims[5] + ((T(1.5)) * (this->rv_lims[11] - this->rv_lims[5]));
+
+      const auto DV = 6.0e4;
+      const auto gridDims(technicalGrid.getLocalSize());
+      for (FsGridTools::FsIndex_t k = 0; k < gridDims[2]; k++) {
+         for (FsGridTools::FsIndex_t j = 0; j < gridDims[1]; j++) {
+            for (FsGridTools::FsIndex_t i = 0; i < gridDims[0]; i++) {
+               const auto rcoords = technicalGrid.getPhysicalCoords(i, j, k);
+               for (float vz = vzmin; vz < vzmax; vz += DV) {
+                  for (float vy = vymin; vy < vymax; vy += DV) {
+                     for (float vx = vxmin; vx < vxmax; vx += DV) {
+                        this->space.push_back(rcoords[0]);
+                        this->space.push_back(rcoords[1]);
+                        this->space.push_back(rcoords[2]);
+                        this->space.push_back(vx);
+                        this->space.push_back(vy);
+                        this->space.push_back(vz);
+                        this->f.push_back(0.0);
+                        this->nrows++;
+                     }
+                  }
+               } // over vspace
+            }
+         }
+      } // over real space
+         // auto min_f=*std::min_element(f.begin(),f.end());
+         // auto max_f=*std::max_element(f.begin(),f.end());
+         // auto min_v=*std::min_element(space.begin(),space.end());
+         // auto max_v=*std::max_element(space.begin(),space.end());
+         // std::cerr<<"Normed-> "<<min_f<<" "<<max_f<<" "<<min_v<<" "<<max_v<<std::endl;
+         // for (int i=0;i<12;++i){
+         //    std::cerr<<rv_lims[i]<<", ";
+         // }
+         // std::cerr<<std::endl;
+      normalize();
+   }
       
    struct Norms{
       T mean={T(0)};
@@ -243,19 +295,44 @@ class PhaseSpace6D{
          }
       }
    }
-   
+
+   void denormalize(T sparse) noexcept {
+      for (auto& val : f) {
+         val = val * norms.std + norms.mean;
+         if (val<sparse){
+            val=0.0;
+         }
+      }
+
+      for (std::size_t row = 0; row < this->nrows; ++row) {
+         for (std::size_t col = 0; col < this->ncols; ++col) {
+            std::size_t index = row * ncols + col;
+            this->space[index] =
+                (this->space[index] + T(0.5)) * (this->rv_lims[col + ncols] - this->rv_lims[col]) + this->rv_lims[col];
+         }
+      }
+   }
+
    std::size_t serialized_bytes_size()const noexcept{
       return sizeof(Norms)+12*sizeof(T)+mlp_representation_nbytes;
    }
    
    void serialize_into(unsigned char* buffer) const {
       std::size_t write_index = 0;
-      std::memcpy(&buffer[write_index], &norms, sizeof(Norms));
+      std::memcpy(&buffer[write_index], &norms.mean, sizeof(Norms));
       write_index += sizeof(Norms);
-      std::memcpy(&buffer[write_index], &rv_lims, 12 * sizeof(T));
+      std::memcpy(&buffer[write_index], &rv_lims[0], 12 * sizeof(T));
       write_index += 12 * sizeof(T);
       std::memcpy(&buffer[write_index], mlp_representation, mlp_representation_nbytes);
       write_index += mlp_representation_nbytes;
+   }
+   
+   void deserialize_from(unsigned char* buffer) {
+      std::size_t read_index = 0;
+      std::memcpy(&norms.mean,&buffer[read_index], sizeof(Norms));
+      read_index += sizeof(Norms);
+      std::memcpy(&rv_lims[0],&buffer[read_index], 12 * sizeof(T));
+      read_index += 12 * sizeof(T);
    }
 
    //This holds a 2D representation of the 6D hypercube coordinates where each rows is [x,y,z,vx,vy,vz]

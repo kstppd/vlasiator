@@ -62,6 +62,10 @@ size_t compress_phasespace6D_f32(GENERIC_TS_POOL::MemPool *p, float* vcoords_ptr
                           size_t n_hidden_layers, float sparsity, float tol, float* weights_ptr, std::size_t weight_size,
                           bool use_input_weights, uint32_t downsampling_factor, float& error, int& status);
 
+void decompress_phasespace6D_f32(GENERIC_TS_POOL::MemPool *p, float* vcoords_ptr, float* vspace_ptr, std::size_t size,
+                          std::size_t fourier_order, size_t* hidden_layers_ptr, size_t n_hidden_layers,
+                          float* weights_ptr, std::size_t weight_size, bool use_input_weights);
+
 
 void uncompress_vdf_union(GENERIC_TS_POOL::MemPool *p,std::size_t nVDFS, std::array<Real, 3>* vcoords_ptr, Realf* vspace_ptr, std::size_t size,
                           std::size_t fourier_order, size_t* hidden_layers_ptr, size_t n_hidden_layers,
@@ -249,6 +253,7 @@ float compress_vdfs_fourier_mlp6D(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geo
    bytes.resize(1);
    const std::vector<CellID>& cells = getLocalCells();
    PhaseSpace6D<float> rv(technicalGrid, mpiGrid, 0);
+   std::cout<<"Phase Space size="<<rv.nrows<<" "<<rv.ncols<<std::endl;
 
    rv.mlp_representation_nbytes = calculate_total_size_bytes<double>(P::mlp_arch, P::mlp_fourier_order, 1);
    rv.mlp_representation = (float*)malloc(rv.mlp_representation_nbytes);
@@ -310,10 +315,18 @@ void ASTERIX::uncompress_union(VDFUnion& vdf_union){
                               P::mlp_arch.size(), vdf_union.network_weights,vdf_union.n_weights*sizeof(double), true);
 }
 
+template <>
+void ASTERIX::uncompress_phasespace6D<float>(ASTERIX::PhaseSpace6D<float>& rv, char* weights, std::size_t n_weights_bytes) {
+   // Memory allocation
+   GENERIC_TS_POOL::MemPool p{};
+   decompress_phasespace6D_f32(&p, rv.space.data(), rv.f.data(), rv.f.size(), P::mlp_fourier_order, P::mlp_arch.data(),
+                               P::mlp_arch.size(), reinterpret_cast<float*>(weights), n_weights_bytes, true);
+}
+
 float compress_vdfs_fourier_mlp_clustered(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                                          size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes,
-                                          uint32_t downsampling_factor) {
-   
+                                          size_t number_of_spatial_cells, bool update_weights,
+                                          std::vector<std::vector<char>>& bytes, uint32_t downsampling_factor) {
+
    //Memory allocation
    GENERIC_TS_POOL::MemPool p{};   
    if(getObjectWrapper().particleSpecies.size()>1){
