@@ -57,6 +57,12 @@ size_t compress_vdf_union(GENERIC_TS_POOL::MemPool *p,std::size_t nVDFS, std::ar
                           size_t n_hidden_layers, Real sparsity, Real tol, Real* weights_ptr, std::size_t weight_size,
                           bool use_input_weights, uint32_t downsampling_factor, float& error, int& status);
 
+size_t compress_phasespace6D_f32(GENERIC_TS_POOL::MemPool *p, float* vcoords_ptr, float* vspace_ptr, std::size_t size,
+                          std::size_t max_epochs, std::size_t fourier_order, size_t* hidden_layers_ptr,
+                          size_t n_hidden_layers, float sparsity, float tol, float* weights_ptr, std::size_t weight_size,
+                          bool use_input_weights, uint32_t downsampling_factor, float& error, int& status);
+
+
 void uncompress_vdf_union(GENERIC_TS_POOL::MemPool *p,std::size_t nVDFS, std::array<Real, 3>* vcoords_ptr, Realf* vspace_ptr, std::size_t size,
                           std::size_t fourier_order, size_t* hidden_layers_ptr, size_t n_hidden_layers,
                           Real* weights_ptr, std::size_t weight_size, bool use_input_weights);
@@ -65,14 +71,15 @@ void uncompress_vdf_union(GENERIC_TS_POOL::MemPool *p,std::size_t nVDFS, std::ar
 auto compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
                                size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes ,uint32_t downsampling_factor)
     -> float;
-    
+
 auto compress_vdfs_fourier_mlp6D(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                               size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes ,uint32_t downsampling_factor)
-    -> float;
+                                 FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid,
+                                 size_t number_of_spatial_cells, bool update_weights,
+                                 std::vector<std::vector<char>>& bytes, uint32_t downsampling_factor) -> float;
 
 auto compress_vdfs_fourier_mlp_clustered(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                                         size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes,
-                                         uint32_t downsampling_factor) -> float;
+                                         size_t number_of_spatial_cells, bool update_weights,
+                                         std::vector<std::vector<char>>& bytes, uint32_t downsampling_factor) -> float;
 
 auto compress_vdfs_zfp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, size_t number_of_spatial_cells)
     -> float;
@@ -90,6 +97,7 @@ auto decompressArrayFloat(char* compressedData, size_t compressedSize, size_t ar
 
 // Main driver, look at header file  for documentation
 void ASTERIX::compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
+                            FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
                             size_t number_of_spatial_cells, P::ASTERIX_COMPRESSION_METHODS method, bool update_weights,std::vector<std::vector<char>>&bytes,
                             uint32_t downsampling_factor /*=1*/) {
 
@@ -116,8 +124,8 @@ void ASTERIX::compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
           compress_vdfs_fourier_mlp_clustered(mpiGrid, number_of_spatial_cells, update_weights, bytes, downsampling_factor);
       break;
    case P::ASTERIX_COMPRESSION_METHODS::MLP6D:
-      local_compression_ratio =
-          compress_vdfs_fourier_mlp6D(mpiGrid, number_of_spatial_cells, update_weights, bytes, downsampling_factor);
+      local_compression_ratio = compress_vdfs_fourier_mlp6D(mpiGrid, technicalGrid, number_of_spatial_cells,
+                                                            update_weights, bytes, downsampling_factor);
       break;
    case P::ASTERIX_COMPRESSION_METHODS::ZFP:
       local_compression_ratio = compress_vdfs_zfp(mpiGrid, number_of_spatial_cells);
@@ -229,31 +237,33 @@ float compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geome
 }
 
 float compress_vdfs_fourier_mlp6D(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
-                                size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes, uint32_t downsampling_factor) {
-   
-   GENERIC_TS_POOL::MemPool p{};   
-   
-   if(getObjectWrapper().particleSpecies.size()>1){
+                                  FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
+                                  size_t number_of_spatial_cells, bool update_weights,
+                                   std::vector<std::vector<char>>&bytes, uint32_t downsampling_factor) {
+
+   Real sparse = getObjectWrapper().particleSpecies[0].sparseMinValue;
+   GENERIC_TS_POOL::MemPool p{};
+   if (getObjectWrapper().particleSpecies.size() > 1) {
       throw std::runtime_error("Multi-Pop not implemented yet!");
    }
-   float local_compression_achieved = 0.0;
-
+   bytes.resize(1);
    const std::vector<CellID>& cells = getLocalCells();
+   PhaseSpace6D<float> rv(technicalGrid, mpiGrid, 0);
 
-   for (uint popID=0; popID<getObjectWrapper().particleSpecies.size(); ++popID) {
-      for (size_t cid=0; cid<cells.size(); ++cid) {
-         //Get spatial coords of this cell
-         SpatialCell* sc = mpiGrid[cid];
-
-         auto rcoords=sc->get_velocity_cell_vx_min(const uint popID, const vmesh::GlobalID velocity_block, const unsigned int velocity_cell)
-      }
-   }
-
-
-
-   
-   std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
-   abort();
+   rv.mlp_representation_nbytes = calculate_total_size_bytes<double>(P::mlp_arch, P::mlp_fourier_order, 1);
+   rv.mlp_representation = (float*)malloc(rv.mlp_representation_nbytes);
+   float error = std::numeric_limits<float>::max();
+   int status = 0;
+   std::size_t nn_mem_footprint_bytes =
+       compress_phasespace6D_f32(&p, rv.space.data(), rv.f.data(), rv.nrows, P::mlp_max_epochs, P::mlp_fourier_order,
+                                 P::mlp_arch.data(), P::mlp_arch.size(), sparse, P::mlp_tollerance, rv.mlp_representation,
+                                 rv.mlp_representation_nbytes, false, downsampling_factor, error, status);
+    
+   const std::size_t total_serialized_size=rv.serialized_bytes_size();
+   bytes.front().resize(total_serialized_size);
+   rv.serialize_into(reinterpret_cast<unsigned char*>(bytes.front().data()));
+   free(rv.mlp_representation);
+   float local_compression_achieved = rv.f.size() * sizeof(float) / static_cast<float>(nn_mem_footprint_bytes);
    return local_compression_achieved;
 }
 

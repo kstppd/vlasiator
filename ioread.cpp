@@ -912,6 +912,7 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
 
 template <typename fileReal>
 bool _readBlockDataCompressionMLP6D(vlsv::ParallelReader & file,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    const std::string& spatMeshName,
    const std::vector<uint64_t>& fileCells,
    const uint64_t localCellStartOffset,
@@ -922,6 +923,34 @@ bool _readBlockDataCompressionMLP6D(vlsv::ParallelReader & file,
    dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
    std::function<vmesh::GlobalID(vmesh::GlobalID)> blockIDremapper,
    const uint popID){
+   
+   
+   bool success=true;
+   const string popName = getObjectWrapper().particleSpecies[popID].name;
+   list<pair<string,string> > attribs;
+   attribs.push_back(make_pair("name",popName));
+   
+   int nFileRanks;
+   if (!file.readParameter("numWritingRanks",nFileRanks)){
+      logFile <<"ERROR: Could not read numWritingRanks from restart file!";
+      return false;
+   }
+   std::vector<std::size_t> nbytes(nFileRanks);
+   if (!file.readArray("MLP_BYTES_PER_RANK",attribs,0,nFileRanks,reinterpret_cast<char*>((nbytes.data())))){
+      logFile<<"ERROR: Could not read mlp bytes per rank"<<endl<<write;
+      std::cerr<<"MLP BYTES PER RANK ARE INVALID"<<std::endl;
+      return false;
+   }
+      std::vector<std::size_t> nclusters(nFileRanks);
+   if (!file.readArray("MLP_CLUSTERS_PER_RANK",attribs,0,nFileRanks,reinterpret_cast<char*>((nclusters.data())))){
+      logFile<<"ERROR: Could not read mlp bytes per rank"<<endl<<write;
+      std::cerr<<"MLP CLUSTERS PER RANK ARE INVALID"<<std::endl;
+      return false;
+   }
+   // const std::size_t nmlps = std::accumulate(nclusters.cbegin(),nclusters.cend(),0);
+   // ASTERIX::PhaseSpace6D<float> rv(technicalGrid,mpiGrid,0); 
+   // std::cout<<"Phase Space size="<<rv.nrows<<" "<<rv.ncols<<std::endl;
+
 
    std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
    abort();
@@ -943,6 +972,7 @@ bool _readBlockDataCompressionMLP6D(vlsv::ParallelReader & file,
 template <typename fileReal>
 bool _readBlockData(
    vlsv::ParallelReader & file,
+   FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
    const std::string& spatMeshName,
    const std::vector<uint64_t>& fileCells,
    const uint64_t localCellStartOffset,
@@ -977,7 +1007,7 @@ bool _readBlockData(
          success=_readBlockDataCompressionMLP<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
          break;
       case P::ASTERIX_COMPRESSION_METHODS::MLP6D:
-         success=_readBlockDataCompressionMLP6D<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
+         success=_readBlockDataCompressionMLP6D<fileReal>(file,technicalGrid,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
          break;
       case P::ASTERIX_COMPRESSION_METHODS::OCTREE:
          success=_readBlockDataCompressionOCTREE<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
@@ -1000,6 +1030,7 @@ bool _readBlockData(
  * @return If true, velocity block data was read successfully.*/
 bool readBlockData(
         vlsv::ParallelReader& file,
+        FsGrid< fsgrids::technical, FS_STENCIL_WIDTH> & technicalGrid,
         const string& meshName,
         const vector<CellID>& fileCells,
         const uint64_t localCellStartOffset,
@@ -1181,11 +1212,11 @@ bool readBlockData(
       
       switch (byteSize) {
          case sizeof(double):
-            if (_readBlockData<double>(file,meshName,fileCells,localCellStartOffset,localCells,blocksPerCell,
+            if (_readBlockData<double>(file,technicalGrid,meshName,fileCells,localCellStartOffset,localCells,blocksPerCell,
                                        myOffset,blockSum,mpiGrid,blockIDremapper,popID) == false) success = false;
             break;
          case sizeof(float):
-            if (_readBlockData<float>(file,meshName,fileCells,localCellStartOffset,localCells,blocksPerCell,
+            if (_readBlockData<float>(file,technicalGrid,meshName,fileCells,localCellStartOffset,localCells,blocksPerCell,
                                       myOffset,blockSum,mpiGrid,blockIDremapper,popID) == false) success = false;
             break;
       }
@@ -1818,7 +1849,7 @@ bool exec_readGrid(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
 
    phiprof::Timer readBlocksTimer {"readBlockData"};
    if (success == true) {
-      success = readBlockData(file,meshName,fileCells,localCellStartOffset,localCells,mpiGrid); 
+      success = readBlockData(file,technicalGrid,meshName,fileCells,localCellStartOffset,localCells,mpiGrid); 
    }
    readBlocksTimer.stop();
 

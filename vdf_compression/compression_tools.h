@@ -31,7 +31,7 @@
 #include "../object_wrapper.h"
 #include "../spatial_cell_wrapper.hpp"
 #include "../velocity_blocks.h"
-#include "stdlib.h"
+#include <fsgrid.hpp>
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -132,29 +132,148 @@ struct UnorderedVDF {
 };
 
 template<typename T>
-struct PhaseSpace6D{
-   static constexpr T lowest = std::numeric_limits<T>::lowest();
-   static constexpr T maximum = std::numeric_limits<T>::max();
-   
-   struct Lims{
-      T xmin=lowest;T ymin=lowest;T zmin=lowest;
-      T vxmin=lowest;T vymin=lowest;T vzmin=lowest;
-      T xmax=maximum;T ymax=maximum;T zmax=maximum;
-      T vxmax=maximum;T vymax=maximum;T vzmax=maximum;
-   };
-   
+class PhaseSpace6D{
+   public:
+      PhaseSpace6D(FsGrid<fsgrids::technical, FS_STENCIL_WIDTH>& technicalGrid,
+                   dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, uint popID) {
+
+         const auto local_start=technicalGrid.getLocalStart();
+         const auto local_size=technicalGrid.getLocalSize();
+         const auto coords0 = technicalGrid.getPhysicalCoords(0,0,0);
+         const auto coords1 = technicalGrid.getPhysicalCoords(local_size[0],local_size[1],local_size[2]);
+         
+         rv_lims[0] =coords0[0]; 
+         rv_lims[1] =coords0[1]; 
+         rv_lims[2] =coords0[2]; 
+         rv_lims[6] =coords1[0]; 
+         rv_lims[7] =coords1[1]; 
+         rv_lims[8] =coords1[2]; 
+         T fsum = 0.0;
+         Real sparse = getObjectWrapper().particleSpecies[popID].sparseMinValue;
+         const auto gridDims(technicalGrid.getLocalSize());
+         for (FsGridTools::FsIndex_t k = 0; k < gridDims[2]; k++) {
+            for (FsGridTools::FsIndex_t j = 0; j < gridDims[1]; j++) {
+               for (FsGridTools::FsIndex_t i = 0; i < gridDims[0]; i++) {
+                  const std::array<FsGridTools::FsIndex_t, 3> globalIndices = technicalGrid.getGlobalIndices(i, j, k);
+                  const dccrg::Types<3>::indices_t indices = {
+                      {(uint64_t)globalIndices[0], (uint64_t)globalIndices[1], (uint64_t)globalIndices[2]}};
+                  CellID dccrgCell =
+                      mpiGrid.get_existing_cell(indices, 0, mpiGrid.mapping.get_maximum_refinement_level());
+                  SpatialCell* sc = mpiGrid[dccrgCell];
+                  vmesh::VelocityBlockContainer<vmesh::LocalID>& blockContainer = sc->get_velocity_blocks(popID);
+                  const std::size_t total_blocks = blockContainer.size();
+                  const Realf* data = blockContainer.getData();
+                  const Real* blockParams = sc->get_block_parameters(popID);
+                  const auto coords = technicalGrid.getPhysicalCoords(i, j, k);
+                  for (std::size_t n = 0; n < total_blocks; ++n) {
+                     const auto bp = blockParams + n * BlockParams::N_VELOCITY_BLOCK_PARAMS;
+                     const Realf* vdf_data = &data[n * WID3];
+                     for (uint k = 0; k < WID; ++k) {
+                        for (uint j = 0; j < WID; ++j) {
+                           for (uint i = 0; i < WID; ++i) {
+                              const T vx = (bp[BlockParams::VXCRD] + (i + 0.5) * bp[BlockParams::DVX]);
+                              const T vy = (bp[BlockParams::VYCRD] + (j + 0.5) * bp[BlockParams::DVY]);
+                              const T vz = (bp[BlockParams::VZCRD] + (k + 0.5) * bp[BlockParams::DVZ]);
+                              const T value = static_cast<T>(vdf_data[cellIndex(i, j, k)]);
+                              // const T scaled_value =
+                              //     std::abs(std::log10(std::max(value, static_cast<T>(0.1f * sparse))));
+                               
+                              const T scaled_value =
+                                  std::abs(std::max(value, static_cast<T>(0.1f * sparse)));                               
+                              this->space.push_back(coords[0]);
+                              this->space.push_back(coords[1]);
+                              this->space.push_back(coords[2]);
+                              this->space.push_back(vx);
+                              this->space.push_back(vy);
+                              this->space.push_back(vz);
+                              this->f.push_back(scaled_value);
+                              fsum += scaled_value;
+                              this->nrows++;
+
+                              rv_lims[3] = std::min(rv_lims[3], vx);
+                              rv_lims[4] = std::min(rv_lims[4], vy);
+                              rv_lims[5] = std::min(rv_lims[5], vz);
+                              rv_lims[9] = std::max(rv_lims[9], vx);
+                              rv_lims[10] = std::max(rv_lims[10], vy);
+                              rv_lims[11] = std::max(rv_lims[11], vz);
+                           }
+                        }
+                     } // over vspace
+                  }    // over blocks
+               }
+            }
+         }// over real space         
+         //Mean and std
+         norms.mean=fsum/this->f.size();
+         T diff2={0.0};
+         for (auto val : f) {
+            diff2 += (val - norms.mean) * (val - norms.mean);
+         }
+         norms.std=std::sqrt(diff2 / f.size());
+
+         normalize();
+         // auto min_f=*std::min_element(f.begin(),f.end());
+         // auto max_f=*std::max_element(f.begin(),f.end());
+         // auto min_v=*std::min_element(space.begin(),space.end());
+         // auto max_v=*std::max_element(space.begin(),space.end());
+         // std::cerr<<"Normed-> "<<min_f<<" "<<max_f<<" "<<min_v<<" "<<max_v<<std::endl;
+         // for (int i=0;i<12;++i){
+         //    std::cerr<<rv_lims[i]<<", ";
+         // }
+         // std::cerr<<std::endl;
+      }
+      
    struct Norms{
       T mean={T(0)};
       T std={T(0)};
    };
+   
+
+
+   void normalize()noexcept{
+      for (auto& val:f){
+         val=(val-norms.mean)/norms.std;
+      }
+      
+      //Normalize rv coords too
+      for (std::size_t row =0; row<this->nrows; ++row){
+         for (std::size_t col=0; col<this->ncols; ++col){
+            std::size_t index=row*ncols+col; 
+            this->space[index]=(this->space[index]-this->rv_lims[col])/(this->rv_lims[col+ncols]-this->rv_lims[col]) - T(0.5);
+         }
+      }
+   }
+   
+   std::size_t serialized_bytes_size()const noexcept{
+      return sizeof(Norms)+12*sizeof(T)+mlp_representation_nbytes;
+   }
+   
+   void serialize_into(unsigned char* buffer) const {
+      std::size_t write_index = 0;
+      std::memcpy(&buffer[write_index], &norms, sizeof(Norms));
+      write_index += sizeof(Norms);
+      std::memcpy(&buffer[write_index], &rv_lims, 12 * sizeof(T));
+      write_index += 12 * sizeof(T);
+      std::memcpy(&buffer[write_index], mlp_representation, mlp_representation_nbytes);
+      write_index += mlp_representation_nbytes;
+   }
 
    //This holds a 2D representation of the 6D hypercube coordinates where each rows is [x,y,z,vx,vy,vz]
    std::vector<T> space;
    //This holds a 1D representation of the 6D hypercube's phase space value where each rows is [f]
    std::vector<T> f;
-   std::size_t rows={0};
-   std::size_t cols={0};
-   std::size_t nVDFs={0};
+   std::size_t nrows={0};
+   std::size_t ncols = {6};
+   std::size_t cols = {0};
+   T* mlp_representation=nullptr;
+   std::size_t mlp_representation_nbytes=0;
+   std::array<T, 12> rv_lims = {
+       std::numeric_limits<T>::max(),    std::numeric_limits<T>::max(),    std::numeric_limits<T>::max(),
+       std::numeric_limits<T>::max(),    std::numeric_limits<T>::max(),    std::numeric_limits<T>::max(),
+       std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(),
+       std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest()};
+
+   Norms norms = {};
 };
 
 struct VDFUnion {
