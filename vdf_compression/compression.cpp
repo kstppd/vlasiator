@@ -65,6 +65,10 @@ void uncompress_vdf_union(GENERIC_TS_POOL::MemPool *p,std::size_t nVDFS, std::ar
 auto compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
                                size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes ,uint32_t downsampling_factor)
     -> float;
+    
+auto compress_vdfs_fourier_mlp6D(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
+                               size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes ,uint32_t downsampling_factor)
+    -> float;
 
 auto compress_vdfs_fourier_mlp_clustered(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
                                          size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes,
@@ -110,6 +114,10 @@ void ASTERIX::compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
    case P::ASTERIX_COMPRESSION_METHODS::MLP_MULTI:
       local_compression_ratio =
           compress_vdfs_fourier_mlp_clustered(mpiGrid, number_of_spatial_cells, update_weights, bytes, downsampling_factor);
+      break;
+   case P::ASTERIX_COMPRESSION_METHODS::MLP6D:
+      local_compression_ratio =
+          compress_vdfs_fourier_mlp6D(mpiGrid, number_of_spatial_cells, update_weights, bytes, downsampling_factor);
       break;
    case P::ASTERIX_COMPRESSION_METHODS::ZFP:
       local_compression_ratio = compress_vdfs_zfp(mpiGrid, number_of_spatial_cells);
@@ -218,6 +226,35 @@ float compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geome
       }
    } // loop over all populations
    return local_compression_achieved / static_cast<float>(total_samples);
+}
+
+float compress_vdfs_fourier_mlp6D(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
+                                size_t number_of_spatial_cells, bool update_weights, std::vector<std::vector<char>>&bytes, uint32_t downsampling_factor) {
+   
+   GENERIC_TS_POOL::MemPool p{};   
+   
+   if(getObjectWrapper().particleSpecies.size()>1){
+      throw std::runtime_error("Multi-Pop not implemented yet!");
+   }
+   float local_compression_achieved = 0.0;
+
+   const std::vector<CellID>& cells = getLocalCells();
+
+   for (uint popID=0; popID<getObjectWrapper().particleSpecies.size(); ++popID) {
+      for (size_t cid=0; cid<cells.size(); ++cid) {
+         //Get spatial coords of this cell
+         SpatialCell* sc = mpiGrid[cid];
+
+         auto rcoords=sc->get_velocity_cell_vx_min(const uint popID, const vmesh::GlobalID velocity_block, const unsigned int velocity_cell)
+      }
+   }
+
+
+
+   
+   std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
+   abort();
+   return local_compression_achieved;
 }
 
 std::vector<std::vector<std::pair<CellID, Real>>>

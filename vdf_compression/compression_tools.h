@@ -131,6 +131,32 @@ struct UnorderedVDF {
    }
 };
 
+template<typename T>
+struct PhaseSpace6D{
+   static constexpr T lowest = std::numeric_limits<T>::lowest();
+   static constexpr T maximum = std::numeric_limits<T>::max();
+   
+   struct Lims{
+      T xmin=lowest;T ymin=lowest;T zmin=lowest;
+      T vxmin=lowest;T vymin=lowest;T vzmin=lowest;
+      T xmax=maximum;T ymax=maximum;T zmax=maximum;
+      T vxmax=maximum;T vymax=maximum;T vzmax=maximum;
+   };
+   
+   struct Norms{
+      T mean={T(0)};
+      T std={T(0)};
+   };
+
+   //This holds a 2D representation of the 6D hypercube coordinates where each rows is [x,y,z,vx,vy,vz]
+   std::vector<T> space;
+   //This holds a 1D representation of the 6D hypercube's phase space value where each rows is [f]
+   std::vector<T> f;
+   std::size_t rows={0};
+   std::size_t cols={0};
+   std::size_t nVDFs={0};
+};
+
 struct VDFUnion {
 
    struct MinMaxValues {

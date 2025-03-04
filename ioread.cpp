@@ -910,6 +910,23 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
    return success;  
 }
 
+template <typename fileReal>
+bool _readBlockDataCompressionMLP6D(vlsv::ParallelReader & file,
+   const std::string& spatMeshName,
+   const std::vector<uint64_t>& fileCells,
+   const uint64_t localCellStartOffset,
+   const uint64_t localCells,
+   const vmesh::LocalID* blocksPerCell,
+   const uint64_t localBlockStartOffset,
+   const uint64_t localBlocks,
+   dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+   std::function<vmesh::GlobalID(vmesh::GlobalID)> blockIDremapper,
+   const uint popID){
+
+   std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
+   abort();
+}
+
 /** Read velocity block mesh data and distribution function data belonging to this process 
  * for the given particle species. This function must be called simultaneously by all processes.
  * @param file VLSV reader with input file open.
@@ -958,6 +975,9 @@ bool _readBlockData(
          break;
       case P::ASTERIX_COMPRESSION_METHODS::MLP_MULTI:
          success=_readBlockDataCompressionMLP<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
+         break;
+      case P::ASTERIX_COMPRESSION_METHODS::MLP6D:
+         success=_readBlockDataCompressionMLP6D<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);
          break;
       case P::ASTERIX_COMPRESSION_METHODS::OCTREE:
          success=_readBlockDataCompressionOCTREE<fileReal>(file,spatMeshName,fileCells,localCellStartOffset,localCells,blocksPerCell,localBlockStartOffset,localBlocks,mpiGrid,blockIDremapper,popID);

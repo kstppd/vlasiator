@@ -920,6 +920,9 @@ void Parameters::getParameters() {
       }else if(P::method_str == "MLP_MULTI") {
          P::vdf_compression_method=ASTERIX_COMPRESSION_METHODS::MLP_MULTI;
          P::doCompress=true;
+      }else if(P::method_str == "MLP6D") {
+         P::vdf_compression_method=ASTERIX_COMPRESSION_METHODS::MLP6D;
+         P::doCompress=true;
       } else if (P::method_str == "ZFP") {
          P::vdf_compression_method=ASTERIX_COMPRESSION_METHODS::ZFP;
          P::doCompress=true;

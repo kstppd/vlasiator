@@ -589,6 +589,13 @@ bool writeVspaceDataCompressionMLP(const uint popID,Writer& vlsvWriter,
  return success;  
 }
 
+bool writeVspaceDataCompressionMLP6D(const uint popID,Writer& vlsvWriter,
+                                   dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                                   const std::vector<CellID>& cells,std::vector<std::vector<char>>&mlp_bytes,std::size_t totalBlocks, MPI_Comm comm){
+   std::cerr<<"Not implemented yet "<<__PRETTY_FUNCTION__<<std::endl;
+   abort();
+}
+
 bool writeVelocityDistributionDataAsterix(const uint popID,Writer& vlsvWriter,
                                    dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                                    const std::vector<CellID>& cells,std::vector<std::vector<char>>&bytes,MPI_Comm comm) {

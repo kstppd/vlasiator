@@ -242,6 +242,7 @@ struct Parameters {
    enum ASTERIX_COMPRESSION_METHODS{
        MLP,
        MLP_MULTI,
+       MLP6D,
        ZFP,
        OCTREE,
        NONE
