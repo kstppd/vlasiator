@@ -324,6 +324,7 @@ public:
    
    void standardize_vspace(){
       const std::size_t nVDFS = _ncols;
+      _norms.resize(nVDFS);
       for (std::size_t v = 0; v < nVDFS; ++v) {
          T sum = 0;
          for (std::size_t i = 0; i < _nrows; ++i) {
@@ -356,12 +357,7 @@ public:
       }
    }
 
-   void unormalize_vcoords(){
-      std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
-         x[0] = ((x[0] + 1.0) / 2.0) * (_v_limits[3] - _v_limits[0]) + _v_limits[0];
-         x[1] = ((x[1] + 1.0) / 2.0) * (_v_limits[4] - _v_limits[1]) + _v_limits[1];
-         x[2] = ((x[2] + 1.0) / 2.0) * (_v_limits[5] - _v_limits[2]) + _v_limits[2];
-      });
+   void unstandardize_vcoords(){
       std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
          x[0] = this->_vnorms[0].mu+(x[0]*this->_vnorms[0].sigma);  
          x[1] = this->_vnorms[1].mu+(x[1]*this->_vnorms[1].sigma);  
@@ -369,7 +365,15 @@ public:
       });
    }
 
-   void unormalize_vspace(){
+   void unormalize_vcoords(){
+      std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
+         x[0] = ((x[0] + 1.0) / 2.0) * (_v_limits[3] - _v_limits[0]) + _v_limits[0];
+         x[1] = ((x[1] + 1.0) / 2.0) * (_v_limits[4] - _v_limits[1]) + _v_limits[1];
+         x[2] = ((x[2] + 1.0) / 2.0) * (_v_limits[5] - _v_limits[2]) + _v_limits[2];
+      });
+   }
+
+   void unstandardize_vspace(){
       const std::size_t nVDFS = _ncols;
       for (std::size_t v = 0; v < nVDFS; ++v) {
          const T max_val = _norms[v].max;
@@ -391,7 +395,8 @@ public:
    }
 
    void unormalize() noexcept {
-      unormalize_vspace();
+      unstandardize_vspace();
+      unstandardize_vcoords();
       unormalize_vcoords();
    }
 
