@@ -206,13 +206,7 @@ public:
                         coords[1] = coords[1] - bulkv[1];
                         coords[2] = coords[2] - bulkv[2];
                      }
-
-                     _v_limits[0] = std::min(_v_limits[0], static_cast<T>(coords[0]));
-                     _v_limits[1] = std::min(_v_limits[1], static_cast<T>(coords[1]));
-                     _v_limits[2] = std::min(_v_limits[2], static_cast<T>(coords[2]));
-                     _v_limits[3] = std::max(_v_limits[3], static_cast<T>(coords[0]));
-                     _v_limits[4] = std::max(_v_limits[4], static_cast<T>(coords[1]));
-                     _v_limits[5] = std::max(_v_limits[5], static_cast<T>(coords[2]));
+                     
                      const double vdf_val = static_cast<double>(vdf_data[cellIndex(i, j, k)]);
                      // vdf_val = std::abs(std::log10(std::max(vdf_val, 0.1*sparse)));
                      if (block_inserted) { // which means the block was not there before
@@ -269,8 +263,83 @@ public:
       std::for_each(_vspace.begin(), _vspace.end(),
                     [sparse](T& value) { value = std::abs(std::log10(std::max(value, 0.1f * sparse))); });
    }
+   
+   void stats()noexcept {
+      // Collect statistics on vspace coords
+      std::array<T, 3> vsums{0, 0, 0};
+      std::array<T, 3> variance{0, 0, 0};
+      std::ranges::for_each(_vcoords, [this, &vsums](std::array<T, 3>& x) {
+         vsums[0] += x[0];
+         vsums[1] += x[1];
+         vsums[2] += x[2];
+      });
+
+      std::array<T, 3> vmu{vsums[0] / _vcoords.size(), vsums[1] / _vcoords.size(), vsums[2] / _vcoords.size()};
+      std::ranges::for_each(_vcoords, [this, &vsums, &vmu, &variance](std::array<T, 3>& x) {
+         variance[0] += std::pow(x[0] - vmu[0], 2);
+         variance[1] += std::pow(x[1] - vmu[1], 2);
+         variance[2] += std::pow(x[2] - vmu[2], 2);
+      });
+      std::array<T, 3> sigma{
+          std::sqrt(variance[0]),
+          std::sqrt(variance[1]),
+          std::sqrt(variance[2]),
+      };
+      printf("Vcoords mu=[%f %f %f]\n", vmu[0], vmu[1], vmu[2]);
+      printf("Vcoords sigma=[%f %f %f]\n", sigma[0], sigma[1], sigma[2]);
+   }
+
+   void norm_vspace_coords()noexcept {
+      // Collect statistics on vspace coords
+      std::array<T, 3> vsums{0, 0, 0};
+      std::array<T, 3> variance{0, 0, 0};
+      std::ranges::for_each(_vcoords, [this, &vsums](std::array<T, 3>& x) {
+         vsums[0] += x[0];
+         vsums[1] += x[1];
+         vsums[2] += x[2];
+      });
+
+      std::array<T, 3> vmu{vsums[0] / _vcoords.size(), vsums[1] / _vcoords.size(), vsums[2] / _vcoords.size()};
+      std::ranges::for_each(_vcoords, [this, &vsums, &vmu, &variance](std::array<T, 3>& x) {
+         variance[0] += std::pow(x[0] - vmu[0], 2);
+         variance[1] += std::pow(x[1] - vmu[1], 2);
+         variance[2] += std::pow(x[2] - vmu[2], 2);
+      });
+
+      variance[0]/=_vcoords.size();
+      variance[1]/=_vcoords.size();
+      variance[2]/=_vcoords.size();
+      std::array<T, 3> sigma{
+          std::sqrt(variance[0]),
+          std::sqrt(variance[1]),
+          std::sqrt(variance[2]),
+      };
+
+      std::ranges::for_each(_vcoords, [this,&vmu,&sigma](std::array<T, 3>& x) {
+         x[0]= (x[0]-vmu[0])/(sigma[0]);
+         x[1]= (x[1]-vmu[1])/(sigma[1]);
+         x[2]= (x[2]-vmu[2])/(sigma[2]);
+      });
+
+      this->_vnorms = std::array<Norms, 3>{Norms{.mu = vmu[0], .sigma = sigma[0], .min = 0.0, .max = 0.0},
+                                           Norms{.mu = vmu[1], .sigma = sigma[1], .min = 0.0, .max = 0.0},
+                                           Norms{.mu = vmu[2], .sigma = sigma[2], .min = 0.0, .max = 0.0}};
+   }
 
    void normalize() noexcept {
+
+      norm_vspace_coords();
+      //Get limits of vspace
+      std::ranges::for_each(_vcoords, [this](std::array<T, 3>& coords) {
+         this->_v_limits[0] = std::min(this->_v_limits[0], static_cast<T>(coords[0]));
+         this->_v_limits[1] = std::min(this->_v_limits[1], static_cast<T>(coords[1]));
+         this->_v_limits[2] = std::min(this->_v_limits[2], static_cast<T>(coords[2]));
+         this->_v_limits[3] = std::max(this->_v_limits[3], static_cast<T>(coords[0]));
+         this->_v_limits[4] = std::max(this->_v_limits[4], static_cast<T>(coords[1]));
+         this->_v_limits[5] = std::max(this->_v_limits[5], static_cast<T>(coords[2]));
+      });
+   
+      
       // Vcoords
       std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
          x[0] = 2.0 * ((x[0] - _v_limits[0]) / (_v_limits[3] - _v_limits[0])) - 1.0;
@@ -309,6 +378,7 @@ public:
          const T sigma_val = std::sqrt(variance);
          _norms[v] = Norms{.mu = mean_val, .sigma = sigma_val, .min = min_val, .max = max_val};
       }
+     
    }
 
    void unormalize_and_unscale() noexcept {
@@ -317,12 +387,18 @@ public:
          x[1] = ((x[1] + 1.0) / 2.0) * (_v_limits[4] - _v_limits[1]) + _v_limits[1];
          x[2] = ((x[2] + 1.0) / 2.0) * (_v_limits[5] - _v_limits[2]) + _v_limits[2];
       });
-
+      std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
+         x[0] = this->_vnorms[0].mu+(x[0]*this->_vnorms[0].sigma);  
+         x[1] = this->_vnorms[1].mu+(x[1]*this->_vnorms[1].sigma);  
+         x[2] = this->_vnorms[2].mu+(x[2]*this->_vnorms[2].sigma);  
+      });
+         // stats();
       const std::size_t nVDFS = _ncols;
       for (std::size_t v = 0; v < nVDFS; ++v) {
          const T max_val = _norms[v].max;
          const T min_val = _norms[v].min;
          const T mean_val = _norms[v].mu;
+         const T sigma_val = _norms[v].sigma;
          const T range = max_val - min_val;
          for (std::size_t i = 0; i < _nrows; ++i) {
             _vspace[index_2d(i, v)] = std::pow(10.0, -1.0 * (_vspace[index_2d(i, v)] * range + min_val + mean_val));
@@ -341,7 +417,7 @@ public:
    }
 
    std::size_t total_serialized_size_bytes() const {
-      return sizeof(Header) + _cids.size() * sizeof(CellID) + _norms.size() * sizeof(Norms) +
+      return sizeof(Header) + _cids.size() * sizeof(CellID) + _norms.size() * sizeof(Norms) +_vnorms.size() * sizeof(Norms)+
              _vbulks.size() * sizeof(std::array<T, 3>) + _vcoords.size() * sizeof(std::array<T, 3>) + 6 * sizeof(T) +
              _n_weights * sizeof(T) + _map.size() * sizeof(std::pair<vmesh::LocalID, std::size_t>);
       ;
@@ -365,6 +441,9 @@ public:
 
       std::memcpy(&buffer[write_index], &_norms[0], _norms.size() * sizeof(Norms));
       write_index += _norms.size() * sizeof(Norms);
+      
+      std::memcpy(&buffer[write_index], &_vnorms[0], _vnorms.size() * sizeof(Norms));
+      write_index += _vnorms.size() * sizeof(Norms);
 
       std::memcpy(&buffer[write_index], &_vbulks[0], _vbulks.size() * sizeof(std::array<T, 3>));
       write_index += _vbulks.size() * sizeof(std::array<T, 3>);
@@ -406,6 +485,9 @@ public:
       _norms.resize(cids_size);
       std::memcpy(_norms.data(), &buffer[read_index], norms_size * sizeof(Norms));
       read_index += norms_size * sizeof(Norms);
+      
+      std::memcpy(_vnorms.data(), &buffer[read_index], _vnorms.size() * sizeof(Norms));
+      read_index += _vnorms.size() * sizeof(Norms);
 
       std::size_t vbulk_size = cids_size;
       _vbulks.resize(vbulk_size);
@@ -459,6 +541,7 @@ public:
    bool _center_vdfs;
 
    std::vector<Norms> _norms;
+   std::array<Norms,3> _vnorms;
    std::vector<CellID> _cids;
    std::vector<std::array<T, 3>> _vcoords;
    std::vector<std::array<T, 3>> _vbulks;
