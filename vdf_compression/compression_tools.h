@@ -170,7 +170,6 @@ public:
       _effective_vdf_size = bytes_of_all_local_vdfs;
 
       std::vector<std::vector<T>> vspaces(cids.size());
-      std::vector<double> f_sums(cids.size(), 0);
       const Real sparse = static_cast<double>(getObjectWrapper().particleSpecies[popID].sparseMinValue);
       for (std::size_t cc = 0; cc < cids.size(); ++cc) {
          const auto& cid = cids[cc];
@@ -217,7 +216,6 @@ public:
                      } else { // So the block was there
                         vspaces[cc].at(it->second + cnt) = vdf_val;
                      }
-                     f_sums.at(cc) += static_cast<double>(vdf_val);
                      cnt++;
                   }
                }
@@ -236,26 +234,6 @@ public:
          for (std::size_t j = 0; j < _ncols; ++j) {
             _vspace.at(index_2d(i, j)) = vspaces[j][i];
          }
-      }
-
-      // Scale now
-      scale(sparse);
-      // Calculate per cellid mean and std
-      _norms = std::move(std::vector<Norms>(_ncols, Norms{}));
-      // Mean
-      for (std::size_t i = 0; i < _norms.size(); ++i) {
-         _norms.at(i).mu = f_sums.at(i) / static_cast<float>(_nrows);
-      }
-      // Std
-      for (std::size_t j = 0; j < _ncols; ++j) {
-         double sum = 0.0;
-         for (std::size_t i = 0; i < _nrows; ++i) {
-            double val = static_cast<double>(_vspace.at(index_2d(i, j)));
-            sum += std::pow(val - _norms.at(j).mu, 2);
-            _norms.at(j).max = std::max(_norms.at(j).max, val);
-            _norms.at(j).min = std::min(_norms.at(j).min, val);
-         }
-         _norms.at(j).sigma = std::sqrt(sum / static_cast<float>(_nrows));
       }
    }
 
@@ -289,8 +267,7 @@ public:
       printf("Vcoords sigma=[%f %f %f]\n", sigma[0], sigma[1], sigma[2]);
    }
 
-   void norm_vspace_coords()noexcept {
-      // Collect statistics on vspace coords
+   void standardize_vcoords()noexcept {
       std::array<T, 3> vsums{0, 0, 0};
       std::array<T, 3> variance{0, 0, 0};
       std::ranges::for_each(_vcoords, [this, &vsums](std::array<T, 3>& x) {
@@ -326,9 +303,7 @@ public:
                                            Norms{.mu = vmu[2], .sigma = sigma[2], .min = 0.0, .max = 0.0}};
    }
 
-   void normalize() noexcept {
-
-      norm_vspace_coords();
+   void min_max_norm_vcoords(){
       //Get limits of vspace
       std::ranges::for_each(_vcoords, [this](std::array<T, 3>& coords) {
          this->_v_limits[0] = std::min(this->_v_limits[0], static_cast<T>(coords[0]));
@@ -338,15 +313,16 @@ public:
          this->_v_limits[4] = std::max(this->_v_limits[4], static_cast<T>(coords[1]));
          this->_v_limits[5] = std::max(this->_v_limits[5], static_cast<T>(coords[2]));
       });
-   
-      
+
       // Vcoords
       std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
          x[0] = 2.0 * ((x[0] - _v_limits[0]) / (_v_limits[3] - _v_limits[0])) - 1.0;
          x[1] = 2.0 * ((x[1] - _v_limits[1]) / (_v_limits[4] - _v_limits[1])) - 1.0;
          x[2] = 2.0 * ((x[2] - _v_limits[2]) / (_v_limits[5] - _v_limits[2])) - 1.0;
       });
-
+   }
+   
+   void standardize_vspace(){
       const std::size_t nVDFS = _ncols;
       for (std::size_t v = 0; v < nVDFS; ++v) {
          T sum = 0;
@@ -378,10 +354,9 @@ public:
          const T sigma_val = std::sqrt(variance);
          _norms[v] = Norms{.mu = mean_val, .sigma = sigma_val, .min = min_val, .max = max_val};
       }
-     
    }
 
-   void unormalize_and_unscale() noexcept {
+   void unormalize_vcoords(){
       std::ranges::for_each(_vcoords, [this](std::array<T, 3>& x) {
          x[0] = ((x[0] + 1.0) / 2.0) * (_v_limits[3] - _v_limits[0]) + _v_limits[0];
          x[1] = ((x[1] + 1.0) / 2.0) * (_v_limits[4] - _v_limits[1]) + _v_limits[1];
@@ -392,7 +367,9 @@ public:
          x[1] = this->_vnorms[1].mu+(x[1]*this->_vnorms[1].sigma);  
          x[2] = this->_vnorms[2].mu+(x[2]*this->_vnorms[2].sigma);  
       });
-         // stats();
+   }
+
+   void unormalize_vspace(){
       const std::size_t nVDFS = _ncols;
       for (std::size_t v = 0; v < nVDFS; ++v) {
          const T max_val = _norms[v].max;
@@ -404,6 +381,18 @@ public:
             _vspace[index_2d(i, v)] = std::pow(10.0, -1.0 * (_vspace[index_2d(i, v)] * range + min_val + mean_val));
          }
       }
+   }
+
+   void normalize(T sparse) noexcept {
+      standardize_vcoords();
+      min_max_norm_vcoords();
+      scale(sparse);
+      standardize_vspace();
+   }
+
+   void unormalize() noexcept {
+      unormalize_vspace();
+      unormalize_vcoords();
    }
 
    constexpr std::size_t index_2d(std::size_t row, std::size_t col) const noexcept { return row * _ncols + col; };

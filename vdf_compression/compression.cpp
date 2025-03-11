@@ -174,7 +174,7 @@ float compress_vdfs_fourier_mlp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geome
          // Extract this span of VDFs as a union
          const std::span<const CellID> span(local_cells.begin(), local_cells.end());
          PhaseSpaceUnion<Realf>b(span, popID, mpiGrid, true);
-         b.normalize();
+         b.normalize(sparse);
 
          // (2) Do the compression for this VDF
          Realf error = std::numeric_limits<double>::max();
@@ -275,7 +275,7 @@ float compress_vdfs_fourier_mlp_clustered(dccrg::Dccrg<SpatialCell, dccrg::Carte
          // Extract this span of VDFs as a union
          const std::span<const CellID> span(cids.data(), cids.size());
          PhaseSpaceUnion<Realf>b(span, popID, mpiGrid, true);
-         b.normalize();
+         b.normalize(sparse);
 
          // (2) Do the compression for this VDF
          Realf error = std::numeric_limits<double>::max();

@@ -864,7 +864,7 @@ bool _readBlockDataCompressionMLP(vlsv::ParallelReader & file,
          //Reconstruct this Union
          ASTERIX::PhaseSpaceUnion<Realf> b(reinterpret_cast<unsigned char*>(mlp_bytes.data()));
          ASTERIX::decompressPhaseSpace<Realf>(b);
-         b.unormalize_and_unscale();
+         b.unormalize();
          b.sparsify(sparse);
 
          //Keep only what you need
