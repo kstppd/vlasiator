@@ -33,6 +33,8 @@
 #include <omp.h>
 #endif
 
+extern "C" void cpu_acc_dense();
+
 /*!
   Calls semi-lagrangian acceleration routines for the provided list of cells
 
@@ -49,6 +51,9 @@ void cpu_accelerate_cells(dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& m
    ) {
    int timerId {phiprof::initializeTimer("cell-semilag-acc")};
    int intersections_id {phiprof::initializeTimer("cell-compute-intersections")};
+
+   //Stub code to accelerate cell
+   cpu_acc_dense();
 
    #pragma omp parallel // Launch workshare region
    {

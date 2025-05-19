@@ -202,7 +202,8 @@ OBJS = 	version.o memoryallocation.o memory_report.o backgroundfield.o quadr.o d
 
 # Add Vlasov solver objects
 OBJS += cpu_acc_intersections.o cpu_acc_transform.o \
-	cpu_trans_pencils.o cpu_pitch_angle_diffusion.o 
+	cpu_trans_pencils.o cpu_pitch_angle_diffusion.o \
+	cpu_acc_stub.o 
 
 # Only build GPU version object files if active
 ifeq ($(USE_GPU),1)
@@ -283,6 +284,10 @@ endif
 
 # Generic rules:
 # for all files in the main source dir
+%.o: vlasovsolver/%.f95
+	@echo [FC] $<
+	$(SILENT)$(FC) $(FCFLAGS) -c $< 
+
 %.o: %.cpp
 	@echo [CC] $<
 	$(SILENT)$(CMP) $(CXXFLAGS) ${MATHFLAGS} $(FLAGS) -c $< $(INC_BOOST) ${INC_DCCRG} ${INC_EIGEN} ${INC_ZOLTAN} ${INC_VECTORCLASS} ${INC_FSGRID} ${INC_PROFILE} ${INC_VLSV} ${INC_PAPI} ${INC_MPI}
