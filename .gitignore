@@ -10,6 +10,7 @@ diagnostic.txt
 *.ptx
 *.s
 *.d
+*mod
 vscode/
 .vscode/
 cppcheck/
