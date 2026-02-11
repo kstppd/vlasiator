@@ -722,7 +722,7 @@ std::vector<float> hermite_spectra_3d(const OrderedVDF& data, int order, float v
          hermite_index = nx*(order)*(order)+ny*(order)+nz;
          //loop over vspace   
          sum=0;
-         for(size_t ix=0; ix<data.shape[0]; ++ix){
+         for(size_t ix=0; ix<data.shape[2]; ++ix){
            for(size_t iy=0; iy<data.shape[1]; ++iy){
              for(size_t iz=0; iz<data.shape[0]; ++iz){
                vspace_index=ix*(data.shape[2])*(data.shape[1])+iy*(data.shape[2])+iz;

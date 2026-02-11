@@ -1080,7 +1080,8 @@ bool _readBlockDataCompressionHERMITE(vlsv::ParallelReader & file,
                const std::array<Real,3>coords={v_limits[0]+i*dv,v_limits[1]+j*dv,v_limits[2]+k*dv};
                Realf& val=vdf.at(i,j,k);
                const auto gid=sc->get_velocity_block(popID, &coords[0]);
-               if (val>=sparse){
+               const auto v =0.1f * sparse * std::pow(10, val);
+               if (v>=sparse){
                   sc->add_velocity_block(gid,popID);
                }
             }
