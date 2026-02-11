@@ -231,6 +231,7 @@ std::vector<std::size_t> P::mlp_arch;
 std::size_t P::mlp_fourier_order;
 std::size_t P::mlp_max_epochs;
 Real P::mlp_tollerance;
+std::size_t P::hermite_order;
 Real P::octree_tolerance;
 std::string P::mlpLayer; 
 Real P::compression_interval; 
@@ -601,6 +602,7 @@ bool P::addParameters() {
    RP::add("Asterix.state", string("Compression toggle"),false);
    RP::add("Asterix.method", string("Compression toggle"),"");
    RP::add("Asterix.max_vdfs_per_nn",string("Max vdfs in multi regression mode") ,1);
+   RP::add("Asterix.hermite_order", string("Number of harmonics for vdf decomposition"),22);
    return true;
 }
 
@@ -958,6 +960,7 @@ void Parameters::getParameters() {
    RP::get("Asterix.state",P::doCompress);
    RP::get("Asterix.method",P::method_str);
    RP::get("Asterix.max_vdfs_per_nn",P::max_vdfs_per_nn);
+   RP::get("Asterix.hermite_order", P::hermite_order);
    
    if (P::doCompress){
       #ifdef ASTERIX_MLP
@@ -982,6 +985,10 @@ void Parameters::getParameters() {
          P::doCompress=true;
       }
       #endif
+      if (P::method_str == "HERMITE") {
+           P::vdf_compression_method=ASTERIX_COMPRESSION_METHODS::HERMITE;
+           P::doCompress=true;
+      }
    }else{
       P::vdf_compression_method=ASTERIX_COMPRESSION_METHODS::NONE;
       P::doCompress=false;

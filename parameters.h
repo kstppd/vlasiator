@@ -251,6 +251,7 @@ struct Parameters {
            MLP_MULTI,
            ZFP,
            OCTREE,
+	   HERMITE,
            NONE
    };
    static std::string mlpLayer;
@@ -259,6 +260,7 @@ struct Parameters {
    static std::size_t mlp_max_epochs;
    static Real compression_interval;
    static Real mlp_tollerance;
+   static std::size_t hermite_order;
    static std::size_t max_vdfs_per_nn;
    static Real octree_tolerance;
    static bool doCompress;

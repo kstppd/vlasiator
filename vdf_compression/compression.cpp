@@ -97,6 +97,8 @@ auto decompressArrayFloat(char* compressedData, size_t compressedSize, size_t ar
 auto compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, const std::vector<CellID>& local_cells)
     -> float;
 #endif
+auto compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, const std::vector<CellID>& local_cells)
+    -> float;
 
 // Main driver, look at header file  for documentation
 void ASTERIX::compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid, const std::vector<CellID>& cells,
@@ -128,6 +130,9 @@ void ASTERIX::compress_vdfs(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
       local_compression_ratio = compress_vdfs_octree(mpiGrid, cells);
       break;
 #endif
+   case P::ASTERIX_COMPRESSION_METHODS::HERMITE:
+      local_compression_ratio = compress_vdfs_hermite(mpiGrid, cells);
+      break;
    case P::ASTERIX_COMPRESSION_METHODS::NONE:
       break;
    default:
@@ -595,4 +600,191 @@ std::vector<double> ASTERIX::decompressArrayDouble(char* compressedData, size_t 
    return decompressedArray;
 }
 #endif //ASTERIX_ZFP
+
+unsigned long long factorial(unsigned long long n) {
+   unsigned long long result = 1;
+   for (unsigned long long i = 2; i <= n; ++i) {
+       result *= i;       
+       if (result < i) {
+           throw std::overflow_error("Factorial result is too large!");
+       }
+   }
+   return result;
+}
+
+std::vector<float> linspace(double start, double end, int len){
+ float step = (end-start)/(len - 1);
+ std::vector<float> x(len);
+ for(int i=0; i<len; ++i){
+   x[i] = start + i*step;
+   }
+ return x;
+}
+
+std::array<float,3> get_drift_velocity(OrderedVDF& data){   
+   std::array<float,3> u={0.0,0.0,0.0};
+   std::vector<float> vx = linspace(data.v_limits[0],data.v_limits[3],data.shape[0]);
+   std::vector<float> vy = linspace(data.v_limits[1],data.v_limits[4],data.shape[1]);
+   std::vector<float> vz = linspace(data.v_limits[2],data.v_limits[5],data.shape[2]);
+   float n = 0;
+   float dv = (data.v_limits[3] - data.v_limits[0]) / (data.shape[0] );
+   for(size_t i=0; i< data.shape[0]; ++i){
+      for(size_t j=0; j< data.shape[1]; ++j){
+        for(size_t k=0; k< data.shape[2]; ++k){          
+          int index = i*data.shape[2]*data.shape[1] + j*data.shape[2] + k;
+          u[0] +=  vx[i] * data.vdf_vals[index] * dv * dv * dv;
+          u[1] +=  vy[j] * data.vdf_vals[index] * dv * dv * dv;
+          u[2] +=  vz[k] * data.vdf_vals[index] * dv * dv * dv;
+          n += data.vdf_vals[index] * dv * dv * dv;
+         }
+      }
+   }
+   for (float& val : u) {  // Use reference to modify elements
+      val /= n;
+  }
+   return u;
+ }
+
+ float get_thermal_velocity(OrderedVDF& data, std::array<float,3> u){
+   float dv = (data.v_limits[3] - data.v_limits[0]) / (data.shape[0] );
+   std::vector<float> vx = linspace(data.v_limits[0],data.v_limits[3],data.shape[0]);
+   std::vector<float> vy = linspace(data.v_limits[1],data.v_limits[4],data.shape[1]);
+   std::vector<float> vz = linspace(data.v_limits[2],data.v_limits[5],data.shape[2]);
+   float n = 0;
+   float Pxx = 0;
+   float Pyy = 0;
+   float Pzz = 0;
+   for(size_t i=0; i<data.shape[0]; ++i){
+      for(size_t j=0; j<data.shape[1]; ++j){
+        for(size_t k=0; k<data.shape[2]; ++k){
+         int index = i*data.shape[2]*data.shape[1] + j*data.shape[1] + k;
+         Pxx += (vx[i] - u[0]) * ((vx[i] - u[0])) * data.vdf_vals[index] * dv * dv * dv ;
+         Pyy += (vy[j] - u[1]) * ((vy[j] - u[1])) * data.vdf_vals[index] * dv * dv * dv ;
+         Pzz += (vz[k] - u[2]) * ((vz[k] - u[2])) * data.vdf_vals[index] * dv * dv * dv ;
+         n += data.vdf_vals[index] * dv * dv * dv;
+        }
+      }
+   }
+  float vth = std::sqrt(  (Pxx+Pyy+Pzz) / (3 * n) );
+return vth;
+}
+
+
+std::vector<std::vector<float>> hermite(std::vector<float>& x, int order){
+   // Recurrence relation: H_n+1 = 2*x*H_n -2*n*H_n-1
+   // H0 = 1, H1 = 2x
+   // base function with Gauss weights: H_n * exp(-0.5*v^2)
+     std::vector<std::vector<float>> hp(order, std::vector<float>(x.size()) ) ;
+     for(size_t i=0; i<x.size(); ++i){
+       hp[0][i] = 1 * std::exp(-0.5*x[i]*x[i]) ;       //Generate first two polynomilas manually
+       hp[1][i] = 2*x[i] * std::exp(-0.5*x[i]*x[i]);
+     }
+     for(int n=2; n<order; ++n){  // Then use recurrent chain
+       for(size_t i=0; i<x.size(); ++i){     
+         hp[n][i] = (2*x[i]*hp[n-1][i] - 2*(n-1)*hp[n-2][i] ) ;
+       }
+     }
+     return hp;
+   }
+
+  std::vector<std::vector<float>> get_hermite(const OrderedVDF& data, int order, float vth, const std::array<float,3>& u, int axis) {
+       // Determine velocity limits for the given axis
+       float v_min = data.v_limits[axis];
+       float v_max = data.v_limits[axis + 3];
+       // Generate velocity grid
+       std::vector<float> v_axis = linspace(v_min, v_max, data.shape[axis]);      
+       for (auto& val : v_axis) {
+           val = (val - u[axis]) / vth;
+       }       
+       std::vector<std::vector<float>> hermite_vals = hermite(v_axis, order);          
+       for (int n = 0; n < order; ++n) {
+           float norm_const = std::sqrt(std::pow(2, n) * factorial(n) * std::sqrt(M_PI) * vth);
+           for (size_t i = 0; i < v_axis.size(); ++i) {
+               hermite_vals[n][i] /= norm_const;
+           }
+       }
+       return hermite_vals;
+   }
+
+std::vector<float> hermite_spectra_3d(OrderedVDF& data, int order, float vth, std::array<float,3> u){
+   std::vector<float> spectra(order*order*order);
+   int hermite_index;
+   int vspace_index;
+   float sum;
+   float dv = (data.v_limits[3]-data.v_limits[0]) / (data.shape[0])  ;
+   std::vector<std::vector<float>> hermite_x = get_hermite(data, order, vth, u, 0);
+   std::vector<std::vector<float>> hermite_y = get_hermite(data, order, vth, u, 1);
+   std::vector<std::vector<float>> hermite_z = get_hermite(data, order, vth, u, 2);
+   // loop over hermite
+   for(int nx=0; nx<order; ++nx){
+     for(int ny=0; ny<order; ++ny){
+       for(int nz=0; nz<order; ++nz){
+         hermite_index = nx*(order)*(order)+ny*(order)+nz;
+         //loop over vspace   
+         sum=0;
+         for(size_t ix=0; ix<data.shape[0]; ++ix){
+           for(size_t iy=0; iy<data.shape[1]; ++iy){
+             for(size_t iz=0; iz<data.shape[0]; ++iz){
+               vspace_index=ix*(data.shape[2])*(data.shape[1])+iy*(data.shape[2])+iz;
+               sum+=data.vdf_vals[vspace_index]*hermite_x[nx][ix]*hermite_y[ny][iy]*hermite_z[nz][iz]*dv*dv*dv;
+             }
+           }
+         }
+         spectra[hermite_index]=sum;
+       }
+     }
+   }
+   return spectra;
+ }
+
+HermSpectrum getHermiteSpectra(OrderedVDF& vdfdata){
+   int order=P::hermite_order; // define max order of the hermite decomposition
+   auto u = get_drift_velocity(vdfdata); 
+   float vth = get_thermal_velocity(vdfdata, u);
+   std::vector<float> spectra=hermite_spectra_3d(vdfdata, order, vth, u); 
+   return HermSpectrum{.N_hermite_harmonic = order, .vth = vth, .u = u, .HermSpectrum = spectra, .v_limits=vdfdata.v_limits, .shape=vdfdata.shape };
+ }
+
+
+
+float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
+                           const std::vector<CellID>& local_cells) {
+   int total_bytes = 0;
+   int global_total_bytes = 0;
+   float local_compression_achieved = 0.0;
+   std::size_t total_samples = 0;
+   for (uint popID = 0; popID < getObjectWrapper().particleSpecies.size(); ++popID) {
+      // Vlasiator boilerplate
+#pragma omp parallel for reduction(+ : total_bytes, local_compression_achieved)
+      for (auto& cid : local_cells) { // loop over spatial cells
+         SpatialCell* sc = mpiGrid[cid];
+         if (sc->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) {
+            continue;
+         }
+         auto blockContainer = sc->get_velocity_blocks(popID);
+         const size_t total_blocks = blockContainer->size();
+         if (total_blocks==0){
+            sc->get_population(popID).compressed_state_buffer = {};
+            continue;
+         }
+         // (1) Extract and Collect the VDF of this cell
+         OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
+	 
+#pragma omp atomic
+         total_samples++;
+         // (2) Do the compression for this VDF
+	 HermSpectrum spectrum=getHermiteSpectra(vdf);
+	 std::size_t bytes_needed = spectrum.calculate_total_bytes();
+	 sc->get_population(popID).compressed_state_buffer.resize( bytes_needed );
+	 spectrum.serialize_into( sc->get_population(popID).compressed_state_buffer.data() );
+
+	local_compression_achieved += vdf.sparse_vdf_bytes / static_cast<float>(bytes_needed);
+      } // loop over all spatial cells
+   }    // loop over all populations
+   return local_compression_achieved / static_cast<float>(total_samples);
+}
+
+
+
+
 

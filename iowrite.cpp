@@ -637,6 +637,64 @@ bool writeVspaceDataCompressionMLP(const uint popID,Writer& vlsvWriter,
 }
 #endif //ASTERIX_MLP
 
+bool writeVspaceDataCompressionHERMITE(const uint popID,Writer& vlsvWriter,
+                                   dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
+                                   const std::vector<CellID>& cells,std::size_t totalBlocks, MPI_Comm comm){
+   
+   
+   //Write the compression method used in this file
+   const int cmp=P::vdf_compression_method;   
+   if (!vlsvWriter.writeParameter("COMPRESSION",&cmp)){
+      logFile<<"ERROR: Failed to write COMPRESSION parameter in vlsv file"<<std::endl<<write;
+      return false;
+   }
+   std::size_t totalElements=0;
+   for (const auto& cid:cells){
+      totalElements+=mpiGrid[cid]->get_population(popID).compressed_state_buffer.size();
+   }
+   bool success=true;
+   map<string,string> attribs;
+   const string popName      = getObjectWrapper().particleSpecies[popID].name;
+   const string spatMeshName = "SpatialGrid";
+   attribs["mesh"] = spatMeshName;
+   attribs["name"] = popName;
+   attribs["compression"] = "HERMITE";
+   const string datatype_avgs = "uint"; //TODO why dont we have pure bytes in vlsv??
+   const uint64_t arraySize_avgs = totalElements;
+   const uint64_t vectorSize_avgs = 1; // There are 64 elements in every velocity block
+
+   // Get the data size needed for writing in data
+   uint64_t dataSize_avgs =1;
+
+   // Start multi write
+   vlsvWriter.startMultiwrite<char>(arraySize_avgs,vectorSize_avgs);
+
+   // Loop over cells
+   for (size_t cell = 0; cell<cells.size(); ++cell) {
+      // Get the spatial cell
+      SpatialCell* SC = mpiGrid[cells[cell]];
+      
+      // Get the number of blocks in this cell
+      const uint64_t arrayElements = SC->get_population(popID).compressed_state_buffer.size();
+      char* arrayToWrite = reinterpret_cast<char*>(SC->get_population(popID).compressed_state_buffer.data());
+
+      // Add a subarray to write
+      vlsvWriter.addMultiwriteUnit<char>(arrayToWrite, arrayElements); // Note: We told beforehands that the vectorsize = WID3 = 64
+   }
+   if (cells.size() == 0) {
+      vlsvWriter.addMultiwriteUnit(NULL, 0); //Dummy write to avoid hang in end multiwrite
+   }
+   // Write the subarrays
+   vlsvWriter.endMultiwrite("BLOCKVARIABLE", attribs);
+      
+   if (globalSuccess(success,"(MAIN) writeGrid: ERROR: Failed to fill temporary velocityBlockData array",MPI_COMM_WORLD) == false) {
+      vlsvWriter.close();
+      return false;
+   }
+
+ return success;  
+}
+
 bool writeVelocityDistributionDataAsterix(const uint popID,Writer& vlsvWriter,
                                    dccrg::Dccrg<SpatialCell,dccrg::Cartesian_Geometry>& mpiGrid,
                                    const std::vector<CellID>& cells,std::vector<std::vector<char>>&bytes,MPI_Comm comm) {
@@ -773,6 +831,9 @@ bool writeVelocityDistributionDataAsterix(const uint popID,Writer& vlsvWriter,
          success=writeVspaceDataCompressionOCTREE(popID,vlsvWriter,mpiGrid,cells,totalBlocks,comm);
          break;
 #endif
+      case P::ASTERIX_COMPRESSION_METHODS::HERMITE:
+         success=writeVspaceDataCompressionHERMITE(popID,vlsvWriter,mpiGrid,cells,totalBlocks,comm);
+         break;
       default:
          std::cout<<"ABORT DEFAULT"<<std::endl;
          break;

@@ -75,6 +75,55 @@ void decompress_phasespace6D_f32(GENERIC_TS_POOL::MemPool* p, std::size_t fin, s
 #define MLP_KEY 42
 
 namespace ASTERIX {
+
+struct HermSpectrum {
+      int N_hermite_harmonic;
+      float vth;
+      std::array<float,3> u;
+      std::vector<float> HermSpectrum;
+      std::array<Real,6> v_limits;
+      std::array<std::size_t, 3> shape;
+
+	std::size_t calculate_total_bytes()
+	{
+	return sizeof(int)+sizeof(float)+3*sizeof(float) + HermSpectrum.size()*sizeof(float)+sizeof(size_t)+6*sizeof(Real) + 3*sizeof(size_t);
+	}
+
+	bool serialize_into(char* buffer)
+	{
+
+        std::size_t write_index = 0;
+	std::size_t size = HermSpectrum.size();
+
+      	std::memcpy(&buffer[write_index], &N_hermite_harmonic, sizeof(int));
+      	write_index += sizeof(int);
+
+      	std::memcpy(&buffer[write_index], &vth, sizeof(float));
+      	write_index +=  sizeof(float);
+
+        std::memcpy(&buffer[write_index], &u, 3*sizeof(float));
+        write_index +=  3*sizeof(float);
+
+        std::memcpy(&buffer[write_index], &size, sizeof(size_t));
+        write_index +=  sizeof(size_t);
+
+        std::memcpy(&buffer[write_index], HermSpectrum.data(), sizeof(float)*size);
+        write_index +=  sizeof(size_t)*size;
+
+        std::memcpy(&buffer[write_index], v_limits.data(), sizeof(Real)*6);
+        write_index +=  sizeof(Real)*6;
+
+        std::memcpy(&buffer[write_index], shape.data(), sizeof(size_t)*3);
+        write_index +=  sizeof(size_t)*3;
+
+	return write_index==calculate_total_bytes(); 
+	}
+
+
+   }; // end HermSpectrum structure
+
+//HermSpectrum deserialize_hermite_from( char* buffer ) 	{ 	}
+
 struct VCoords {
    Real vx, vy, vz;
    VCoords operator+(const VCoords& other) { return {vx + other.vx, vy + other.vy, vz + other.vz}; }
