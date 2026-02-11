@@ -845,12 +845,13 @@ float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
 #pragma omp atomic
          total_samples++;
          // (2) Do the compression for this VDF
-	 const HermSpectrum spectrum=getHermiteSpectra(vdf);
-	 const std::size_t bytes_needed = spectrum.calculate_total_bytes();
-	 sc->get_population(popID).compressed_state_buffer.resize( bytes_needed );
-	 spectrum.serialize_into( sc->get_population(popID).compressed_state_buffer.data() );
-
-	local_compression_achieved += vdf.sparse_vdf_bytes / static_cast<float>(bytes_needed);
+      	const HermSpectrum spectrum=getHermiteSpectra(vdf);
+      	const std::size_t bytes_needed = spectrum.calculate_total_bytes();
+      	sc->get_population(popID).compressed_state_buffer.resize( bytes_needed );
+      	if(!spectrum.serialize_into( sc->get_population(popID).compressed_state_buffer.data() )){
+      	   fprintf(stderr,"FAILED TO SERIALIZE HERMITE PROPERLY!\n");
+      	}
+      	local_compression_achieved += vdf.sparse_vdf_bytes / static_cast<float>(bytes_needed);
       } // loop over all spatial cells
    }    // loop over all populations
    return local_compression_achieved / static_cast<float>(total_samples);

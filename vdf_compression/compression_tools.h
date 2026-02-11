@@ -107,7 +107,7 @@ struct HermSpectrum {
       write_index += sizeof(size_t);
 
       std::memcpy(&buffer[write_index], HermSpectrum.data(), sizeof(float) * size);
-      write_index += sizeof(size_t) * size;
+      write_index += sizeof(float) * size;
 
       std::memcpy(&buffer[write_index], v_limits.data(), sizeof(Real) * 6);
       write_index += sizeof(Real) * 6;
