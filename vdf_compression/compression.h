@@ -71,4 +71,7 @@ std::vector<double> decompressArrayDouble(char* compressedData, size_t compresse
 // Function to decompress a compressed array of floats using ZFP
 std::vector<float> decompressArrayFloat(char* compressedData, size_t compressedSize, size_t arraySize, float tol);
 
+//Reconstruct from hermite state
+std::vector<float> reconstruct_vdf(OrderedVDF& data, std::vector<float> spectra, int order, float vth, std::array<float,3> u);
+
 } // namespace ASTERIX

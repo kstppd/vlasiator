@@ -621,7 +621,7 @@ std::vector<float> linspace(double start, double end, int len){
  return x;
 }
 
-std::array<float,3> get_drift_velocity(OrderedVDF& data){   
+std::array<float,3> get_drift_velocity(const OrderedVDF& data){   
    std::array<float,3> u={0.0,0.0,0.0};
    std::vector<float> vx = linspace(data.v_limits[0],data.v_limits[3],data.shape[0]);
    std::vector<float> vy = linspace(data.v_limits[1],data.v_limits[4],data.shape[1]);
@@ -645,7 +645,7 @@ std::array<float,3> get_drift_velocity(OrderedVDF& data){
    return u;
  }
 
- float get_thermal_velocity(OrderedVDF& data, std::array<float,3> u){
+ float get_thermal_velocity(const OrderedVDF& data, std::array<float,3> u){
    float dv = (data.v_limits[3] - data.v_limits[0]) / (data.shape[0] );
    std::vector<float> vx = linspace(data.v_limits[0],data.v_limits[3],data.shape[0]);
    std::vector<float> vy = linspace(data.v_limits[1],data.v_limits[4],data.shape[1]);
@@ -670,7 +670,7 @@ return vth;
 }
 
 
-std::vector<std::vector<float>> hermite(std::vector<float>& x, int order){
+std::vector<std::vector<float>> hermite(const std::vector<float>& x, int order){
    // Recurrence relation: H_n+1 = 2*x*H_n -2*n*H_n-1
    // H0 = 1, H1 = 2x
    // base function with Gauss weights: H_n * exp(-0.5*v^2)
@@ -706,7 +706,7 @@ std::vector<std::vector<float>> hermite(std::vector<float>& x, int order){
        return hermite_vals;
    }
 
-std::vector<float> hermite_spectra_3d(OrderedVDF& data, int order, float vth, std::array<float,3> u){
+std::vector<float> hermite_spectra_3d(const OrderedVDF& data, int order, float vth, std::array<float,3> u){
    std::vector<float> spectra(order*order*order);
    int hermite_index;
    int vspace_index;
@@ -737,7 +737,7 @@ std::vector<float> hermite_spectra_3d(OrderedVDF& data, int order, float vth, st
    return spectra;
  }
 
-HermSpectrum getHermiteSpectra(OrderedVDF& vdfdata){
+HermSpectrum getHermiteSpectra(const OrderedVDF& vdfdata){
    int order=P::hermite_order; // define max order of the hermite decomposition
    auto u = get_drift_velocity(vdfdata); 
    float vth = get_thermal_velocity(vdfdata, u);
@@ -745,6 +745,78 @@ HermSpectrum getHermiteSpectra(OrderedVDF& vdfdata){
    return HermSpectrum{.N_hermite_harmonic = order, .vth = vth, .u = u, .HermSpectrum = spectra, .v_limits=vdfdata.v_limits, .shape=vdfdata.shape };
  }
 
+std::vector<std::vector<float>> get_hermite_x(const OrderedVDF& data, int order, float vth, std::array<float,3> u){
+   std::vector<float> x = linspace(data.v_limits[0],data.v_limits[3],data.shape[0]);
+
+   for(auto& val:x ){
+     val = (val - u[0])/(vth); /// NORMALIZATION VSPACE
+   }
+   std::vector<std::vector<float>> hermite_x = hermite(x, order);
+   for(int n=0; n<order; ++n){
+     float norm_const = sqrt(pow(2,n)*factorial(n)*sqrt(M_PI)*vth);
+     for(size_t i=0; i < x.size(); ++i){
+       hermite_x[n][i] /= norm_const;
+     }
+   }
+   return hermite_x;
+ }
+ 
+ std::vector<std::vector<float>> get_hermite_y(const OrderedVDF& data, int order, float vth, std::array<float,3> u){
+   std::vector<float> y = linspace(data.v_limits[1],data.v_limits[4],data.shape[1]);
+   for(auto& val:y ){
+     val = (val - u[1])/(vth); /// NORMALIZATION VSPACE
+   }
+   std::vector<std::vector<float>> hermite_y = hermite(y, order);
+   for(int n=0; n<order; ++n){
+     float norm_const = sqrt(pow(2,n)*factorial(n)*sqrt(M_PI)*vth);
+     for(size_t i=0; i < y.size(); ++i){
+       hermite_y[n][i] *= 1/norm_const;
+     }
+   }
+   return hermite_y;
+ }
+ 
+ std::vector<std::vector<float>> get_hermite_z(const OrderedVDF& data, int order, float vth, std::array<float,3> u){
+   std::vector<float> z = linspace(data.v_limits[2],data.v_limits[5],data.shape[2]);
+   for(auto& val:z ){
+     val = (val - u[2])/(vth); /// NORMALIZATION VSPACE
+   }
+   std::vector<std::vector<float>> hermite_z = hermite(z, order);
+   for(int n=0; n<order; ++n){
+     float norm_const = sqrt(pow(2,n)*factorial(n)*sqrt(M_PI)*vth);
+     for(size_t i=0; i < z.size(); ++i){
+       hermite_z[n][i] *= 1/norm_const;
+     }
+   }
+   return hermite_z;
+ }
+
+
+ std::vector<float> ASTERIX::reconstruct_vdf(OrderedVDF& data, std::vector<float> spectra, int order, float vth, std::array<float,3> u){
+   std::vector<float> f(data.shape[2]*data.shape[1]*data.shape[0]);
+   std::vector<std::vector<float>> hermite_x = get_hermite_x(data, order, vth, u);
+   std::vector<std::vector<float>> hermite_y = get_hermite_y(data, order, vth, u);
+   std::vector<std::vector<float>> hermite_z = get_hermite_z(data, order, vth, u);
+   float dv = (data.v_limits[3]-data.v_limits[0]) / (data.shape[0]-1);
+   for (size_t vx=0; vx<data.shape[0]; ++vx){
+     for (size_t vy=0; vy<data.shape[1]; ++vy){
+       for (size_t vz=0; vz<data.shape[2]; ++vz){
+         int ind = vx*data.shape[1]*data.shape[2] + vy*data.shape[2] + vz;
+         float sum = 0.0f;
+         for(int nx=0; nx<order; ++nx){
+           for(int ny=0; ny<order; ++ny){
+             for(int nz=0; nz<order; ++nz){
+               int n = nx*(order)*(order) + ny*(order) + nz;
+               sum += spectra[n]*hermite_x[nx][vx]*hermite_y[ny][vy]*hermite_z[nz][vz];
+             }
+           }
+         }
+         f[ind]=sum;
+       }
+     }
+   }
+ return f;
+ }
 
 
 float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,
@@ -768,13 +840,13 @@ float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
             continue;
          }
          // (1) Extract and Collect the VDF of this cell
-         OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
+         const OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
 	 
 #pragma omp atomic
          total_samples++;
          // (2) Do the compression for this VDF
-	 HermSpectrum spectrum=getHermiteSpectra(vdf);
-	 std::size_t bytes_needed = spectrum.calculate_total_bytes();
+	 const HermSpectrum spectrum=getHermiteSpectra(vdf);
+	 const std::size_t bytes_needed = spectrum.calculate_total_bytes();
 	 sc->get_population(popID).compressed_state_buffer.resize( bytes_needed );
 	 spectrum.serialize_into( sc->get_population(popID).compressed_state_buffer.data() );
 
