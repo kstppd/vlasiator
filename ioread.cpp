@@ -1047,23 +1047,21 @@ bool _readBlockDataCompressionHERMITE(vlsv::ParallelReader & file,
       std::array<std::size_t, 3> shape;
       
       //Read state
-      std::memcpy(&nharmonics ,compressed_bytes.data()+read_index , sizeof(int) );
-      read_index+=sizeof(int);
-      std::memcpy(&vth ,compressed_bytes.data()+read_index , sizeof(float) );
-      read_index+=sizeof(float);
-      std::memcpy(vbulk.data() ,compressed_bytes.data()+read_index , 3*sizeof(float) );
-      read_index+=3*sizeof(float);
-      std::memcpy(&size ,compressed_bytes.data()+read_index , sizeof(std::size_t) );
-      read_index+=3*sizeof(std::size_t);
-      std::vector<float> hermite_data;
-      hermite_data.resize(size);
-      std::memcpy(hermite_data.data() ,compressed_bytes.data()+read_index , size*sizeof(float) );
-      read_index+=size*sizeof(float);
-      std::memcpy(v_limits.data() ,compressed_bytes.data()+read_index , 6*sizeof(Real) );
-      read_index+=6*sizeof(Real);
-      std::memcpy(shape.data() ,compressed_bytes.data()+read_index , 3*sizeof(std::size_t) );
-      read_index+=3*sizeof(std::size_t);
-
+      std::memcpy(&nharmonics, compressed_bytes.data() + read_index, sizeof(int));
+      read_index += sizeof(int);
+      std::memcpy(&vth, compressed_bytes.data() + read_index, sizeof(float));
+      read_index += sizeof(float);
+      std::memcpy(vbulk.data(), compressed_bytes.data() + read_index, 3 * sizeof(float));
+      read_index += 3 * sizeof(float);
+      std::memcpy(&size, compressed_bytes.data() + read_index, sizeof(std::size_t));
+      read_index += sizeof(std::size_t);
+      std::vector<float> hermite_data(size);
+      std::memcpy(hermite_data.data(), compressed_bytes.data() + read_index, size * sizeof(float));
+      read_index += size * sizeof(float);
+      std::memcpy(v_limits.data(), compressed_bytes.data() + read_index, 6 * sizeof(Real));
+      read_index += 6 * sizeof(Real);
+      std::memcpy(shape.data(), compressed_bytes.data() + read_index, 3 * sizeof(std::size_t));
+      read_index += 3 * sizeof(std::size_t);
       ASTERIX::OrderedVDF vdf{.blocks_to_ignore={},.sparse_vdf_bytes=0,
                                .vdf_vals={},
                                .v_limits=v_limits,
@@ -1088,7 +1086,7 @@ bool _readBlockDataCompressionHERMITE(vlsv::ParallelReader & file,
             }
          }
       }
-      ASTERIX::overwrite_pop_spatial_cell_vdf(sc, popID, vdf);
+      ASTERIX::overwrite_pop_spatial_cell_vdf(sc, popID, vdf,sparse,true);
       sc->adjustSingleCellVelocityBlocks(popID);
    }
    return success;  

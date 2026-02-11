@@ -513,13 +513,16 @@ public:
 
 auto extract_pop_vdf_from_spatial_cell(spatial_cell::SpatialCell* sc, uint popID) -> UnorderedVDF;
 
-auto extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(spatial_cell::SpatialCell* sc, uint popID, int zoom) -> OrderedVDF;
+auto extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(spatial_cell::SpatialCell* sc, uint popID, int zoom,
+                                                               Real sparse = 1e-16, bool logscale = false)
+    -> OrderedVDF;
 
 constexpr auto isPow2(std::unsigned_integral auto val) -> bool { return (val & (val - 1)) == 0; };
 
 auto overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint popID, const std::vector<Realf>& new_vspace) -> void;
 
-auto overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint popID, const OrderedVDF& vdf) -> void;
+auto overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint popID, const OrderedVDF& vdf,
+                                    Real sparse = 1e-16, bool logscale = false) -> void;
 
 auto overwrite_cellids_vdfs(const std::span<const CellID> cids, uint popID,
                             dccrg::Dccrg<spatial_cell::SpatialCell, dccrg::Cartesian_Geometry>& mpiGrid,

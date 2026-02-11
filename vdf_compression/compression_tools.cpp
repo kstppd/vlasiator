@@ -106,7 +106,8 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint
    return;
 }
 
-void ASTERIX::overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint popID, const OrderedVDF& vdf) {
+void ASTERIX::overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint popID, const OrderedVDF& vdf,
+                                             Real sparse, bool logscale) {
    assert(sc && "Invalid Pointer to Spatial Cell !");
    auto blockContainer = sc->get_velocity_blocks(popID);
    const size_t total_blocks = blockContainer->size();
@@ -131,12 +132,12 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint
                const size_t bbox_i = std::min(static_cast<size_t>(std::floor((vx - vdf.v_limits[0]) / dvx)), nx - 1);
                const size_t bbox_j = std::min(static_cast<size_t>(std::floor((vy - vdf.v_limits[1]) / dvy)), ny - 1);
                const size_t bbox_k = std::min(static_cast<size_t>(std::floor((vz - vdf.v_limits[2]) / dvz)), nz - 1);
-                    const size_t index = bbox_i * (ny * nz) + bbox_j * nz + bbox_k;
-                 // vspace.at(index) += vdf_data[cellIndex(i, j, k)] / ratio;
-
-
-               vdf_data[cellIndex(i, j, k)] = vdf.vdf_vals.at(index);
-
+               const size_t index = bbox_i * (ny * nz) + bbox_j * nz + bbox_k;
+               if (logscale) {
+                  vdf_data[cellIndex(i, j, k)] = 0.1f * sparse * std::pow(10, vdf.vdf_vals.at(index));
+               } else {
+                  vdf_data[cellIndex(i, j, k)] = vdf.vdf_vals.at(index);
+               }
             }
          }
       }
@@ -145,8 +146,9 @@ void ASTERIX::overwrite_pop_spatial_cell_vdf(spatial_cell::SpatialCell* sc, uint
 }
 
 // Extracts VDF in a cartesian C ordered mesh in a minimum BBOX and with a zoom level used for upsampling/downsampling
-ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(spatial_cell::SpatialCell* sc, uint popID,
-                                                                                       int zoom) {
+ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(spatial_cell::SpatialCell* sc,
+                                                                                       uint popID, int zoom,
+                                                                                       Real sparse, bool logscale) {
    assert(sc && "Invalid Pointer to Spatial Cell !");
    if (zoom != 1) {
       throw std::runtime_error("Zoom is not supported yet!");
@@ -256,7 +258,17 @@ ASTERIX::OrderedVDF ASTERIX::extract_pop_vdf_from_spatial_cell_ordered_min_bbox_
       ignored.push_back(std::move(ignore_list.extract(it++).value()));
    }
 
-   return ASTERIX::OrderedVDF{.blocks_to_ignore=ignored,.sparse_vdf_bytes=total_blocks*WID*WID*WID*sizeof(Realf),.vdf_vals = vspace, .v_limits = vlims, .shape = {nx, ny, nz}};
+   if (logscale) {
+      for (std::size_t i = 0; i < vspace.size(); ++i) {
+         vspace[i] = std::log10(std::max(vspace[i], static_cast<float>(0.1f * sparse))) - std::log10(0.1f * sparse);
+      }
+   }
+
+   return ASTERIX::OrderedVDF{.blocks_to_ignore = ignored,
+                              .sparse_vdf_bytes = total_blocks * WID * WID * WID * sizeof(Realf),
+                              .vdf_vals = vspace,
+                              .v_limits = vlims,
+                              .shape = {nx, ny, nz}};
 }
 
 void ASTERIX::overwrite_cellids_vdfs(const std::span<const CellID> cids, uint popID,

@@ -826,6 +826,7 @@ float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
    float local_compression_achieved = 0.0;
    std::size_t total_samples = 0;
    for (uint popID = 0; popID < getObjectWrapper().particleSpecies.size(); ++popID) {
+      Real sparse = getObjectWrapper().particleSpecies[popID].sparseMinValue;
       // Vlasiator boilerplate
 #pragma omp parallel for reduction(+ : total_bytes, local_compression_achieved)
       for (auto& cid : local_cells) { // loop over spatial cells
@@ -840,7 +841,7 @@ float compress_vdfs_hermite(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>
             continue;
          }
          // (1) Extract and Collect the VDF of this cell
-         const OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1);
+         const OrderedVDF vdf = extract_pop_vdf_from_spatial_cell_ordered_min_bbox_zoomed(sc, popID, 1 , sparse , true);
 	 
 #pragma omp atomic
          total_samples++;
