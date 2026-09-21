@@ -487,6 +487,9 @@ namespace glossa {
          if (name == "clamp") {
             return numeric(std::min(std::max(arg(0), arg(1)), arg(2)));
          }
+         if (name == "int") {
+            return numeric(static_cast<int>(arg(0)));
+         }
          if (name == "print") {
             for (size_t i = 0; i < values.size(); i++) {
                std::cout << (i ? " " : "");
