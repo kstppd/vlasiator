@@ -181,8 +181,31 @@ namespace glossa {
          } else if (c == '"') {
             i++;
             std::string s;
-            while (i < n && input[i] != '"')
+            while (i < n && input[i] != '"') {
+               if (input[i] == '\\' && i + 1 < n) {
+                  char esc = input[i + 1];
+                  i += 2;
+                  switch (esc) {
+                  case 'n':
+                     s += '\n';
+                     break;
+                  case 't':
+                     s += '\t';
+                     break;
+                  case 'r':
+                     s += '\r';
+                     break;
+                  case '0':
+                     s += '\0';
+                     break;
+                  default:
+                     s += esc;
+                     break;
+                  }
+                  continue;
+               }
                s += input[i++];
+            }
             if (i < n) {
                i++;
             }
@@ -466,7 +489,12 @@ namespace glossa {
          }
          if (name == "print") {
             for (size_t i = 0; i < values.size(); i++) {
-               std::cout << (i ? " " : "") << to_string(values[i]);
+               std::cout << (i ? " " : "");
+               if (values[i].kind == Value::Kind::String) {
+                  std::cout << values[i].text;
+               } else {
+                  std::cout << values[i].number;
+               }
             }
             std::cout << std::endl;
             return values.empty() ? numeric(0) : values[0];
@@ -498,6 +526,24 @@ namespace glossa {
 
    inline const std::unordered_map<std::string, double>& reserved_constants() {
       return predefined_globals;
+   }
+
+   inline size_t find_expr_no_quotes(const std::string& s, char needle) {
+      bool in_string = false;
+      for (size_t i = 0; i < s.size(); i++) {
+         if (in_string && s[i] == '\\' && i + 1 < s.size()) {
+            i++;
+            continue;
+         }
+         if (s[i] == '"') {
+            in_string = !in_string;
+            continue;
+         }
+         if (!in_string && s[i] == needle) {
+            return i;
+         }
+      }
+      return std::string::npos;
    }
 
    inline std::string evaluate_config(const std::string& source, Vars& vars, BumpAllocator& arena) {
@@ -547,9 +593,23 @@ namespace glossa {
             continue;
          }
 
-         size_t eq_pos = line.find('=');
+         size_t eq_pos = find_expr_no_quotes(line, '=');
          if (eq_pos == std::string::npos) {
-            result << line << "\n";
+            bool executed = false;
+            try {
+               auto tokens = lex(trim(line));
+               GlossaParser parser(tokens, arena);
+               Expr* expr = parser.parse_expr();
+               if (expr->kind == Expr::Kind::Callable && parser.current().kind == Token::Kind::_EOF) {
+                  eval(expr, vars);
+                  executed = true;
+               }
+            } catch (const std::exception&) {
+               executed = false;
+            }
+            if (!executed) {
+               result << line << "\n";
+            }
             continue;
          }
          std::string key = trim(line.substr(0, eq_pos));
@@ -563,7 +623,7 @@ namespace glossa {
             key = trim(key.substr(GLOBALKW.size()));
          }
          std::string after_eq = line.substr(eq_pos + 1);
-         size_t hash_pos = after_eq.find('#');
+         size_t hash_pos = find_expr_no_quotes(after_eq, '#');
          std::string value_raw = hash_pos == std::string::npos ? after_eq : after_eq.substr(0, hash_pos);
          std::string comment_suffix = hash_pos == std::string::npos ? "" : after_eq.substr(hash_pos);
          std::string expr_text = trim(value_raw);
