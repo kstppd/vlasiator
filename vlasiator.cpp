@@ -237,9 +237,7 @@ void computeNewTimeStep(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mp
    }
 }
 
-std::unordered_map<std::string, double> create_config_globals(){
-   return std::unordered_map<std::string, double>();
-}
+std::unordered_map<std::string, double> create_config_globals(std::initializer_list<std::pair<std::string, double>> values) { return {values.begin(), values.end()}; }
 
 int simulate(int argn,char* args[]) {
    int myRank, doBailout=0;
