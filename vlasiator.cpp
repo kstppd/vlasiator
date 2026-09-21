@@ -283,7 +283,7 @@ int simulate(int argn,char* args[]) {
 
    std::vector<std::string> extras;               // extra options we didn't expect but found
    std::vector<std::string> filenames;            // things that don't start with -- and smell like a filename
-   const auto supplied_globals = create_config_globals();
+   const auto supplied_globals = create_config_globals({});
    readparameters.parse(extras, filenames, true, supplied_globals); // true to ignore config extras
    getObjectWrapper().populationsParsed=true;
    if (Readparameters::helpRequested) {
