@@ -75,7 +75,7 @@ if [[ $PLATFORM != "-leonardo_booster" && $PLATFORM != "-karolina_cuda" && $PLAT
     echo "################# Fetching jemalloc #####################"
     #curl -O -L https://github.com/jemalloc/jemalloc/releases/download/5.4.0/jemalloc-5.4.0.tar.bz2
     #tar xjf jemalloc-5.4.0.tar.bz2
-    git clone --depth 1 --branch 5.4.0 https://github.com/jemalloc/jemalloc
+    git clone --depth=1 --branch 5.4.0 https://github.com/jemalloc/jemalloc
     cd jemalloc
     git_use_commit "$JEMALLOC_COMMIT"
     cd ..
