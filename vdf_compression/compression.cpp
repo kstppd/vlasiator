@@ -35,6 +35,7 @@
 #include <map>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -429,10 +430,16 @@ float compress_vdfs_zfp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mp
          size_t ss{0};
          sc->get_population(popID).compressed_state_buffer =
              compress(vdf.vdf_vals.data(), vdf.vdf_vals.size(), ss, sparse);
+         if (ss == 0) {
+            throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP produced 0 bytes for cell " + std::to_string(cid));
+         }
          float ratio = static_cast<float>(vdf.vdf_vals.size() * sizeof(Realf)) / static_cast<float>(ss);
          local_compression_achieved += ratio;
       } // loop over all spatial cells
    }    // loop over all populations
+   if (total_samples == 0) {
+      return 0.0;
+   }
    return local_compression_achieved / static_cast<float>(total_samples);
 }
 
@@ -514,21 +521,33 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
 
 #ifdef ASTERIX_ZFP
 std::vector<char> compress(float* array, size_t arraySize, size_t& compressedSize, float tol) {
-   // Allocate memory for compressed data
    zfp_stream* zfp = zfp_stream_open(NULL);
    zfp_field* field = zfp_field_1d(array, zfp_type_float, arraySize);
-   size_t maxSize = zfp_stream_maximum_size(zfp, field);
+   if (!zfp || !field) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP failed to open stream/field.");
+   }
+   zfp_stream_set_accuracy(zfp, tol);
+
+   const size_t maxSize = zfp_stream_maximum_size(zfp, field);
+   if (maxSize == 0) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP returned zero maximum stream size.");
+   }
    std::vector<char> compressedData(maxSize);
 
-   // Initialize ZFP compression
-   zfp_stream_set_accuracy(zfp, tol);
-   bitstream* stream = stream_open(compressedData.data(), compressedSize);
+   bitstream* stream = stream_open(compressedData.data(), compressedData.size());
+   if (!stream) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP failed to open bitstream.");
+   }
    zfp_stream_set_bit_stream(zfp, stream);
    zfp_stream_rewind(zfp);
 
-   // Compress the array
    compressedSize = zfp_compress(zfp, field);
-   compressedData.erase(compressedData.begin() + compressedSize, compressedData.end());
+   if (compressedSize == 0 || compressedSize > maxSize) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): zfp_compress failed (returned " +
+                               std::to_string(compressedSize) + " bytes, buffer " + std::to_string(maxSize) +
+                               " bytes, array size " + std::to_string(arraySize) + ").");
+   }
+   compressedData.resize(compressedSize);
    zfp_field_free(field);
    zfp_stream_close(zfp);
    stream_close(stream);
@@ -551,7 +570,9 @@ std::vector<float> ASTERIX::decompressArrayFloat(char* compressedData, size_t co
    // Decompress the array
    zfp_field* field_decompress = zfp_field_1d(decompressedArray.data(), zfp_type_float, decompressedArray.size());
    size_t retval = zfp_decompress(zfp, field_decompress);
-   (void)retval;
+   if (retval == 0) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): zfp_decompress failed.");
+   }
    zfp_field_free(field_decompress);
    zfp_stream_close(zfp);
    stream_close(stream_decompress);
@@ -563,16 +584,31 @@ std::vector<float> ASTERIX::decompressArrayFloat(char* compressedData, size_t co
 std::vector<char> compress(double* array, size_t arraySize, size_t& compressedSize, double tol) {
    zfp_stream* zfp = zfp_stream_open(NULL);
    zfp_field* field = zfp_field_1d(array, zfp_type_double, arraySize);
-   size_t maxSize = zfp_stream_maximum_size(zfp, field);
+   if (!zfp || !field) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP failed to open stream/field.");
+   }
+   zfp_stream_set_accuracy(zfp, tol);
+
+   const size_t maxSize = zfp_stream_maximum_size(zfp, field);
+   if (maxSize == 0) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP returned zero maximum stream size.");
+   }
    std::vector<char> compressedData(maxSize);
 
-   zfp_stream_set_accuracy(zfp, tol);
-   bitstream* stream = stream_open(compressedData.data(), compressedSize);
+   bitstream* stream = stream_open(compressedData.data(), compressedData.size());
+   if (!stream) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): ZFP failed to open bitstream.");
+   }
    zfp_stream_set_bit_stream(zfp, stream);
    zfp_stream_rewind(zfp);
 
    compressedSize = zfp_compress(zfp, field);
-   compressedData.erase(compressedData.begin() + compressedSize, compressedData.end());
+   if (compressedSize == 0 || compressedSize > maxSize) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): zfp_compress failed (returned " +
+                               std::to_string(compressedSize) + " bytes, buffer " + std::to_string(maxSize) +
+                               " bytes, array size " + std::to_string(arraySize) + ").");
+   }
+   compressedData.resize(compressedSize);
    zfp_field_free(field);
    zfp_stream_close(zfp);
    stream_close(stream);
@@ -592,7 +628,9 @@ std::vector<double> ASTERIX::decompressArrayDouble(char* compressedData, size_t 
 
    zfp_field* field_decompress = zfp_field_1d(decompressedArray.data(), zfp_type_double, decompressedArray.size());
    size_t retval = zfp_decompress(zfp, field_decompress);
-   (void)retval;
+   if (retval == 0) {
+      throw std::runtime_error("(VDF COMPRESSION ERROR): zfp_decompress failed.");
+   }
    zfp_field_free(field_decompress);
    zfp_stream_close(zfp);
    stream_close(stream_decompress);
