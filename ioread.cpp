@@ -577,11 +577,11 @@ bool _readBlockDataCompressionZFP(vlsv::ParallelReader & file,
    Real sparse = getObjectWrapper().particleSpecies[popID].sparseMinValue;
    for(uint64_t i=0; i<localCells; i++) {
       CellID cell = fileCells[localCellStartOffset + i]; //spatial cell id
+      vmesh::LocalID nBlocksInCell = blocksPerCell[i];
       if (mpiGrid[cell]->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) {
+         blockBufferOffset += nBlocksInCell;
          continue;
       }
-      vmesh::LocalID nBlocksInCell = blocksPerCell[i];
-      //copy blocks in this cell to vector blockIdsInCell, size of read in data has been checked earlier
       blockIdsInCell.reserve(nBlocksInCell);
       blockIdsInCell.assign(blockIdBuffer + blockBufferOffset, blockIdBuffer + blockBufferOffset + nBlocksInCell);
       for(auto& id : blockIdsInCell) {
@@ -606,8 +606,8 @@ bool _readBlockDataCompressionZFP(vlsv::ParallelReader & file,
       } else {
          std::runtime_error("ERROR: failed to read in VDFs for type fileReal. ");
       }
-      for(uint64_t i = 0; i< WID3 * nBlocksInCell ; i++){
-         cellBlockData[i] =  static_cast<Realf>(data[i]);
+      for(uint64_t j = 0; j< WID3 * nBlocksInCell ; j++){
+         cellBlockData[j] =  static_cast<Realf>(data[j]);
       }
       delete[] data;
       blockBufferOffset += nBlocksInCell; //jump to location of next local cell

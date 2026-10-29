@@ -412,6 +412,7 @@ float compress_vdfs_zfp(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>& mp
          SpatialCell* sc = mpiGrid[cid];
          assert(sc && "Invalid Pointer to Spatial Cell !");
          if (sc->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) {
+            sc->get_population(popID).compressed_state_buffer = {};
             continue;
          }
          auto blockContainer = sc->get_velocity_blocks(popID);
@@ -459,6 +460,7 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
       for (auto& cid : local_cells) { // loop over spatial cells
          SpatialCell* sc = mpiGrid[cid];
          if (sc->sysBoundaryFlag == sysboundarytype::DO_NOT_COMPUTE) {
+            sc->get_population(popID).compressed_state_buffer = {};
             continue;
          }
          auto blockContainer = sc->get_velocity_blocks(popID);
@@ -515,6 +517,9 @@ float compress_vdfs_octree(dccrg::Dccrg<SpatialCell, dccrg::Cartesian_Geometry>&
 
       } // loop over all spatial cells
    }    // loop over all populations
+   if (total_samples == 0) {
+      return 0.0;
+   }
    return local_compression_achieved / static_cast<float>(total_samples);
 }
 #endif //ASTERIX_OCTREE
